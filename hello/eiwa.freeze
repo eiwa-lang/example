@@ -1,0 +1,5 @@
+dependencies:
+  html:
+    github: eiwa-lang/html
+    branch: main
+    commit: 1c6bd8413b870f7655b7d427ce8b7abdcb065e9e

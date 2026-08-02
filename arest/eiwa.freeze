@@ -1,0 +1,10 @@
+dependencies:
+  arest:
+    github: eiwa-lang/arest
+    commit: 86c65e8364db3770357c4ef911244a89b032cf74
+  postgres:
+    github: eiwa-lang/postgres
+    commit: 543e9b0dae394a1352ee439e9d825d664c40a597
+  html:
+    github: eiwa-lang/html
+    commit: e1ef53662af12e5596b7de870d78e714679bf733
