@@ -1,0 +1,32 @@
+import { Server, ServerConnection } from "std.http"
+import { Log } from "std.log"
+
+import { ArestBuilder } from "arest_builder"
+import { Dispatcher } from ".dispatcher.dispatcher"
+
+fun arest(port: Int, init: ArestBuilder.() -> Void) {
+    val builder = ArestBuilder(port)
+    init(builder)
+    val server = Server()
+    if (server.bind(port)) {
+        Log.info { "[Arest] Server listening on http://localhost:" + port.toString() + " ..." }
+        val dispatcher = Dispatcher(builder)
+        while (builder.running) {
+            try {
+                val conn = server.accept()
+                if (conn is ServerConnection) {
+                    task {
+                        dispatcher.dispatch(conn)
+                    }
+                }
+            } catch (e) {
+                Log.error(e) { "[Arest] Error processing connection" }
+            }
+        }
+
+        server.close()
+        Log.info { "[Arest] Server stopped gracefully." }
+    } else {
+        Log.error { "[Arest] Failed to bind to port " + port.toString() }
+    }
+}

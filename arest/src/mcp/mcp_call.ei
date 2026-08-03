@@ -1,0 +1,17 @@
+import { ArestBuilder } from ".arest_builder"
+
+type McpCall(
+    val server: ArestBuilder,
+    val tool: String = "",
+    val arguments: String = ""
+) {
+
+    fun respond(result: String): String {
+        return result
+    }
+
+    fun error(message: String): String {
+        return message
+    }
+
+}

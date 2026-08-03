@@ -1,0 +1,36 @@
+type Route(
+    val method: String,
+    val path: String,
+    val handler: ApplicationCall.() -> Void
+)
+
+type RoutingBuilder(val routes: MutableList<Route?> = MutableList<Route?>()) {
+
+    fun get(path: String, handler: ApplicationCall.() -> Void) {
+        routes.add(Route("GET", path, handler))
+    }
+
+    fun post(path: String, handler: ApplicationCall.() -> Void) {
+        routes.add(Route("POST", path, handler))
+    }
+
+    fun put(path: String, handler: ApplicationCall.() -> Void) {
+        routes.add(Route("PUT", path, handler))
+    }
+
+    fun patch(path: String, handler: ApplicationCall.() -> Void) {
+        routes.add(Route("PATCH", path, handler))
+    }
+
+    fun delete(path: String, handler: ApplicationCall.() -> Void) {
+        routes.add(Route("DELETE", path, handler))
+    }
+
+    fun head(path: String, handler: ApplicationCall.() -> Void) {
+        routes.add(Route("HEAD", path, handler))
+    }
+
+    fun options(path: String, handler: ApplicationCall.() -> Void) {
+        routes.add(Route("OPTIONS", path, handler))
+    }
+}

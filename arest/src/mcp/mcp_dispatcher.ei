@@ -1,0 +1,51 @@
+import { ServerConnection, Request } from "std.http"
+import { Log } from "std.log"
+
+import { ArestBuilder } from ".arest_builder"
+import { McpCall } from "mcp_call"
+import { McpTool } from "mcp_builder"
+
+type McpDispatcher(val builder: ArestBuilder) {
+
+    fun dispatch(conn: ServerConnection, req: Request) {
+
+        if (req.method != "POST") {
+            conn.writeResponse(405, "application/json", "{\"error\":\"Method Not Allowed\"}")
+            return
+        }
+
+        // TODO:
+        // Parse JSON-RPC request
+        // Dispatch initialize
+        // Dispatch tools/list
+        // Dispatch tools/call
+        // Dispatch resources/list
+        // Dispatch resources/read
+        // Dispatch prompts/list
+        // Dispatch prompts/get
+
+        conn.writeResponse(501, "application/json", "{\"error\":\"MCP dispatcher not implemented\"}")
+    }
+
+    fun executeTool(name: String): Bool {
+        var i = 0
+        val tools = builder.mcpBuilder.tools
+        while (i < tools.size()) {
+            val tool = tools.get(i)
+            if (tool is McpTool) {
+                val t = tool
+                if (t.name == name) {
+                    val call = McpCall(
+                        builder,
+                        t.name
+                    )
+                    t.handler(call)
+                    return true
+                }
+            }
+            i = i + 1
+        }
+
+        return false
+    }
+}

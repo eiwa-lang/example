@@ -1,4 +1,4 @@
-import { arest } from "arest"
+import { arest } from ".arest"
 
 import { date, now, Time } from "std.time"
 import { List, MutableList, MutableMap } from "std.collections"
