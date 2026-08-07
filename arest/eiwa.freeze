@@ -1,7 +1,0 @@
-dependencies:
-  postgres:
-    github: eiwa-lang/postgres
-    commit: 37463a8dd3ba4e9511e379f5474bbb8bb17a7b4b
-  html:
-    github: eiwa-lang/html
-    commit: 22e1ff2414eaa6176a03150ed302f1090794f90b

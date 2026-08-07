@@ -1,0 +1,116 @@
+import { ApplicationCall } from "arest.application_call"
+import { html } from "html"
+
+fun mcpCodeBlock(): String {
+    return "arest(8080) {\n" +
+        "    mcp {\n" +
+        "        name(\"Calculator\")\n" +
+        "        version(\"1.0.0\")\n" +
+        "        tool(\"sum\") {\n" +
+        "            val a = argument<Int>(\"a\")\n" +
+        "            val b = argument<Int>(\"b\")\n" +
+        "            respond(a + b)\n" +
+        "        }\n" +
+        "    }\n" +
+        "}"
+}
+
+fun httpCodeBlock(): String {
+    return "arest(8080) {\n" +
+        "    routing {\n" +
+        "        get(\"/\") {\n" +
+        "            respondText(\"Hello\")\n" +
+        "        }\n" +
+        "    }\n" +
+        "}"
+}
+
+fun homePage(call: ApplicationCall) {
+    call.respond(200, "text/html", html {
+        head {
+            meta(charset = "UTF-8")
+            title("Arest - Tutorial")
+            script(src = "https://cdn.tailwindcss.com")
+            link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css")
+            script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js")
+        }
+        body(class = "bg-blue-950 text-gray-100 font-sans antialiased") {
+            div(class = "max-w-3xl mx-auto py-12 px-6") {
+                div(class = "flex items-center justify-between mb-6") {
+                    span("Arest Tutorial", class = "inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-950 text-blue-400 border border-blue-800")
+                    div(class = "flex items-center gap-3") {
+                        a(href = "https://github.com/eiwa-lang/arest", class = "inline-flex items-center bg-white text-gray-900 text-sm font-semibold py-1.5 px-3 rounded-full hover:bg-gray-200") {
+                            img(src = "https://cdn.simpleicons.org/github/181717", class = "w-4 h-4", alt = "GitHub")
+                        }
+                        a(href = "https://github.com/eiwa-lang", class = "text-sm font-semibold text-blue-400 hover:text-blue-300", text = "Eiwa Language")
+                    }
+                }
+                h1("Aprenda o Arest", class = "text-4xl font-extrabold text-white tracking-tight mb-2")
+                h2("HTTP REST + MCP no mesmo servidor Eiwa.", class = "text-base text-gray-400 mb-8")
+                p("O Arest e um framework web em Eiwa que expoe rotas HTTP e tools MCP. Voce escreve a logica; o framework cuida do transporte, JSON-RPC e descoberta.", class = "text-sm text-gray-300 mb-6")
+                h3("1) HTTP: rotas simples", class = "text-lg font-bold text-blue-400 uppercase tracking-wider mb-2")
+                div(class = "bg-[#1a1b26] border border-gray-800 rounded-xl p-4 mb-6 overflow-x-auto") {
+                    pre(class = "text-xs whitespace-pre") {
+                        code(httpCodeBlock(), class = "language-eiwa")
+                    }
+                }
+                h3("2) MCP: tool com argumentos tipados", class = "text-lg font-bold text-indigo-400 uppercase tracking-wider mb-2")
+                div(class = "bg-[#1a1b26] border border-gray-800 rounded-xl p-4 mb-6 overflow-x-auto") {
+                    pre(class = "text-xs whitespace-pre") {
+                        code(mcpCodeBlock(), class = "language-eiwa")
+                    }
+                }
+                h3("3) Teste ao vivo (JSON-RPC)", class = "text-lg font-bold text-purple-400 uppercase tracking-wider mb-2")
+                div(class = "bg-[#1a1b26] border border-gray-800 rounded-xl p-5 mb-6") {
+                    span("MCP method", class = "block text-sm text-gray-400 mb-1")
+                    select(id = "method", class = "w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-gray-100 mb-4") {
+                        option("initialize", "initialize")
+                        option("tools/list", "tools/list")
+                        option("tools/call", "tools/call")
+                        option("resources/list", "resources/list")
+                        option("resources/read", "resources/read")
+                        option("prompts/list", "prompts/list")
+                        option("prompts/get", "prompts/get")
+                    }
+                    span("Params (JSON)", class = "block text-sm text-gray-400 mb-1")
+                    input(inputType = "text", id = "params", class = "w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-gray-100 font-mono text-xs mb-4")
+                    button(id = "runBtn", class = "bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-5 rounded-lg", text = "Run")
+                    span("", id = "status", class = "ml-3 text-xs text-gray-400")
+                    pre(id = "out", class = "mt-4 bg-gray-950 border border-gray-700 rounded-lg p-4 text-sm font-mono min-h-24 overflow-x-auto") {
+                        code("Click Run to test.", class = "language-json")
+                    }
+                }
+                div(class = "flex flex-wrap gap-4") {
+                    a(href = "https://github.com/eiwa-lang", class = "inline-block bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-5 rounded-xl transition", text = "Aprenda Eiwa")
+                    a(href = "/json", class = "inline-block bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold py-2 px-5 rounded-xl border border-gray-700 transition", text = "/json")
+                    a(href = "/data", class = "inline-block bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold py-2 px-5 rounded-xl border border-gray-700 transition", text = "/data")
+                }
+            }
+            script(
+                "hljs.registerAliases('eiwa', { languageName: 'javascript' });\n" +
+                "hljs.highlightAll();\n" +
+                "function defaults(m){ return m==='tools/call' ? JSON.stringify({name:'sum',arguments:{a:40,b:2}}) : m==='resources/read' ? JSON.stringify({uri:'config://database'}) : m==='prompts/get' ? JSON.stringify({name:'review'}) : ''; }\n" +
+                "var mEl=document.getElementById('method');\n" +
+                "var pEl=document.getElementById('params');\n" +
+                "var oEl=document.getElementById('out');\n" +
+                "var cEl=oEl.querySelector('code');\n" +
+                "var sEl=document.getElementById('status');\n" +
+                "pEl.placeholder={'name':'sum','arguments':{'a':40,'b':2}};\n" +
+                "mEl.addEventListener('change',function(){ pEl.value=defaults(mEl.value); });\n" +
+                "pEl.value=defaults(mEl.value);\n" +
+                "function run(){\n" +
+                "  var method=mEl.value;\n" +
+                "  var body={jsonrpc:'2.0',id:1,method:method};\n" +
+                "  var p=pEl.value;\n" +
+                "  if(p){ try{ body.params=JSON.parse(p); } catch(e){ cEl.className='language-json'; cEl.textContent='Invalid JSON: ' + e.message; sEl.textContent='error'; return; } }\n" +
+                "  sEl.textContent='sending...';\n" +
+                "  fetch('/mcp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})\n" +
+                "    .then(function(r){ return r.text(); })\n" +
+                "    .then(function(t){ cEl.className='language-json'; cEl.innerHTML=hljs.highlight(t,{language:'json'}).value; sEl.textContent='ok'; })\n" +
+                "    .catch(function(e){ cEl.className='language-json'; cEl.innerHTML=hljs.highlight('Error: ' + e,{language:'plaintext'}).value; sEl.textContent='error'; });\n" +
+                "}\n" +
+                "document.getElementById('runBtn').addEventListener('click',run);"
+            )
+        }
+    })
+}
