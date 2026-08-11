@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun whenExpr(): String {
+    return fragment {
+        div(class = "lesson-fragment space-y-3", dataHint = "When when is used as an expression, else is required.", dataOutput = "Not Found\n\n[ok] when can be a statement or expression and supports multiple values per branch.") {
+            p("Turn a code into a message using a when expression.", class = "text-slate-300")
+            pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
+                code(class = "language-kotlin") {
+                    write("val code = 404\n\nval message = when (code) {\n    200 -> \"OK\"\n    401, 403 -> \"Unauthorized\"\n    404 -> \"Not Found\"\n    else -> \"Unknown\"\n}\n\nprint(message)")
+                }
+            }
+        }
+    }
+}

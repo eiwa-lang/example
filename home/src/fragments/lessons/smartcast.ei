@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun smartCast(): String {
+    return fragment {
+        div(class = "lesson-fragment space-y-3", dataHint = "Matching a variable against a contract subtype smart-casts it inside the branch.", dataOutput = "Circle Area: 25\nSquare Area: 16\n\n[ok] No manual casts needed - the compiler narrows the type for us.") {
+            p("Pattern-match a contract variable and access subtype fields safely.", class = "text-slate-300")
+            pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
+                code(class = "language-kotlin") {
+                    write("contract Shape\ntype Circle(val radius: Int) : Shape\ntype Square(val side: Int) : Shape\n\nfun area(shape: Shape) {\n    when (shape) {\n        is Circle -> print(\"Circle Area: \" + (shape.radius * shape.radius).toString())\n        is Square -> print(\"Square Area: \" + (shape.side * shape.side).toString())\n    }\n}\n\narea(Circle(5))\narea(Square(3))")
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun serialization(): String {
+    return fragment {
+        div(class = "lesson-fragment space-y-3", dataHint = "Serialization is opt-in through contracts and skills, without runtime reflection.", dataOutput = "{\"name\":\"Ana\",\"age\":30}\n\n[ok] The compiler knows which fields are serializable and the encoder walks that list.") {
+            p("Implement Serializable and compose Json to expose toJson().", class = "text-slate-300")
+            pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
+                code(class = "language-kotlin") {
+                    write("import { Json } from \"std.json\"\n\ntype User(val name: String, val age: Int) : Serializable + Json\n\nval user = User(\"Ana\", 30)\nprint(user.toJson())")
+                }
+            }
+        }
+    }
+}

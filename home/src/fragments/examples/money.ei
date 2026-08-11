@@ -1,0 +1,18 @@
+import { fragment } from "html"
+
+fun moneyExample(): String {
+    return fragment {
+        div {
+            div(class = "editor-bar") { span("money.ei") }
+            div(class = "editor-content") {
+            h3("Money, currencies and allocation")
+            p("Standard currencies, overloaded arithmetic, and the Fowler allocation engine prevent fractional-cent loss.")
+            pre {
+                code(class = "language-kotlin") {
+                    write("import { brl, usd, eur, Money } from \"std.money\"\n\nval a = brl(1500)\nval b = eur(350)\nval c = usd(2500)\n\nprint(a.format())\nprint((a + a).format())\nprint(b.format())\nprint(c.format())\n\nval tenReais = brl(1000)\nval parts = tenReais.split(3)\nprint(parts[0].format() + \" + \" + parts[1].format())\nprint((parts[0] + parts[1] + parts[2]).format())")
+                }
+            }
+            }
+        }
+    }
+}

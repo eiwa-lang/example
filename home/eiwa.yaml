@@ -1,0 +1,14 @@
+name: home
+version: 0.1.0
+output: app
+
+dependencies:
+  arest:
+    github: eiwa-lang/arest
+    branch: main
+  postgres:
+    github: eiwa-lang/postgres
+    branch: main
+  html:
+    github: eiwa-lang/html
+    branch: main

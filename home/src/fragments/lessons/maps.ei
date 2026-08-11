@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun maps(): String {
+    return fragment {
+        div(class = "lesson-fragment space-y-3", dataHint = "The of literal creates an immutable Map. Use MutableMap for writes.", dataOutput = "Brasilia\n\n[ok] Map literals keep syntax compact and key reads use brackets.") {
+            p("Use the infix of syntax to create a Map and read by key.", class = "text-slate-300")
+            pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
+                code(class = "language-kotlin") {
+                    write("val capitals = [\n    \"Brazil\" of \"Brasilia\",\n    \"France\" of \"Paris\"\n]\n\nprint(capitals[\"Brazil\"])")
+                }
+            }
+        }
+    }
+}

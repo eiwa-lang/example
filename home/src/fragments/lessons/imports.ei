@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun imports(): String {
+    return fragment {
+        div(class = "lesson-fragment space-y-3", dataHint = "The .ei extension is inferred. Imported files should be passive libraries.", dataOutput = "5\n\n[ok] Your namespace stays clean: import only add and call it from the root file.") {
+            p("Use destructured imports to declare dependencies clearly.", class = "text-slate-300")
+            pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
+                code(class = "language-kotlin") {
+                    write("import { add } from \"math\"\n\nval result = add(2, 3)\nprint(result)")
+                }
+            }
+        }
+    }
+}

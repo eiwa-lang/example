@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun footer(): String {
+    return fragment {
+        div(class = "wrap") {
+            p("Eiwa is built for developers who value clarity and native performance.", class = "tagline")
+            div(class = "footer-links") {
+                a(text = "GitHub", href = "https://github.com/eiwa-lang/eiwa", target = "_blank", rel = "noreferrer")
+                a(text = "Arest", href = "https://github.com/eiwa-lang/arest", target = "_blank", rel = "noreferrer")
+                a(text = "Back to top", href = "#top")
+            }
+        }
+    }
+}

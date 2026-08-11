@@ -1,0 +1,49 @@
+import { fragment } from "html"
+
+fun features(): String {
+    return fragment {
+        div(class = "wrap") {
+            div(class = "section-heading") {
+                h2("What the language delivers")
+                p("Modern syntax with native performance, strict null safety, and a composition-first type model.")
+            }
+            div(class = "feature-row") {
+                div(class = "card") { 
+                    div(class = "icon") { svg(viewBox = "0 0 24 24") { path(d = "M13 2L4 14h6l-1 8 9-12h-6l1-8z", fill = "none") } }
+                    div { 
+                        h3("Native, no JVM")  
+                        p("Build standalone binaries with a lightweight runtime.")
+                    }
+                }
+                div(class = "card") { 
+                    div(class = "icon") { svg(viewBox = "0 0 24 24") { path(d = "M8 6l-6 6 6 6M16 6l6 6-6 6", fill = "none") } }
+                    div { 
+                        h3("Expressive")  
+                        p("Kotlin-like ergonomics with clear, compact code.")
+                    }
+                }
+                div(class = "card") { 
+                    div(class = "icon") { svg(viewBox = "0 0 24 24") { path(d = "M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z", fill = "none") } }
+                    div { 
+                        h3("Null safety")  
+                        p("Unsafe access is blocked by the type system.")
+                    }
+                }
+                div(class = "card") { 
+                    div(class = "icon") { svg(viewBox = "0 0 24 24") { path(d = "M12 2l9 5v10l-9 5-9-5V7l9-5zM12 22V12M3 7l9 5 9-5", fill = "none") } }
+                    div { 
+                        h3("Composition")  
+                        p("Types, contracts, skills, and objects compose behavior.")
+                    }
+                }
+                div(class = "card") { 
+                    div(class = "icon") { svg(viewBox = "0 0 24 24") { path(d = "M5 15c-1.5 1.5-2 5-2 5s3.5-.5 5-2M14 4c3-3 8-2 8-2s1 5-2 8l-8 8-4-4 6-6z", fill = "none") } }
+                    div { 
+                        h3("APIs and MCP")  
+                        p("Ship HTTP routes and MCP tools from one native server.")
+                    }
+                }
+            }
+        }
+    }
+}

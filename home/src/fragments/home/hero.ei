@@ -1,0 +1,49 @@
+import { fragment } from "html"
+
+fun hero(): String {
+    return fragment {
+        div(class = "stars") {}
+        svg(viewBox = "0 0 1536 190", class = "forest", preserveAspectRatio = "xMidYMax slice") {
+            path(fill = "#161226", opacity = ".55", d = "M0 190 L0 140 Q80 122 160 134 Q260 148 340 126 Q440 100 520 116 Q620 134 700 140 Q800 148 890 132 Q980 118 1070 130 Q1160 142 1250 126 Q1340 110 1420 124 Q1490 136 1536 124 L1536 190 Z")
+        }
+        div(class = "wrap hero-grid") {
+            div(class = "hero-copy") {
+                span("A modern programming language", class = "pill")
+                h1 {
+                    write("Build software with ")
+                    span("clarity.", class = "grad")
+                }
+                p("Eiwa combines Kotlin-like ergonomics with native compilation, compile-time null safety, and a practical path for APIs, MCP, and safe systems.", class = "lead")
+                div(class = "cta-row") {
+                    a(href = "#tour", class = "btn btn-primary") {
+                        write("Explore the tour")
+                        svg(viewBox = "0 0 24 24", class = "button-icon") { path(d = "M5 12h14M13 6l6 6-6 6", fill = "none") }
+                    }
+                    a(href = "#examples", class = "btn btn-ghost") {
+                        write("View examples")
+                        svg(viewBox = "0 0 24 24", class = "button-icon") { path(d = "M4 19.5A2.5 2.5 0 016.5 17H20V4H6.5A2.5 2.5 0 004 6.5v13zM4 19.5A2.5 2.5 0 006.5 22H20v-5", fill = "none") }
+                    }
+                }
+                div(class = "install") {
+                    span("$", class = "dollar")
+                    code("curl -fsSL https://eiwa.dev/install.sh | sh")
+                    button(id = "copy-install", class = "copy-button") {
+                        svg(viewBox = "0 0 24 24", class = "copy-icon") { path(d = "M9 9h12v12H9zM5 15V5a2 2 0 012-2h10", fill = "none") }
+                    }
+                }
+            }
+            div(class = "hero-art") {
+                div("hero-note") {
+                    write("// Eiwa sees")
+                    br()
+                    write("what others")
+                    br()
+                    write("don't.")
+                    br()
+                    img(src = "/assets/eiwa.png", alt = "Eiwa", class = "logo")
+                }
+                img(src = "/assets/owl-hero.png", alt = "Eiwa owl mascot")
+            }
+        }
+    }
+}

@@ -1,0 +1,12 @@
+import { fragment } from "html"
+
+fun start(): String {
+    return fragment {
+        div(class = "side-card") {
+            img(src = "/assets/owl-card.png", alt = "Eiwa owl mascot among purple leaves")
+            h3("Start in seconds")
+            p("Install Eiwa, run your first file, then ship a native binary.")
+            a(text = "Installation guide", href = "https://github.com/eiwa-lang/eiwa", target = "_blank", rel = "noreferrer", class = "more")
+        }
+    }
+}

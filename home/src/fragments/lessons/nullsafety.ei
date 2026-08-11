@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun nullSafety(): String {
+    return fragment {
+        div(class = "lesson-fragment space-y-3", dataHint = "guest.name should fail because guest can be Null.", dataOutput = "Anonymous\n\n[ok] Null is a union type. Access is only valid when you unwrap explicitly.") {
+            p("Model absence with User? and access values with ?. and ?:.", class = "text-slate-300")
+            pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
+                code(class = "language-kotlin") {
+                    write("type User(val name: String)\n\nval guest: User? = null\nval safeName = guest?.name ?: \"Anonymous\"\n\nprint(safeName)")
+                }
+            }
+        }
+    }
+}

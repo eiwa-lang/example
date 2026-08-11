@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun ternary(): String {
+    return fragment {
+        div(class = "lesson-fragment space-y-3", dataHint = "The ternary expression type is inferred from both branches.", dataOutput = "8\n\n[ok] The ternary expression type is inferred from both branches.") {
+            p("Return a value with condition ? a : b.", class = "text-slate-300")
+            pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
+                code(class = "language-kotlin") {
+                    write("fun max(a: Int, b: Int): Int {\n    return (a > b) ? a : b\n}\n\nprint(max(8, 3))")
+                }
+            }
+        }
+    }
+}

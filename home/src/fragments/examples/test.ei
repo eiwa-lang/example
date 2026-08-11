@@ -1,0 +1,18 @@
+import { fragment } from "html"
+
+fun testExample(): String {
+    return fragment {
+        div {
+            div(class = "editor-bar") { span("calculator_test.ei") }
+            div(class = "editor-content") {
+            h3("Native test runner")
+            p("Files ending with _test.ei can declare test blocks and run with eiwa test.")
+            pre {
+                code(class = "language-kotlin") {
+                    write("// calculator_test.ei\nimport { sum } from \"calculator\"\n\ntest \"sum two integers\" {\n    val result = sum(10, 5)\n    assert(result == 15)\n}")
+                }
+            }
+            }
+        }
+    }
+}
