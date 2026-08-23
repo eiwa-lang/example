@@ -1,0 +1,8 @@
+.git
+.gitignore
+bin/
+app
+temp_llvm.o
+*.o
+*.tar.gz
+Makefile
