@@ -1,0 +1,136 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: metallb-system
+--- 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: metallb-system
+  name: config
+data:
+  config: |
+    address-pools:
+    - name: default
+      protocol: layer2
+      addresses:
+      - 137.131.210.220-137.131.210.220
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: metallb-system
+  name: controller
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: metallb-system:controller
+rules:
+- apiGroups: [""]
+  resources: ["services", "endpoints", "pods", "nodes"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: metallb-system:controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metallb-system:controller
+subjects:
+- kind: ServiceAccount
+  name: controller
+  namespace: metallb-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: metallb-system
+  name: speaker
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: metallb-system:speaker
+rules:
+- apiGroups: [""]
+  resources: ["pods", "nodes", "services", "endpoints", "namespaces"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: metallb-system:speaker
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metallb-system:speaker
+subjects:
+- kind: ServiceAccount
+  name: speaker
+  namespace: metallb-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: metallb-system
+  name: controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metallb
+      component: controller
+  template:
+    metadata:
+      labels:
+        app: metallb
+        component: controller
+    spec:
+      serviceAccountName: controller
+      containers:
+      - name: controller
+        image: metallb/controller:v0.13.10
+        args:
+        - --port=7472
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  namespace: metallb-system
+  name: speaker
+spec:
+  selector:
+    matchLabels:
+      app: metallb
+      component: speaker
+  template:
+    metadata:
+      labels:
+        app: metallb
+        component: speaker
+    spec:
+      serviceAccountName: speaker
+      containers:
+      - name: speaker
+        image: metallb/speaker:v0.13.10
+        env:
+        - name: METALLB_ML_SECRETKEY
+          valueFrom:
+            secretKeyRef:
+              name: memberlist
+              key: secretkey
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: metallb-system
+  name: memberlist
+type: Opaque
+data:
+  secretkey: "VGhpcyBpcyBhIHNlY3JldCBrZXkgZm9yIG1lbWJlcmxpc3Q=" # base64 do texto "This is a secret key for memberlist"

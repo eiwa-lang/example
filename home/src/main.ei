@@ -42,6 +42,13 @@ fun homePage() = html {
         script(src = "https://unpkg.com/htmx.org@2.0.6")
         script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js")
         script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/kotlin.min.js")
+
+        link(rel = "icon", linkType = "image/png", href = "/favicon/favicon-96x96.png", sizes = "96x96")
+        link(rel = "icon", linkType = "image/svg+xml", href = "/favicon/favicon.svg")
+        link(rel = "shortcut icon", href = "/favicon/favicon.ico")
+        link(rel = "apple-touch-icon", href = "/favicon/apple-touch-icon.png", sizes="180x180")
+        meta(name = "apple-mobile-web-app-title", contentValue = "Eiwa")
+        link(rel = "manifest", href = "/favicon/site.webmanifest")
     }
     body(id = "top") {
         header {
@@ -199,6 +206,7 @@ fun homePage() = html {
 }
 
 arest(8081) {
+    health()
     routing {
         static("/", "static")
         get("/") { this.respond(200, "text/html", homePage()) }
