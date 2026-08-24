@@ -32,18 +32,18 @@ spec:
           env:
             - name: PORT
               value: "8081"
-          # livenessProbe:
-          #   httpGet:
-          #     path: /health
-          #     port: 8081
-          #   initialDelaySeconds: 5
-          #   periodSeconds: 10
-          # readinessProbe:
-          #   httpGet:
-          #     path: /health
-          #     port: 8081
-          #   initialDelaySeconds: 5
-          #   periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
       restartPolicy: Always
 ---
 # Service Eiwa home
