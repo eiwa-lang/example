@@ -13,6 +13,7 @@ import { footer } from ".fragments.home.footer"
 import { imports } from ".fragments.lessons.imports"
 import { topLevel } from ".fragments.lessons.toplevel"
 import { collections } from ".fragments.lessons.collections"
+import { loops } from ".fragments.lessons.loops"
 import { strings } from ".fragments.lessons.strings"
 import { nullSafety } from ".fragments.lessons.nullsafety"
 import { exceptions } from ".fragments.lessons.exceptions"
@@ -77,7 +78,16 @@ fun homePage() = html {
             section(id = "playground", class = "section") {
                 div(class = "wrap code-grid") {
                     div(class = "editor") {
-                        div(class = "editor-bar") { span("main.ei") }
+                        div(class = "editor-bar") {
+                            div(class = "source-code") {
+                                img(src = "/assets/eiwa.png", alt = "Eiwa", class = "logo")
+                                write("main.ei")
+                            }
+                            div(class = "thead") {
+                                span(class = "dot") {}
+                                write("Terminal")
+                            }
+                        }
                         div(class = "editor-split") {
                             div(class = "editor-content source-code") {
                                 pre(class = "playground-code") {
@@ -92,24 +102,20 @@ fun homePage() = html {
                                         write("\n    ")
                                         span("println", class = "tok-fn")
                                         write("(message)\n\n    ")
+                                        span("val", class = "tok-kw")
+                                        write(" numbers = [1, 2, 3, 4, 5]\n    ")
                                         span("for", class = "tok-kw")
-                                        write(" (n ")
-                                        span("in", class = "tok-kw")
-                                        write(" ")
-                                        span("1..5", class = "tok-num")
-                                        write(") {\n        ")
+                                        write(" (numbers) {\n        ")
                                         span("println", class = "tok-fn")
                                         write("(")
-                                        span("\"n = \" + n", class = "tok-str")
-                                        write(")\n    }\n}")
+                                        span("\"n = \"", class = "tok-str")
+                                        write(" + it.")
+                                        span("toString", class = "tok-fn")
+                                        write("())\n    }\n}")
                                     }
                                 }
                             }
                             div(class = "terminal") {
-                                div(class = "thead") {
-                                    span(class = "dot") {}
-                                    write("Terminal")
-                                }
                                 div {
                                     span("$", class = "prompt")
                                     write(" eiwa run main.ei")
@@ -169,23 +175,24 @@ fun homePage() = html {
                             button(text = "01 Import symbols", class = "tab-button active lesson-tab", hxGet = "/fragments/lessons/imports", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                             button(text = "02 Write without main", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/toplevel", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                             button(text = "03 Sum a list", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/collections", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "04 Escape sequences", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/strings", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "05 Avoid unsafe null", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/nullsafety", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "06 Exceptions", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/exceptions", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "07 Create maps", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/maps", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "08 Use ternary", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/ternary", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "09 Overload +", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/operators", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "10 Standardize branches", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/when", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "11 Compose types and objects", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/compositionobject", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "12 Run tasks", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/tasks", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "13 Serialize without reflection", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/serialization", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "14 Narrow contracts with casts", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/smartcast", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "15 Model variants with enum", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/enum", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "16 Write once with generics", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/generics", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "17 Chain with scope functions", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/scopefunc", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "18 Talk to native C", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/cinterop", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "19 Build, then freeze", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/mutability", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "20 Generate unique IDs", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/uuid", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "04 Repeat and loops", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/loops", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "05 Escape sequences", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/strings", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "06 Avoid unsafe null", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/nullsafety", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "07 Exceptions", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/exceptions", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "08 Create maps", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/maps", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "09 Use ternary", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/ternary", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "10 Overload +", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/operators", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "11 Standardize branches", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/when", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "12 Compose types and objects", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/compositionobject", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "13 Run tasks", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/tasks", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "14 Serialize without reflection", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/serialization", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "15 Narrow contracts with casts", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/smartcast", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "16 Model variants with enum", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/enum", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "17 Write once with generics", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/generics", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "18 Chain with scope functions", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/scopefunc", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "19 Talk to native C", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/cinterop", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "20 Build, then freeze", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/mutability", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "21 Generate unique IDs", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/uuid", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                         }
                         div(class = "lesson-workspace") {
                             div(id = "lesson-preview", class = "editor", hxGet = "/fragments/lessons/imports", hxTrigger = "load", hxSwap = "innerHTML") {}
@@ -198,7 +205,42 @@ fun homePage() = html {
                     }
                 }
             }
-            section(id = "start", class = "section") { div(class = "wrap code-grid") { div(class = "editor") { div(class = "editor-bar") { span("Quick start") }  div(class = "editor-content") { pre { code(class = "language-bash") { write("curl -fsSL https://eiwa.dev/install.sh | sh\neiwa run app.ei\neiwa build app.ei\neiwa test") } } } }  div(id = "start-card", hxGet = "/fragments/home/start", hxTrigger = "load", hxSwap = "innerHTML") {} } }
+            section(id = "start", class = "section") {
+                div(class = "wrap code-grid") {
+                    div(class = "editor") {
+                        div(class = "editor-bar") {
+                            div(class = "quick") {
+                                span(class = "dot") {}
+                                write("Quick start")
+                            }
+                        }
+                        div(class = "terminal") {
+                            div {
+                                span("$", class = "prompt")
+                                write(" curl -fsSL https://eiwa.dev/install.sh | sh")
+                            }
+                            div {
+                                span("$", class = "prompt")
+                                write(" eiwa run")
+                            }
+                            div {
+                                span("$", class = "prompt")
+                                write(" eiwa build")
+                            }
+                            div {
+                                span("$", class = "prompt")
+                                write(" eiwa test")
+                            }
+                            div {
+                                span("$", class = "prompt")
+                                write(" ")
+                                span("", class = "cursor")
+                            }
+                        }
+                    }
+                    div(id = "start-card", hxGet = "/fragments/home/start", hxTrigger = "load", hxSwap = "innerHTML") {}
+                }
+            }
         }
         footer(id = "footer", hxGet = "/fragments/home/footer", hxTrigger = "load", hxSwap = "innerHTML") {}
         script(src = "/app.js")
@@ -222,6 +264,7 @@ arest(8081) {
         get("/fragments/lessons/imports") { this.respond(200, "text/html", imports()) }
         get("/fragments/lessons/toplevel") { this.respond(200, "text/html", topLevel()) }
         get("/fragments/lessons/collections") { this.respond(200, "text/html", collections()) }
+        get("/fragments/lessons/loops") { this.respond(200, "text/html", loops()) }
         get("/fragments/lessons/strings") { this.respond(200, "text/html", strings()) }
         get("/fragments/lessons/nullsafety") { this.respond(200, "text/html", nullSafety()) }
         get("/fragments/lessons/exceptions") { this.respond(200, "text/html", exceptions()) }

@@ -6,7 +6,7 @@ fun collections(): String {
             p("Iterate through an immutable List using for.", class = "text-slate-300")
             pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
                 code(class = "language-kotlin") {
-                    write("val numbers = [1, 2, 3, 4]\nvar total = 0\n\nfor (item in numbers) {\n    total = total + item\n}\n\nprint(total)")
+                    write("val numbers = [1, 2, 3, 4]\nvar total = 0\n\nfor (numbers) {\n    total = total + it\n}\n\nprint(total)")
                 }
             }
         }

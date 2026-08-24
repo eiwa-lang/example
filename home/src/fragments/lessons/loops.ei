@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun loops(): String {
+    return fragment {
+        div(class = "lesson-fragment space-y-3", dataHint = "for iterates over collections with it, repeat counts N times, while tests conditions, and retry handles errors.", dataOutput = "for: 10\nfor: 20\nrepeat: 0\nrepeat: 1\nwhile: 0\nwhile: 1\nretry: 0\n\n[ok] Eiwa supports lambda-style for loops, while loops, and std.system helpers like repeat, loop, and retry.") {
+            p("Explore all looping styles: for, repeat, while, and retry.", class = "text-slate-300")
+            pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
+                code(class = "language-kotlin") {
+                    write("// 1. for: iterate over collections with lambda block\nval numbers = [10, 20]\nfor (numbers) {\n    println(\"for: \" + it.toString())\n}\n\n// 2. repeat: executes N times with 0-indexed it\nrepeat(2) {\n    println(\"repeat: \" + it.toString())\n}\n\n// 3. while: classic condition-based loop\nvar i = 0\nwhile (i < 2) {\n    println(\"while: \" + i.toString())\n    i = i + 1\n}\n\n// 4. retry: executes with automatic exception catching\nretry(2) { attempt ->\n    println(\"retry: \" + attempt.toString())\n}")
+                }
+            }
+        }
+    }
+}
