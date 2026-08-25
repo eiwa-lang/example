@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
+function initApp() {
   function highlightAll(scope) {
     const root = scope || document;
     root.querySelectorAll("pre code").forEach(function (block) {
@@ -14,6 +14,9 @@ document.addEventListener("DOMContentLoaded", function () {
           item.classList.remove("active");
         });
         tab.classList.add("active");
+        if (typeof tab.scrollIntoView === "function") {
+          tab.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+        }
       });
     });
   }
@@ -35,23 +38,73 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  highlightAll();
+  function bindMobileMenu() {
+    const menuToggle = document.getElementById("menu-toggle");
+    const mobileMenu = document.getElementById("mobile-menu");
+    if (!menuToggle || !mobileMenu) return;
 
+    function toggleMenu(forceState) {
+      const willOpen = typeof forceState === "boolean" ? forceState : !mobileMenu.classList.contains("open");
+      if (willOpen) {
+        menuToggle.classList.add("open");
+        mobileMenu.classList.add("open");
+        document.body.style.overflow = "hidden";
+      } else {
+        menuToggle.classList.remove("open");
+        mobileMenu.classList.remove("open");
+        document.body.style.overflow = "";
+      }
+    }
+
+    menuToggle.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleMenu();
+    });
+
+    mobileMenu.querySelectorAll("a").forEach(function (link) {
+      link.addEventListener("click", function () {
+        toggleMenu(false);
+      });
+    });
+
+    document.addEventListener("click", function (e) {
+      if (mobileMenu.classList.contains("open") && !mobileMenu.contains(e.target) && !menuToggle.contains(e.target)) {
+        toggleMenu(false);
+      }
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && mobileMenu.classList.contains("open")) {
+        toggleMenu(false);
+      }
+    });
+  }
+
+  highlightAll();
   bindTabs(".example-tab");
   bindTabs(".lesson-tab");
-
   bindLessonRun();
+  bindMobileMenu();
 
   document.body.addEventListener("click", function (event) {
-    if (event.target.id !== "copy-install") return;
+    const copyBtn = event.target.closest("#copy-install");
+    if (!copyBtn) return;
     navigator.clipboard.writeText("curl -fsSL https://eiwa.dev/install.sh | sh");
-    event.target.classList.add("copied");
+    copyBtn.classList.add("copied");
     setTimeout(function () {
-      event.target.classList.remove("copied");
+      copyBtn.classList.remove("copied");
     }, 900);
   });
 
   document.body.addEventListener("htmx:afterSwap", function (event) {
     highlightAll(event.target);
   });
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}
+

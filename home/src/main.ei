@@ -79,86 +79,106 @@ fun homePage() = html {
                     a(text = "GitHub", href = "https://github.com/eiwa-lang/eiwa", target = "_blank", rel = "noreferrer")
                 }
                 div(class = "nav-right") {
-                    a(text = "Get Started", href = "#start", class = "btn btn-primary btn-sm")
+                    a(text = "Get Started", href = "#start", class = "btn btn-primary btn-sm nav-cta")
+                    button(id = "menu-toggle", class = "menu-toggle") {
+                        span(class = "hamburger-bar") {}
+                        span(class = "hamburger-bar") {}
+                        span(class = "hamburger-bar") {}
+                    }
                 }
+            }
+        }
+        div(id = "mobile-menu", class = "mobile-menu") {
+            div(class = "mobile-menu-inner") {
+                a(text = "Language Tour", href = "#tour", class = "mobile-link")
+                a(text = "Examples", href = "#examples", class = "mobile-link")
+                a(text = "Packages", href = "#packages", class = "mobile-link")
+                a(text = "Quick Start", href = "#start", class = "mobile-link")
+                a(text = "GitHub", href = "https://github.com/eiwa-lang/eiwa", target = "_blank", rel = "noreferrer", class = "mobile-link")
+                a(text = "Get Started", href = "#start", class = "btn btn-primary mobile-menu-btn")
             }
         }
         main {
             section(id = "hero", class = "hero", hxGet = "/fragments/home/hero", hxTrigger = "load", hxSwap = "innerHTML") {}
-            section(id = "features", class = "section", hxGet = "/fragments/home/features", hxTrigger = "load", hxSwap = "innerHTML") {}
+            section(id = "features", hxGet = "/fragments/home/features", hxTrigger = "load", hxSwap = "innerHTML") {}
             section(id = "playground", class = "section") {
-                div(class = "wrap code-grid") {
-                    div(class = "editor") {
-                        div(class = "editor-bar") {
-                            div(class = "file-title source-code") {
-                                img(src = "/assets/eiwa.png", alt = "Eiwa", class = "logo")
-                                write("main.ei")
+                div(class = "wrap") {
+                    div(class = "section-heading") {
+                        p("Modern syntax with native performance, strict null safety, and a composition-first type model.")
+                    }
+                    div(class = "code-grid") {
+                        div(class = "editor") {
+                            div(class = "editor-bar") {
+                                div(class = "file-title source-code") {
+                                    img(src = "/assets/eiwa.png", alt = "Eiwa", class = "logo")
+                                    write("main.ei")
+                                }
+                                div(class = "thead") {
+                                    span(class = "dot") {}
+                                    write("Terminal")
+                                }
                             }
-                            div(class = "thead") {
-                                span(class = "dot") {}
-                                write("Terminal")
-                            }
-                        }
-                        div(class = "editor-split") {
-                            div(class = "editor-content source-code") {
-                                pre(class = "playground-code") {
-                                    code {
-                                        span("fun", class = "tok-kw")
+                            div(class = "editor-split") {
+                                div(class = "editor-content source-code") {
+                                    pre(class = "playground-code") {
+                                        code {
+                                            span("fun", class = "tok-kw")
+                                            write(" ")
+                                            span("main", class = "tok-fn")
+                                            write("() {\n    ")
+                                            span("val", class = "tok-kw")
+                                            write(" message = ")
+                                            span("\"Hello, Eiwa!\"", class = "tok-str")
+                                            write("\n    ")
+                                            span("println", class = "tok-fn")
+                                            write("(message)\n\n    ")
+                                            span("val", class = "tok-kw")
+                                            write(" numbers = [1, 2, 3, 4, 5]\n    ")
+                                            span("for", class = "tok-kw")
+                                            write(" (numbers) {\n        ")
+                                            span("println", class = "tok-fn")
+                                            write("(")
+                                            span("\"n = \"", class = "tok-str")
+                                            write(" + it)\n    }\n}")
+                                        }
+                                    }
+                                }
+                                div(class = "terminal") {
+                                    div {
+                                        span("$", class = "prompt")
+                                        write(" eiwa run main.ei")
+                                    }
+                                    div {
+                                        write("Hello, Eiwa!")
+                                    }
+                                    div {
+                                        write("n = 1")
+                                    }
+                                    div {
+                                        write("n = 2")
+                                    }
+                                    div {
+                                        write("n = 3")
+                                    }
+                                    div {
+                                        write("n = 4")
+                                    }
+                                    div {
+                                        write("n = 5")
+                                    }
+                                    div(class = "ok") {
+                                        write("Finished in 0.23s")
+                                    }
+                                    div {
+                                        span("$", class = "prompt")
                                         write(" ")
-                                        span("main", class = "tok-fn")
-                                        write("() {\n    ")
-                                        span("val", class = "tok-kw")
-                                        write(" message = ")
-                                        span("\"Hello, Eiwa!\"", class = "tok-str")
-                                        write("\n    ")
-                                        span("println", class = "tok-fn")
-                                        write("(message)\n\n    ")
-                                        span("val", class = "tok-kw")
-                                        write(" numbers = [1, 2, 3, 4, 5]\n    ")
-                                        span("for", class = "tok-kw")
-                                        write(" (numbers) {\n        ")
-                                        span("println", class = "tok-fn")
-                                        write("(")
-                                        span("\"n = \"", class = "tok-str")
-                                        write(" + it)\n    }\n}")
+                                        span("", class = "cursor")
                                     }
                                 }
                             }
-                            div(class = "terminal") {
-                                div {
-                                    span("$", class = "prompt")
-                                    write(" eiwa run main.ei")
-                                }
-                                div {
-                                    write("Hello, Eiwa!")
-                                }
-                                div {
-                                    write("n = 1")
-                                }
-                                div {
-                                    write("n = 2")
-                                }
-                                div {
-                                    write("n = 3")
-                                }
-                                div {
-                                    write("n = 4")
-                                }
-                                div {
-                                    write("n = 5")
-                                }
-                                div(class = "ok") {
-                                    write("Finished in 0.23s")
-                                }
-                                div {
-                                    span("$", class = "prompt")
-                                    write(" ")
-                                    span("", class = "cursor")
-                                }
-                            }
                         }
+                        div(id = "playground-card", hxGet = "/fragments/home/start", hxTrigger = "load", hxSwap = "innerHTML") {}
                     }
-                    div(id = "playground-card", hxGet = "/fragments/home/start", hxTrigger = "load", hxSwap = "innerHTML") {}
                 }
             }
             section(id = "examples", class = "section") {
@@ -239,15 +259,28 @@ fun homePage() = html {
                             }
                             div {
                                 span("$", class = "prompt")
-                                write(" eiwa run")
+                                span(" eiwa", class = "eiwa")
+                                write(" init my-app && cd my-app")
                             }
                             div {
                                 span("$", class = "prompt")
-                                write(" eiwa build")
+                                span(" eiwa", class = "eiwa")
+                                write(" add eiwa-lang/arest")
                             }
                             div {
                                 span("$", class = "prompt")
-                                write(" eiwa test")
+                                span(" eiwa", class = "eiwa")
+                                write(" run")
+                            }
+                            div {
+                                span("$", class = "prompt")
+                                span(" eiwa", class = "eiwa")
+                                write(" test")
+                            }
+                            div {
+                                span("$", class = "prompt")
+                                span(" eiwa", class = "eiwa")
+                                write(" build")
                             }
                             div {
                                 span("$", class = "prompt")

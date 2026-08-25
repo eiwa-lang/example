@@ -2,10 +2,6 @@ import { fragment } from "html"
 
 fun hero(): String {
     return fragment {
-        div(class = "stars") {}
-        svg(viewBox = "0 0 1536 190", class = "forest", preserveAspectRatio = "xMidYMax slice") {
-            path(fill = "#161226", opacity = ".55", d = "M0 190 L0 140 Q80 122 160 134 Q260 148 340 126 Q440 100 520 116 Q620 134 700 140 Q800 148 890 132 Q980 118 1070 130 Q1160 142 1250 126 Q1340 110 1420 124 Q1490 136 1536 124 L1536 190 Z")
-        }
         div(class = "wrap hero-grid") {
             div(class = "hero-copy") {
                 span("A modern programming language", class = "pill")
@@ -13,7 +9,7 @@ fun hero(): String {
                     write("Build software with ")
                     span("clarity.", class = "grad")
                 }
-                p("Eiwa combines Kotlin-like ergonomics with native compilation, compile-time null safety, and a practical path for APIs, MCP, and safe systems.", class = "lead")
+                p("Eiwa combines Kotlin-like ergonomics with native compilation, compile-time null safety, and a practical path for APIs, MCPs, and safe systems.", class = "lead")
                 div(class = "cta-row") {
                     a(href = "#tour", class = "btn btn-primary") {
                         write("Explore the tour")

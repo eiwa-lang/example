@@ -5,7 +5,7 @@ fun start(): String {
         div(class = "side-card") {
             img(src = "/assets/owl-card.png", alt = "Eiwa owl mascot among purple leaves")
             h3("Start in seconds")
-            p("Install Eiwa, run your first file, then ship a native binary.")
+            p("Scaffold a project with eiwa init, add packages from Git, test, and ship optimized native binaries.")
             a(text = "Installation guide", href = "https://github.com/eiwa-lang/eiwa", target = "_blank", rel = "noreferrer", class = "more")
         }
     }
