@@ -2,11 +2,11 @@ import { fragment } from "html"
 
 fun generics(): String {
     return fragment {
-        div(class = "lesson-fragment space-y-3", dataHint = "Monomorphization copies the function per concrete type, so there is zero-cost abstraction.", dataOutput = "42\nhello\n\n[ok] identity infers Int and String without boxing or vtable dispatch.") {
-            p("Share behavior across types with monomorphized generic functions.", class = "text-slate-300")
+        div(class = "lesson-fragment space-y-3", dataHint = "Generic type parameters use <T> syntax and are monomorphized at compile time.", dataOutput = "42\nhello\n\n[ok] Generics deliver type safety with zero runtime overhead via compile-time specialization.") {
+            p("Write generic functions and classes that work with any type.", class = "text-slate-300")
             pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
                 code(class = "language-kotlin") {
-                    write("fun identity<T>(x: T): T {\n    return x\n}\n\nprint(identity(42).toString())\nprint(identity(\"hello\"))")
+                    write("fun identity<T>(x: T): T {\n    return x\n}\n\nprint(identity(42))\nprint(identity(\"hello\"))")
                 }
             }
         }

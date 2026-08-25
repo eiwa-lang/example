@@ -10,6 +10,7 @@ import { hero } from ".fragments.home.hero"
 import { features } from ".fragments.home.features"
 import { start } from ".fragments.home.start"
 import { footer } from ".fragments.home.footer"
+import { packages } from ".fragments.home.packages"
 import { imports } from ".fragments.lessons.imports"
 import { topLevel } from ".fragments.lessons.toplevel"
 import { collections } from ".fragments.lessons.collections"
@@ -31,6 +32,14 @@ import { scopeFunctions } from ".fragments.lessons.scopefunc"
 import { cInterop } from ".fragments.lessons.cinterop"
 import { mutability } from ".fragments.lessons.mutability"
 import { uuid } from ".fragments.lessons.uuid"
+import { tasksExample } from ".fragments.examples.tasks"
+import { postgresExample } from ".fragments.examples.postgres"
+import { money } from ".fragments.lessons.money"
+import { time } from ".fragments.lessons.time"
+import { ulid } from ".fragments.lessons.ulid"
+import { logging } from ".fragments.lessons.logging"
+import { envLesson } from ".fragments.lessons.env"
+import { randomLesson } from ".fragments.lessons.random"
 
 fun homePage() = html {
     head {
@@ -39,10 +48,11 @@ fun homePage() = html {
         meta(name = "description", contentValue = "Eiwa is a modern programming language for native APIs, MCP, and safe systems.")
         title("Eiwa - Build software with clarity")
         link(rel = "stylesheet", href = "/app.css")
-        link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css")
+        link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/material-darker.min.css")
         script(src = "https://unpkg.com/htmx.org@2.0.6")
         script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js")
         script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/kotlin.min.js")
+        script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/yaml.min.js")
 
         link(rel = "icon", linkType = "image/png", href = "/favicon/favicon-96x96.png", sizes = "96x96")
         link(rel = "icon", linkType = "image/svg+xml", href = "/favicon/favicon.svg")
@@ -64,6 +74,7 @@ fun homePage() = html {
                 div(class = "nav-links") {
                     a(text = "Language", href = "#tour")
                     a(text = "Examples", href = "#examples")
+                    a(text = "Packages", href = "#packages")
                     a(text = "Start", href = "#start")
                     a(text = "GitHub", href = "https://github.com/eiwa-lang/eiwa", target = "_blank", rel = "noreferrer")
                 }
@@ -79,7 +90,7 @@ fun homePage() = html {
                 div(class = "wrap code-grid") {
                     div(class = "editor") {
                         div(class = "editor-bar") {
-                            div(class = "source-code") {
+                            div(class = "file-title source-code") {
                                 img(src = "/assets/eiwa.png", alt = "Eiwa", class = "logo")
                                 write("main.ei")
                             }
@@ -109,9 +120,7 @@ fun homePage() = html {
                                         span("println", class = "tok-fn")
                                         write("(")
                                         span("\"n = \"", class = "tok-str")
-                                        write(" + it.")
-                                        span("toString", class = "tok-fn")
-                                        write("())\n    }\n}")
+                                        write(" + it)\n    }\n}")
                                     }
                                 }
                             }
@@ -158,15 +167,18 @@ fun homePage() = html {
                     div(class = "tabs-layout") {
                         div(class = "tab-list", id = "example-tabs") {
                             button(text = "HTTP", class = "tab-button active example-tab", hxGet = "/fragments/examples/http", hxTarget = "#example-view", hxSwap = "innerHTML")
+                            button(text = "Tasks", class = "tab-button example-tab", hxGet = "/fragments/examples/tasks", hxTarget = "#example-view", hxSwap = "innerHTML")
+                            button(text = "Postgres", class = "tab-button example-tab", hxGet = "/fragments/examples/postgres", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "MCP", class = "tab-button example-tab", hxGet = "/fragments/examples/mcp", hxTarget = "#example-view", hxSwap = "innerHTML")
-                            button(text = "Tests", class = "tab-button example-tab", hxGet = "/fragments/examples/tests", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "Time", class = "tab-button example-tab", hxGet = "/fragments/examples/time", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "Money", class = "tab-button example-tab", hxGet = "/fragments/examples/money", hxTarget = "#example-view", hxSwap = "innerHTML")
+                            button(text = "Tests", class = "tab-button example-tab", hxGet = "/fragments/examples/tests", hxTarget = "#example-view", hxSwap = "innerHTML")
                         }
                         div(id = "example-view", class = "editor", hxGet = "/fragments/examples/http", hxTrigger = "load", hxSwap = "innerHTML") {}
                     }
                 }
             }
+            section(id = "packages", class = "section", hxGet = "/fragments/home/packages", hxTrigger = "load", hxSwap = "innerHTML") {}
             section(id = "tour", class = "section") {
                 div(class = "wrap") {
                     div(class = "section-heading") { h2("Eiwa language tour") p("Choose a lesson, inspect its code, and view its expected output.") }
@@ -193,6 +205,12 @@ fun homePage() = html {
                             button(text = "19 Talk to native C", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/cinterop", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                             button(text = "20 Build, then freeze", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/mutability", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                             button(text = "21 Generate unique IDs", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/uuid", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "22 Manage money", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/money", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "23 Work with epoch time", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/time", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "24 Sortable ULIDs", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/ulid", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "25 Structured logging", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/logging", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "26 Environment & .env", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/env", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "27 Random & collections", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/random", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                         }
                         div(class = "lesson-workspace") {
                             div(id = "lesson-preview", class = "editor", hxGet = "/fragments/lessons/imports", hxTrigger = "load", hxSwap = "innerHTML") {}
@@ -256,6 +274,7 @@ arest(8081) {
         get("/fragments/home/features") { this.respond(200, "text/html", features()) }
         get("/fragments/home/start") { this.respond(200, "text/html", start()) }
         get("/fragments/home/footer") { this.respond(200, "text/html", footer()) }
+        get("/fragments/home/packages") { this.respond(200, "text/html", packages()) }
         get("/fragments/examples/http") { this.respond(200, "text/html", httpExample()) }
         get("/fragments/examples/mcp") { this.respond(200, "text/html", mcpExample()) }
         get("/fragments/examples/tests") { this.respond(200, "text/html", testExample()) }
@@ -282,5 +301,13 @@ arest(8081) {
         get("/fragments/lessons/cinterop") { this.respond(200, "text/html", cInterop()) }
         get("/fragments/lessons/mutability") { this.respond(200, "text/html", mutability()) }
         get("/fragments/lessons/uuid") { this.respond(200, "text/html", uuid()) }
+        get("/fragments/examples/tasks") { this.respond(200, "text/html", tasksExample()) }
+        get("/fragments/examples/postgres") { this.respond(200, "text/html", postgresExample()) }
+        get("/fragments/lessons/money") { this.respond(200, "text/html", money()) }
+        get("/fragments/lessons/time") { this.respond(200, "text/html", time()) }
+        get("/fragments/lessons/ulid") { this.respond(200, "text/html", ulid()) }
+        get("/fragments/lessons/logging") { this.respond(200, "text/html", logging()) }
+        get("/fragments/lessons/env") { this.respond(200, "text/html", envLesson()) }
+        get("/fragments/lessons/random") { this.respond(200, "text/html", randomLesson()) }
     }
 }

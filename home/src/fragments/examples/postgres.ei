@@ -1,0 +1,23 @@
+import { fragment } from "html"
+
+fun postgresExample(): String {
+    return fragment {
+        div {
+            div(class = "editor-bar") {
+                div(class = "file-title") {
+                    img(src = "/assets/eiwa.png", alt = "Eiwa", class = "logo")
+                    write("database.ei")
+                }
+            }
+            div(class = "editor-content") {
+            h3("PostgreSQL Native Driver")
+            p("Direct native connection pooling and parameterized query execution.")
+            pre {
+                code(class = "language-kotlin") {
+                    write("import { Postgres, Pool } from \"postgres\"\n\nval pool = Pool(\"postgres://user:pass@localhost:5432/mydb\", maxConnections = 10)\n\nval users = pool.query(\"SELECT id, name, email FROM users WHERE active = $1\", [true])\n\nfor (users) {\n    println(\"User: \" + it.get(\"name\") + \" <\" + it.get(\"email\") + \">\")\n}")
+                }
+            }
+            }
+        }
+    }
+}

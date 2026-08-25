@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun logging(): String {
+    return fragment {
+        div(class = "lesson-fragment space-y-3", dataHint = "std.log provides a global Log facade with structured JSON/Text formatting and level filtering.", dataOutput = "[INFO] Server started on port 8080\n\n[ok] Logging statements evaluate messages efficiently and format with ANSI colors.") {
+            p("Use the global Log facade with structured text or JSON formatters.", class = "text-slate-300")
+            pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
+                code(class = "language-kotlin") {
+                    write("import { Log } from \"std.log\"\n\nLog.info(\"Server started on port 8080\")\nLog.debug(\"Database pool initialized\")\n\nval authLog = Log.with(\"auth\")\nauthLog.warn(\"Rate limit reached for user #123\")")
+                }
+            }
+        }
+    }
+}

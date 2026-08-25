@@ -2,11 +2,11 @@ import { fragment } from "html"
 
 fun uuid(): String {
     return fragment {
-        div(class = "lesson-fragment space-y-3", dataHint = "Uuid.v7 generates time-ordered, database-friendly identifiers; .version() reports the variant.", dataOutput = "7\nu7Tf...\n\n[ok] IDs carry their own version and embed a timestamp for index-friendly ordering.") {
-            p("Create time-ordered UUIDs tuned for primary keys.", class = "text-slate-300")
+        div(class = "lesson-fragment space-y-3", dataHint = "std.uuid provides RFC 4122 v4 UUIDs and v7 time-ordered UUIDs.", dataOutput = "4\n\n[ok] UUIDs are strongly typed and format to canonical strings.") {
+            p("Generate and inspect UUIDs with std.uuid.", class = "text-slate-300")
             pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
                 code(class = "language-kotlin") {
-                    write("import { Uuid } from \"std.uuid\"\n\nval id = Uuid.generate()\nprint(id.version().toString())\nprint(id.toString())")
+                    write("import { Uuid } from \"std.uuid\"\n\nval id = Uuid.generate()\nprint(id.version())\nprint(id)")
                 }
             }
         }

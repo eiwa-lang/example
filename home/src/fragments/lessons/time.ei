@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun time(): String {
+    return fragment {
+        div(class = "lesson-fragment space-y-3", dataHint = "std.time uses Epoch-First Unix timestamps for ultra-fast arithmetic and formatting.", dataOutput = "2026-07-20 02:00:00\nHours: 2\n\n[ok] Time math operates on raw seconds without timezone bugs or heavy calendar allocations.") {
+            p("Perform epoch-first date math with standard durations.", class = "text-slate-300")
+            pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
+                code(class = "language-kotlin") {
+                    write("import { now, date, hours } from \"std.time\"\n\nval base = date(2026, 7, 20)\nval deadline = base + hours(2)\n\nprintln(deadline.format(\"YYYY-MM-DD HH:mm:ss\"))\n\nval duration = deadline - base\nprintln(\"Hours: \" + duration.hours())")
+                }
+            }
+        }
+    }
+}

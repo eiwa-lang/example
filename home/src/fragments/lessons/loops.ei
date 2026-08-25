@@ -6,7 +6,7 @@ fun loops(): String {
             p("Explore all looping styles: for, repeat, while, and retry.", class = "text-slate-300")
             pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
                 code(class = "language-kotlin") {
-                    write("// 1. for: iterate over collections with lambda block\nval numbers = [10, 20]\nfor (numbers) {\n    println(\"for: \" + it.toString())\n}\n\n// 2. repeat: executes N times with 0-indexed it\nrepeat(2) {\n    println(\"repeat: \" + it.toString())\n}\n\n// 3. while: classic condition-based loop\nvar i = 0\nwhile (i < 2) {\n    println(\"while: \" + i.toString())\n    i = i + 1\n}\n\n// 4. retry: executes with automatic exception catching\nretry(2) { attempt ->\n    println(\"retry: \" + attempt.toString())\n}")
+                    write("// 1. for: iterate over collections with lambda block\nval numbers = [10, 20]\nfor (numbers) {\n    println(\"for: \" + it)\n}\n\n// 2. repeat: executes N times with 0-indexed it\nrepeat(2) {\n    println(\"repeat: \" + it)\n}\n\n// 3. while: classic condition-based loop\nvar i = 0\nwhile (i < 2) {\n    println(\"while: \" + i)\n    i = i + 1\n}\n\n// 4. retry: executes with automatic exception catching\nretry(2) { attempt ->\n    println(\"retry: \" + attempt)\n}")
                 }
             }
         }

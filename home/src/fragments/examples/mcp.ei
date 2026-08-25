@@ -3,7 +3,12 @@ import { fragment } from "html"
 fun mcpExample(): String {
     return fragment {
         div {
-            div(class = "editor-bar") { span("mcp.ei") }
+            div(class = "editor-bar") {
+                div(class = "file-title") {
+                    img(src = "/assets/eiwa.png", alt = "Eiwa", class = "logo")
+                    write("mcp.ei")
+                }
+            }
             div(class = "editor-content") {
             h3("MCP tool in Eiwa")
             p("The same syntax can publish a tool consumed by MCP agents and clients.")

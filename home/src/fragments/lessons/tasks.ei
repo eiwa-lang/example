@@ -2,11 +2,11 @@ import { fragment } from "html"
 
 fun tasks(): String {
     return fragment {
-        div(class = "lesson-fragment space-y-3", dataHint = "await() is the explicit suspension point of the current fiber.", dataOutput = "[Ana, Leo]\nconfig-data\n\n[ok] Child tasks belong to the parent scope, preventing leaked work after the parent exits.") {
-            p("Use task { } and await() for structured concurrency.", class = "text-slate-300")
+        div(class = "lesson-fragment space-y-3", dataHint = "task {} launches a lightweight coroutine, and .await() suspends until the result is ready.", dataOutput = "[Ana, Leo]\nconfig-data\n\n[ok] Stackless coroutines provide concurrent execution without thread overhead.") {
+            p("Launch asynchronous tasks and await their results cleanly.", class = "text-slate-300")
             pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
                 code(class = "language-kotlin") {
-                    write("fun fetchUsers(): List<String> {\n    return [\"Ana\", \"Leo\"]\n}\n\nfun fetchConfig(): String {\n    return \"config-data\"\n}\n\nval usersTask = task { fetchUsers() }\nval configTask = task { fetchConfig() }\n\nval users = usersTask.await()\nval config = configTask.await()\n\nprintln(users.toString())\nprintln(config)")
+                    write("fun fetchUsers(): List<String> {\n    return [\"Ana\", \"Leo\"]\n}\n\nfun fetchConfig(): String {\n    return \"config-data\"\n}\n\nval usersTask = task { fetchUsers() }\nval configTask = task { fetchConfig() }\n\nval users = usersTask.await()\nval config = configTask.await()\n\nprintln(users)\nprintln(config)")
                 }
             }
         }

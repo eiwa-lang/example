@@ -1,0 +1,56 @@
+import { fragment } from "html"
+
+fun packages(): String {
+    return fragment {
+        div(class = "wrap") {
+            div(class = "section-heading") {
+                span("Package Management", class = "pill")
+                h2("Git-First, Declarative & Reproducible")
+                p("No centralized registry bottlenecks. Eiwa resolves dependencies directly from GitHub, GitLab, or any Git URL with immutable lockfiles.")
+            }
+            div(class = "packages-grid code-grid-440") {
+                div(class = "editor") {
+                    div(class = "editor-bar") {
+                        div {
+                            span("📄", class = "icon-file")
+                            write("eiwa.yaml")
+                        }
+                    }
+                    div(class = "editor-content") {
+                        pre {
+                            code(class = "language-yaml") {
+                                write("name: my-app\nversion: 0.1.0\noutput: app\n\ndependencies:\n  arest:\n    github: eiwa-lang/arest\n    branch: main\n  postgres:\n    github: eiwa-lang/postgres\n    tag: v1.0.0\n  html:\n    github: eiwa-lang/html\n    commit: 8c64d09\n  auth:\n    git: https://gitlab.com/company/auth.git\n    branch: main")
+                            }
+                        }
+                    }
+                }
+                div(class = "packages-flow") {
+                    div(class = "flow-card") {
+                        div(class = "flow-num") { write("1") }
+                        div {
+                            h3("Add dependencies instantly")
+                            p("Smart inference from GitHub, GitLab, and version tags.")
+                            pre(class = "cli-badge") { code(class = "language-bash") { write("eiwa add eiwa-lang/arest") } }
+                        }
+                    }
+                    div(class = "flow-card") {
+                        div(class = "flow-num") { write("2") }
+                        div {
+                            h3("Fast, cached resolution")
+                            p("Shallow clones and local caches ensure instantaneous compilations.")
+                            pre(class = "cli-badge") { code(class = "language-bash") { write("eiwa install") } }
+                        }
+                    }
+                    div(class = "flow-card") {
+                        div(class = "flow-num") { write("3") }
+                        div {
+                            h3("Immutable & reproducible")
+                            p("Freeze exact commit hashes into lockfiles for deterministic CI/CD pipelines.")
+                            pre(class = "cli-badge") { code(class = "language-bash") { write("eiwa freeze") } }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

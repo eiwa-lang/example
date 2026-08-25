@@ -2,11 +2,11 @@ import { fragment } from "html"
 
 fun mutability(): String {
     return fragment {
-        div(class = "lesson-fragment space-y-3", dataHint = "Collections are immutable by default; .mut() opens editing and .freeze() returns a safe view.", dataOutput = "3\n99") {
-            p("Mutate a snapshot locally, then hand off an immutable collection.", class = "text-slate-300")
+        div(class = "lesson-fragment space-y-3", dataHint = "Collections are immutable by default. Call .mut() to get a mutable builder, and .freeze() when done.", dataOutput = "3\n99\n\n[ok] Explicit mutability prevents accidental mutations across function boundaries.") {
+            p("Transition between immutable collections and mutable builders explicitly.", class = "text-slate-300")
             pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
                 code(class = "language-kotlin") {
-                    write("import { List } from \"std.collections\"\n\nval base: List<Int> = [10, 20]\n\nval builder = base.mut()\nbuilder.add(30)\nbuilder.set(0, 99)\n\nval result = builder.freeze()\nprint(result.size().toString())\nprint(result[0].toString())")
+                    write("import { List } from \"std.collections\"\n\nval base: List<Int> = [10, 20]\n\nval builder = base.mut()\nbuilder.add(30)\nbuilder.set(0, 99)\n\nval result = builder.freeze()\nprint(result.size())\nprint(result[0])")
                 }
             }
         }

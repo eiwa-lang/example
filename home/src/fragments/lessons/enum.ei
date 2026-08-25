@@ -6,7 +6,7 @@ fun enumTypes(): String {
             p("Define a strongly typed set of constants and pattern-match on it.", class = "text-slate-300")
             pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
                 code(class = "language-kotlin") {
-                    write("enum Direction { NORTH, EAST, SOUTH, WEST }\n\nval d = Direction.NORTH\nprint(d.name + \" \" + d.ordinal.toString())\n\nwhen (d) {\n    Direction.EAST -> print(\"east\")\n    else -> print(\"north\")\n}")
+                    write("enum Direction { NORTH, EAST, SOUTH, WEST }\n\nval d = Direction.NORTH\nprint(d.name + \" \" + d.ordinal)\n\nwhen (d) {\n    Direction.EAST -> print(\"east\")\n    else -> print(\"north\")\n}")
                 }
             }
         }

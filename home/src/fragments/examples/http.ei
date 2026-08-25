@@ -3,7 +3,12 @@ import { fragment } from "html"
 fun httpExample(): String {
     return fragment {
         div {
-            div(class = "editor-bar") { span("http.ei") }
+            div(class = "editor-bar") {
+                div(class = "file-title") {
+                    img(src = "/assets/eiwa.png", alt = "Eiwa", class = "logo")
+                    write("http.ei")
+                }
+            }
             div(class = "editor-content") {
             h3("HTML + JSON routes with Arest")
             p("Serve HTML, return map-based JSON, and serialize typed objects in one compact server.")

@@ -3,13 +3,18 @@ import { fragment } from "html"
 fun timeExample(): String {
     return fragment {
         div {
-            div(class = "editor-bar") { span("time.ei") }
+            div(class = "editor-bar") {
+                div(class = "file-title") {
+                    img(src = "/assets/eiwa.png", alt = "Eiwa", class = "logo")
+                    write("time.ei")
+                }
+            }
             div(class = "editor-content") {
             h3("std.time epoch-first")
             p("Dates and durations use explicit math and operator overloading without heavy objects.")
             pre {
                 code(class = "language-kotlin") {
-                    write("import { now, date, hours } from \"std.time\"\n\nval deploy = now()\nval release = date(2026, 7, 20) + hours(2)\n\nprint(release.format(\"YYYY-MM-DD HH:mm:ss\"))\nprint((release - deploy).hours().toString())")
+                    write("import { now, date, hours } from \"std.time\"\n\nval deploy = now()\nval release = date(2026, 7, 20) + hours(2)\n\nprint(release.format(\"YYYY-MM-DD HH:mm:ss\"))\nprint(\"Hours left: \" + (release - deploy).hours())")
                 }
             }
             }

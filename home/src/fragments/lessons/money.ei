@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun money(): String {
+    return fragment {
+        div(class = "lesson-fragment space-y-3", dataHint = "Money uses minor units (cents) and Fowler allocation to prevent fractional-cent loss.", dataOutput = "R$ 159,90\nR$ 70,00 | R$ 20,00 | R$ 10,00\nR$ 3,34 + R$ 3,33 + R$ 3,33\n\n[ok] Arithmetic and proportional allocations are guaranteed to preserve exact sums.") {
+            p("Perform precise financial arithmetic and zero-loss Fowler splits.", class = "text-slate-300")
+            pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
+                code(class = "language-kotlin") {
+                    write("import { brl } from \"std.money\"\n\n// 1. Math without floating-point errors\nval price = brl(14990)\nval shipping = brl(1000)\nval total = price + shipping\nprintln(total.format())\n\n// 2. Revenue share (70%, 20%, 10%)\nval payout = brl(10000)\nval shares = payout.allocate([70, 20, 10])\nprintln(shares[0].format() + \" | \" + shares[1].format() + \" | \" + shares[2].format())\n\n// 3. Fair split: R$ 10,00 in 3 parts\nval splitBill = brl(1000).split(3)\nprintln(splitBill[0].format() + \" + \" + splitBill[1].format() + \" + \" + splitBill[2].format())")
+                }
+            }
+        }
+    }
+}
