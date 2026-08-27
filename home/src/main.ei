@@ -65,7 +65,7 @@ fun homePage() = html {
         header {
             nav(class = "wrap nav") {
                 a(href = "#top", class = "brand") {
-                    img(src = "/assets/eiwa.png", alt = "Eiwa", class = "logo")
+                    img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
                     span {
                         strong("eiwa")
                         small("lang")
@@ -110,7 +110,7 @@ fun homePage() = html {
                         div(class = "editor") {
                             div(class = "editor-bar") {
                                 div(class = "file-title source-code") {
-                                    img(src = "/assets/eiwa.png", alt = "Eiwa", class = "logo")
+                                    img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
                                     write("main.ei")
                                 }
                                 div(class = "thead") {

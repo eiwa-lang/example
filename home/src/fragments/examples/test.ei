@@ -5,7 +5,7 @@ fun testExample(): String {
         div {
             div(class = "editor-bar") {
                 div(class = "file-title") {
-                    img(src = "/assets/eiwa.png", alt = "Eiwa", class = "logo")
+                    img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
                     write("calculator_test.ei")
                 }
             }

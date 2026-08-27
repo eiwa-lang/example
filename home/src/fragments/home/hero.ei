@@ -36,9 +36,9 @@ fun hero(): String {
                     br()
                     write("don't.")
                     br()
-                    img(src = "/assets/eiwa.png", alt = "Eiwa", class = "logo")
+                    img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
                 }
-                img(src = "/assets/owl-hero.png", alt = "Eiwa owl mascot")
+                img(src = "/assets/owl-hero.avif", alt = "Eiwa owl mascot")
             }
         }
     }
