@@ -7,7 +7,9 @@ import { testExample } from ".fragments.examples.test"
 import { timeExample } from ".fragments.examples.time"
 import { moneyExample } from ".fragments.examples.money"
 import { hero } from ".fragments.home.hero"
+import { whyEiwa } from ".fragments.home.why"
 import { features } from ".fragments.home.features"
+import { paradigms } from ".fragments.home.paradigms"
 import { start } from ".fragments.home.start"
 import { footer } from ".fragments.home.footer"
 import { packages } from ".fragments.home.packages"
@@ -40,6 +42,7 @@ import { ulid } from ".fragments.lessons.ulid"
 import { logging } from ".fragments.lessons.logging"
 import { envLesson } from ".fragments.lessons.env"
 import { randomLesson } from ".fragments.lessons.random"
+import { extensionsLesson } from ".fragments.lessons.extensions"
 
 fun homePage() = html {
     head {
@@ -72,6 +75,8 @@ fun homePage() = html {
                     }
                 }
                 div(class = "nav-links") {
+                    a(text = "Paradigms", href = "#paradigms")
+                    a(text = "Why Eiwa?", href = "#why")
                     a(text = "Language", href = "#tour")
                     a(text = "Examples", href = "#examples")
                     a(text = "Packages", href = "#packages")
@@ -90,6 +95,8 @@ fun homePage() = html {
         }
         div(id = "mobile-menu", class = "mobile-menu") {
             div(class = "mobile-menu-inner") {
+                a(text = "Paradigms", href = "#paradigms", class = "mobile-link")
+                a(text = "Why Eiwa?", href = "#why", class = "mobile-link")
                 a(text = "Language Tour", href = "#tour", class = "mobile-link")
                 a(text = "Examples", href = "#examples", class = "mobile-link")
                 a(text = "Packages", href = "#packages", class = "mobile-link")
@@ -181,6 +188,8 @@ fun homePage() = html {
                     }
                 }
             }
+            section(id = "paradigms", class = "section", hxGet = "/fragments/home/paradigms", hxTrigger = "load", hxSwap = "innerHTML") {}
+            section(id = "why", class = "section", hxGet = "/fragments/home/why", hxTrigger = "load", hxSwap = "innerHTML") {}
             section(id = "examples", class = "section") {
                 div(class = "wrap") {
                     div(class = "section-heading") { h2("Small code, clear intent")  p("Switch between HTTP, MCP, tests, time, and money examples.") }
@@ -231,6 +240,7 @@ fun homePage() = html {
                             button(text = "25 Structured logging", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/logging", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                             button(text = "26 Environment & .env", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/env", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                             button(text = "27 Random & collections", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/random", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "28 Extension functions", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/extensions", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                         }
                         div(class = "lesson-workspace") {
                             div(id = "lesson-preview", class = "editor", hxGet = "/fragments/lessons/imports", hxTrigger = "load", hxSwap = "innerHTML") {}
@@ -304,7 +314,9 @@ arest(8081) {
         static("/", "static")
         get("/") { this.respond(200, "text/html", homePage()) }
         get("/fragments/home/hero") { this.respond(200, "text/html", hero()) }
+        get("/fragments/home/why") { this.respond(200, "text/html", whyEiwa()) }
         get("/fragments/home/features") { this.respond(200, "text/html", features()) }
+        get("/fragments/home/paradigms") { this.respond(200, "text/html", paradigms()) }
         get("/fragments/home/start") { this.respond(200, "text/html", start()) }
         get("/fragments/home/footer") { this.respond(200, "text/html", footer()) }
         get("/fragments/home/packages") { this.respond(200, "text/html", packages()) }
@@ -342,5 +354,6 @@ arest(8081) {
         get("/fragments/lessons/logging") { this.respond(200, "text/html", logging()) }
         get("/fragments/lessons/env") { this.respond(200, "text/html", envLesson()) }
         get("/fragments/lessons/random") { this.respond(200, "text/html", randomLesson()) }
+        get("/fragments/lessons/extensions") { this.respond(200, "text/html", extensionsLesson()) }
     }
 }

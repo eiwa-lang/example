@@ -1,0 +1,102 @@
+import { fragment } from "html"
+
+fun whyEiwa(): String {
+    return fragment {
+        div(class = "wrap") {
+            div(class = "section-heading") {
+                h2("Why Eiwa?")
+                p("Designed from first principles for clarity, developer ergonomics, and native execution without JVM or heavy runtimes.")
+            }
+            div(class = "why-grid") {
+                div(class = "why-card") {
+                    div(class = "why-header") {
+                        div(class = "why-badge-row") {
+                            span(class = "why-badge badge-composition") { write("Architecture") }
+                        }
+                        h3("Composition Over Inheritance")
+                        p("Say goodbye to fragile base classes, deep class hierarchies, and hidden override bugs. Eiwa replaces OOP inheritance with clean composition.")
+                    }
+                    div(class = "why-body") {
+                        ul(class = "why-points") {
+                            li {
+                                strong("type: ")
+                                write("Holds pure state, identity, and constructor parameters.")
+                            }
+                            li {
+                                strong("contract: ")
+                                write("Defines pure polymorphic API signatures without implementation.")
+                            }
+                            li {
+                                strong("skill: ")
+                                write("Reusable method behaviors and mixins without carrying mutable state.")
+                            }
+                            li {
+                                strong("object: ")
+                                write("Dedicated singletons for global configs and static utilities.")
+                            }
+                        }
+                        div(class = "editor why-editor") {
+                            div(class = "editor-bar") {
+                                div(class = "file-title") {
+                                    span(class = "dot dot-purple") {}
+                                    write("composition.ei")
+                                }
+                            }
+                            div(class = "editor-content") {
+                                pre(class = "playground-code") {
+                                    code(class = "language-kotlin") {
+                                        write("contract Notifier {\n    fun send(msg: String)\n}\n\nskill EmailAlert : Notifier {\n    fun alert(title: String) {\n        this.send(\"[ALERT] \" + title)\n    }\n}\n\ntype User(val email: String) : Notifier + EmailAlert {\n    implement fun send(msg: String) {\n        print(\"Sending to \" + this.email + \": \" + msg)\n    }\n}\n\nval user = User(\"alice@eiwa.dev\")\nuser.alert(\"Deploy finished!\")")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                div(class = "why-card") {
+                    div(class = "why-header") {
+                        div(class = "why-badge-row") {
+                            span(class = "why-badge badge-async") { write("Concurrency") }
+                        }
+                        h3("Native Stackless Coroutines")
+                        p("Enjoy the expressive power of Kotlin-style tasks and await, without requiring a JVM or a bulky C event-loop runtime.")
+                    }
+                    div(class = "why-body") {
+                        ul(class = "why-points") {
+                            li {
+                                strong("LLVM State Machines: ")
+                                write("Suspending task bodies are transformed directly into lightweight heap continuations.")
+                            }
+                            li {
+                                strong("Pure-Eiwa Scheduler: ")
+                                write("Cooperative, high-throughput multi-core dispatchers drive tasks with zero OS thread thrashing.")
+                            }
+                            li {
+                                strong("Instant Await: ")
+                                write("Direct async synchronization with structured error handling and null-safe results.")
+                            }
+                            li {
+                                strong("Native Footprint: ")
+                                write("Thousands of concurrent tasks consume mere megabytes of memory.")
+                            }
+                        }
+                        div(class = "editor why-editor") {
+                            div(class = "editor-bar") {
+                                div(class = "file-title") {
+                                    span(class = "dot dot-blue") {}
+                                    write("coroutines.ei")
+                                }
+                            }
+                            div(class = "editor-content") {
+                                pre(class = "playground-code") {
+                                    code(class = "language-kotlin") {
+                                        write("fun main() {\n    // Launch two concurrent tasks\n    val taskA = task {\n        http.get(\"https://api.one\")\n    }\n    val taskB = task {\n        http.get(\"https://api.two\")\n    }\n\n    // Await both results cooperatively\n    val resA = taskA.await()\n    val resB = taskB.await()\n    print(resA + \" & \" + resB)\n}")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

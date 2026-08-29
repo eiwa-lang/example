@@ -1,0 +1,77 @@
+import { fragment } from "html"
+
+fun paradigms(): String {
+    return fragment {
+        div(class = "wrap") {
+            div(class = "section-heading") {
+                h2("Your Syntax, Your Paradigm")
+                p("Design types with encapsulated methods (Java & C# style) or declare lean data types with decoupled receiver functions (Go & Rust style). Both compile natively with zero overhead.")
+            }
+            div(class = "paradigms-grid") {
+                div(class = "paradigm-card") {
+                    div(class = "paradigm-header") {
+                        div(class = "paradigm-title-group") {
+                            span(class = "paradigm-badge badge-oop") { write("Java & C# Style") }
+                            h3("OOP Encapsulated")
+                        }
+                        p("Methods live inside the type body for classic object-oriented cohesion.", class = "paradigm-desc")
+                    }
+                    div(class = "editor paradigm-editor") {
+                        div(class = "editor-bar") {
+                            div(class = "file-title") {
+                                span(class = "dot dot-purple") {}
+                                write("user_oop.ei")
+                            }
+                        }
+                        div(class = "editor-content source-code") {
+                            pre(class = "playground-code") {
+                                code(class = "language-kotlin") {
+                                    write("type User(val name: String, val role: String) {\n    fun isModerator(): Bool {\n        return this.role == \"admin\" || this.role == \"mod\"\n    }\n\n    fun greet(): String {\n        return \"Welcome, \" + this.name\n    }\n}\n\nval u = User(\"Alice\", \"admin\")\nassert(u.isModerator() == true)\nprint(u.greet())")
+                                }
+                            }
+                        }
+                    }
+                }
+                div(class = "paradigm-card") {
+                    div(class = "paradigm-header") {
+                        div(class = "paradigm-title-group") {
+                            span(class = "paradigm-badge badge-decoupled") { write("Go & Rust Style") }
+                            h3("Decoupled Extensions")
+                        }
+                        p("Clean struct-like types with behavior attached externally via receivers.", class = "paradigm-desc")
+                    }
+                    div(class = "editor paradigm-editor") {
+                        div(class = "editor-bar") {
+                            div(class = "file-title") {
+                                span(class = "dot dot-blue") {}
+                                write("user_modular.ei")
+                            }
+                        }
+                        div(class = "editor-content source-code") {
+                            pre(class = "playground-code") {
+                                code(class = "language-kotlin") {
+                                    write("type User(val name: String, val role: String)\n\nfun User.isModerator(): Bool {\n    return this.role == \"admin\" || this.role == \"mod\"\n}\n\nfun User.greet(): String {\n    return \"Welcome, \" + this.name\n}\n\nval u = User(\"Alice\", \"admin\")\nassert(u.isModerator() == true)\nprint(u.greet())")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            div(class = "paradigm-footer-note") {
+                div(class = "paradigm-pill") {
+                    span(class = "check-dot") {}
+                    write("Identical Call Syntax: ")
+                    code { write("user.greet()") }
+                }
+                div(class = "paradigm-pill") {
+                    span(class = "check-dot") {}
+                    write("Static Type-Safe Dispatch")
+                }
+                div(class = "paradigm-pill") {
+                    span(class = "check-dot") {}
+                    write("Zero Abstraction Overhead")
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun extensionsLesson(): String {
+    return fragment {
+        div(class = "lesson-fragment space-y-3", dataHint = "Extension functions attach methods to existing types or primitives without modifying their definitions.", dataOutput = "Hello, Eiwa!\n49\n\n[ok] Extension functions dispatch with static receiver resolution and zero overhead.") {
+            p("Declare extension functions on types and primitives (Go/Rust style decoupling).", class = "text-slate-300")
+            pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
+                code(class = "language-kotlin") {
+                    write("// 1. Extension on primitive String\nfun String.exclaim(): String {\n    return this + \"!\"\n}\n\n// 2. Extension on custom type\ntype Vector2D(val x: Int, val y: Int)\n\nfun Vector2D.magnitudeSquared(): Int {\n    return this.x * this.x + this.y * this.y\n}\n\nfun main() {\n    val greeting = \"Hello, Eiwa\".exclaim()\n    print(greeting)\n\n    val v = Vector2D(3, 4)\n    val mag = v.magnitudeSquared()\n    print(mag) // 3*3 + 4*4 = 25\n}")
+                }
+            }
+        }
+    }
+}
