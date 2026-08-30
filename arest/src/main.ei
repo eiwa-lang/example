@@ -61,7 +61,7 @@ fun main() {
                 val result = pool.query("SELECT id, name FROM users")
 
                 val users = MutableList<User>()
-                for (row in result.rows()) {
+                for (result.rows()) { row ->
                     users.add(User(row.int("id"), row.string("name")))
                 }
                 respond(200, "application/json", users.toJson())
@@ -103,9 +103,9 @@ fun main() {
             http("/mcp")
 
             tool("sum") {
-                val a = argumentInt("a")
-                val b = argumentInt("b")
-                respond((a + b).toString())
+                val a = arguments["a"]!!.asNumber()
+                val b = arguments["b"]!!.asNumber()
+                respond(a + b)
             }
 
             resource("config://database") {

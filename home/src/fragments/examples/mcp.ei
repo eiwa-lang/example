@@ -10,11 +10,11 @@ fun mcpExample(): String {
                 }
             }
             div(class = "editor-content") {
-            h3("MCP tool in Eiwa")
+            h3("MCP tool in Arest")
             p("The same syntax can publish a tool consumed by MCP agents and clients.")
             pre {
                 code(class = "language-kotlin") {
-                    write("import { arest } from \"arest.arest\"\n\narest(8080) {\n    mcp {\n        name(\"Calculator\")\n        version(\"1.0.0\")\n        tool(\"sum\") {\n            val a = argument<Int>(\"a\")\n            val b = argument<Int>(\"b\")\n            respond(a + b)\n        }\n    }\n}")
+                    write("import { arest } from \"arest.arest\"\n\narest(8080) {\n    mcp {\n        name(\"Calculator\")\n        version(\"1.0.0\")\n        tool(\"sum\") {\n            val a = arguments[\"a\"]!!.asNumber()\n            val b = arguments[\"b\"]!!.asNumber()\n            respond(a + b)\n        }\n    }\n}")
                 }
             }
             }

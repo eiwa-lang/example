@@ -10,11 +10,11 @@ fun httpExample(): String {
                 }
             }
             div(class = "editor-content") {
-            h3("HTML + JSON routes with Arest")
-            p("Serve HTML, return map-based JSON, and serialize typed objects in one compact server.")
+            h3("JSON routes with Arest")
+            p("Return map-based JSON and serialize typed objects in one compact server.")
             pre {
                 code(class = "language-kotlin") {
-                    write("import { arest } from \"arest.arest\"\n\narest(8082) {\n    routing {\n        get(\"/html\") {\n            this.respond(200, \"text/html\", html {\n                head {\n                    title(\"Title\")\n                }\n                body {\n                    h1(\"Welcome to Eiwa!\")\n                }\n            })\n        }\n\n        get(\"/map\") {\n            val body = MutableMap<String, String>()\n            body[\"welcome\"] = \"Hi there!\"\n            body[\"date\"] = now().toString()\n            body[\"uuid\"] = Uuid.generate().toString()\n            body[\"money\"] = brl(Random.nextInt()).format()\n\n            respond(200, \"application/json\", body.toJson())\n        }\n\n        get(\"/json\") {\n            val addr = Address(\"Sao Paulo\", \"01000-000\")\n            val person = Person(\"Ana\", 30, addr, date(1987, 10, 10), [\"friend\", \"coder\"])\n\n            respond(200, \"application/json\", person.toJson())\n        }\n    }\n}")
+                    write("import { arest } from \"arest.arest\"\n\narest(8082) {\n    routing {\n        get(\"/map\") {\n            val body = MutableMap<String, String>()\n            body[\"content\"] = \"Welcome to Eiwa!\"\n            body[\"page\"] = request.queries[\"page\"] ?: \"home\"\n\n            respond(200, \"application/json\", body.toJson())\n        }\n\n        get(\"/json\") {\n            val addr = Address(\"Sao Paulo\", \"01000-000\")\n            val person = Person(\"Ana\", 30, addr, date(1987, 10, 10), [\"friend\", \"coder\"])\n\n            respond(200, \"application/json\", person.toJson())\n        }\n    }\n}")
                 }
             }
             }

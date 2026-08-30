@@ -182,12 +182,14 @@ mcp {
     http("/mcp")
 
     tool("sum") {
-        val a = argumentInt("a")
-        val b = argumentInt("b")
-        respond((a + b).toString())
+        val a = arguments["a"]!!.asNumber()
+        val b = arguments["b"]!!.asNumber()
+        respond(a + b)
     }
 }
 ```
+
+Os argumentos vêm de `params.arguments` (JSON) e são acessados como um mapa — o mesmo conceito do `request.queries["name"]` do HTTP, mas com valores tipados JSON: `arguments["a"]` retorna `JsonValue?`, e você converte com `.asString()`, `.asNumber()`, `.asBool()`. `hasArgument("a")` verifica presença.
 
 `mcp_builder` registra `tool/resource/prompt`; o `McpDispatcher` cuida de `initialize`, `tools/list`, `tools/call`, etc. automaticamente. Você só escreve a lógica de negócio.
 
@@ -219,6 +221,6 @@ curl -X POST http://localhost:8082/mcp -H "Content-Type: application/json" \
 | `get("/") { }` | lambda receiver | Handler HTTP (contexto `ApplicationCall`) |
 | `ApplicationCall` | `application_call.ei` | respond/request/server |
 | `mcp { }` | `mcp_builder.ei` | Registra tools/resources/prompts |
-| `McpDispatcher` | `mcp/mcp_dispatcher.ei` | Protocolo JSON-RPC |
+| `McpCall` | `mcp_call.ei` | Contexto da tool: `arguments["a"]` (mapa JSON) |
 
 O Arest separa **transporte** (HTTP/MCP) de **lógica** (seus handlers): você só escreve o que cada rota/tool faz — o framework cuida do resto.

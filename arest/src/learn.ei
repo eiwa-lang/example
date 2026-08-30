@@ -7,8 +7,8 @@ fun mcpCodeBlock(): String {
         "        name(\"Calculator\")\n" +
         "        version(\"1.0.0\")\n" +
         "        tool(\"sum\") {\n" +
-        "            val a = argument<Int>(\"a\")\n" +
-        "            val b = argument<Int>(\"b\")\n" +
+        "            val a = arguments[\"a\"]!!.asNumber()\n" +
+        "            val b = arguments[\"b\"]!!.asNumber()\n" +
         "            respond(a + b)\n" +
         "        }\n" +
         "    }\n" +
@@ -54,7 +54,7 @@ fun homePage(call: ApplicationCall) {
                         code(httpCodeBlock(), class = "language-eiwa")
                     }
                 }
-                h3("2) MCP: tool com argumentos tipados", class = "text-lg font-bold text-indigo-400 uppercase tracking-wider mb-2")
+                h3("2) MCP: tool com argumentos em mapa JSON", class = "text-lg font-bold text-indigo-400 uppercase tracking-wider mb-2")
                 div(class = "bg-[#1a1b26] border border-gray-800 rounded-xl p-4 mb-6 overflow-x-auto") {
                     pre(class = "text-xs whitespace-pre") {
                         code(mcpCodeBlock(), class = "language-eiwa")

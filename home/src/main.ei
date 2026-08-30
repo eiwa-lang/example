@@ -2,6 +2,7 @@ import { html } from "html"
 import { arest } from "arest.arest"
 
 import { httpExample } from ".fragments.examples.http"
+import { htmlExample } from ".fragments.examples.htmldsl"
 import { mcpExample } from ".fragments.examples.mcp"
 import { testExample } from ".fragments.examples.test"
 import { timeExample } from ".fragments.examples.time"
@@ -195,10 +196,11 @@ fun homePage() = html {
                     div(class = "section-heading") { h2("Small code, clear intent")  p("Switch between HTTP, MCP, tests, time, and money examples.") }
                     div(class = "tabs-layout") {
                         div(class = "tab-list", id = "example-tabs") {
-                            button(text = "HTTP", class = "tab-button active example-tab", hxGet = "/fragments/examples/http", hxTarget = "#example-view", hxSwap = "innerHTML")
+                            button(text = "HTTP Server", class = "tab-button active example-tab", hxGet = "/fragments/examples/http", hxTarget = "#example-view", hxSwap = "innerHTML")
+                            button(text = "HTML", class = "tab-button example-tab", hxGet = "/fragments/examples/html", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "Tasks", class = "tab-button example-tab", hxGet = "/fragments/examples/tasks", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "Postgres", class = "tab-button example-tab", hxGet = "/fragments/examples/postgres", hxTarget = "#example-view", hxSwap = "innerHTML")
-                            button(text = "MCP", class = "tab-button example-tab", hxGet = "/fragments/examples/mcp", hxTarget = "#example-view", hxSwap = "innerHTML")
+                            button(text = "MCP Server", class = "tab-button example-tab", hxGet = "/fragments/examples/mcp", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "Time", class = "tab-button example-tab", hxGet = "/fragments/examples/time", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "Money", class = "tab-button example-tab", hxGet = "/fragments/examples/money", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "Tests", class = "tab-button example-tab", hxGet = "/fragments/examples/tests", hxTarget = "#example-view", hxSwap = "innerHTML")
@@ -312,48 +314,49 @@ arest(8081) {
     health()
     routing {
         static("/", "static")
-        get("/") { this.respond(200, "text/html", homePage()) }
-        get("/fragments/home/hero") { this.respond(200, "text/html", hero()) }
-        get("/fragments/home/why") { this.respond(200, "text/html", whyEiwa()) }
-        get("/fragments/home/features") { this.respond(200, "text/html", features()) }
-        get("/fragments/home/paradigms") { this.respond(200, "text/html", paradigms()) }
-        get("/fragments/home/start") { this.respond(200, "text/html", start()) }
-        get("/fragments/home/footer") { this.respond(200, "text/html", footer()) }
-        get("/fragments/home/packages") { this.respond(200, "text/html", packages()) }
-        get("/fragments/examples/http") { this.respond(200, "text/html", httpExample()) }
-        get("/fragments/examples/mcp") { this.respond(200, "text/html", mcpExample()) }
-        get("/fragments/examples/tests") { this.respond(200, "text/html", testExample()) }
-        get("/fragments/examples/time") { this.respond(200, "text/html", timeExample()) }
-        get("/fragments/examples/money") { this.respond(200, "text/html", moneyExample()) }
-        get("/fragments/lessons/imports") { this.respond(200, "text/html", imports()) }
-        get("/fragments/lessons/toplevel") { this.respond(200, "text/html", topLevel()) }
-        get("/fragments/lessons/collections") { this.respond(200, "text/html", collections()) }
-        get("/fragments/lessons/loops") { this.respond(200, "text/html", loops()) }
-        get("/fragments/lessons/strings") { this.respond(200, "text/html", strings()) }
-        get("/fragments/lessons/nullsafety") { this.respond(200, "text/html", nullSafety()) }
-        get("/fragments/lessons/exceptions") { this.respond(200, "text/html", exceptions()) }
-        get("/fragments/lessons/maps") { this.respond(200, "text/html", maps()) }
-        get("/fragments/lessons/ternary") { this.respond(200, "text/html", ternary()) }
-        get("/fragments/lessons/operators") { this.respond(200, "text/html", operators()) }
-        get("/fragments/lessons/when") { this.respond(200, "text/html", whenExpr()) }
-        get("/fragments/lessons/compositionobject") { this.respond(200, "text/html", compositionObject()) }
-        get("/fragments/lessons/tasks") { this.respond(200, "text/html", tasks()) }
-        get("/fragments/lessons/serialization") { this.respond(200, "text/html", serialization()) }
-        get("/fragments/lessons/smartcast") { this.respond(200, "text/html", smartCast()) }
-        get("/fragments/lessons/enum") { this.respond(200, "text/html", enumTypes()) }
-        get("/fragments/lessons/generics") { this.respond(200, "text/html", generics()) }
-        get("/fragments/lessons/scopefunc") { this.respond(200, "text/html", scopeFunctions()) }
-        get("/fragments/lessons/cinterop") { this.respond(200, "text/html", cInterop()) }
-        get("/fragments/lessons/mutability") { this.respond(200, "text/html", mutability()) }
-        get("/fragments/lessons/uuid") { this.respond(200, "text/html", uuid()) }
-        get("/fragments/examples/tasks") { this.respond(200, "text/html", tasksExample()) }
-        get("/fragments/examples/postgres") { this.respond(200, "text/html", postgresExample()) }
-        get("/fragments/lessons/money") { this.respond(200, "text/html", money()) }
-        get("/fragments/lessons/time") { this.respond(200, "text/html", time()) }
-        get("/fragments/lessons/ulid") { this.respond(200, "text/html", ulid()) }
-        get("/fragments/lessons/logging") { this.respond(200, "text/html", logging()) }
-        get("/fragments/lessons/env") { this.respond(200, "text/html", envLesson()) }
-        get("/fragments/lessons/random") { this.respond(200, "text/html", randomLesson()) }
-        get("/fragments/lessons/extensions") { this.respond(200, "text/html", extensionsLesson()) }
+        get("/") { respond(200, "text/html", homePage()) }
+        get("/fragments/home/hero") { respond(200, "text/html", hero()) }
+        get("/fragments/home/why") { respond(200, "text/html", whyEiwa()) }
+        get("/fragments/home/features") { respond(200, "text/html", features()) }
+        get("/fragments/home/paradigms") { respond(200, "text/html", paradigms()) }
+        get("/fragments/home/start") { respond(200, "text/html", start()) }
+        get("/fragments/home/footer") { respond(200, "text/html", footer()) }
+        get("/fragments/home/packages") { respond(200, "text/html", packages()) }
+        get("/fragments/examples/http") { respond(200, "text/html", httpExample()) }
+        get("/fragments/examples/html") { respond(200, "text/html", htmlExample()) }
+        get("/fragments/examples/mcp") { respond(200, "text/html", mcpExample()) }
+        get("/fragments/examples/tests") { respond(200, "text/html", testExample()) }
+        get("/fragments/examples/time") { respond(200, "text/html", timeExample()) }
+        get("/fragments/examples/money") { respond(200, "text/html", moneyExample()) }
+        get("/fragments/lessons/imports") { respond(200, "text/html", imports()) }
+        get("/fragments/lessons/toplevel") { respond(200, "text/html", topLevel()) }
+        get("/fragments/lessons/collections") { respond(200, "text/html", collections()) }
+        get("/fragments/lessons/loops") { respond(200, "text/html", loops()) }
+        get("/fragments/lessons/strings") { respond(200, "text/html", strings()) }
+        get("/fragments/lessons/nullsafety") { respond(200, "text/html", nullSafety()) }
+        get("/fragments/lessons/exceptions") { respond(200, "text/html", exceptions()) }
+        get("/fragments/lessons/maps") { respond(200, "text/html", maps()) }
+        get("/fragments/lessons/ternary") { respond(200, "text/html", ternary()) }
+        get("/fragments/lessons/operators") { respond(200, "text/html", operators()) }
+        get("/fragments/lessons/when") { respond(200, "text/html", whenExpr()) }
+        get("/fragments/lessons/compositionobject") { respond(200, "text/html", compositionObject()) }
+        get("/fragments/lessons/tasks") { respond(200, "text/html", tasks()) }
+        get("/fragments/lessons/serialization") { respond(200, "text/html", serialization()) }
+        get("/fragments/lessons/smartcast") { respond(200, "text/html", smartCast()) }
+        get("/fragments/lessons/enum") { respond(200, "text/html", enumTypes()) }
+        get("/fragments/lessons/generics") { respond(200, "text/html", generics()) }
+        get("/fragments/lessons/scopefunc") { respond(200, "text/html", scopeFunctions()) }
+        get("/fragments/lessons/cinterop") { respond(200, "text/html", cInterop()) }
+        get("/fragments/lessons/mutability") { respond(200, "text/html", mutability()) }
+        get("/fragments/lessons/uuid") { respond(200, "text/html", uuid()) }
+        get("/fragments/examples/tasks") { respond(200, "text/html", tasksExample()) }
+        get("/fragments/examples/postgres") { respond(200, "text/html", postgresExample()) }
+        get("/fragments/lessons/money") { respond(200, "text/html", money()) }
+        get("/fragments/lessons/time") { respond(200, "text/html", time()) }
+        get("/fragments/lessons/ulid") { respond(200, "text/html", ulid()) }
+        get("/fragments/lessons/logging") { respond(200, "text/html", logging()) }
+        get("/fragments/lessons/env") { respond(200, "text/html", envLesson()) }
+        get("/fragments/lessons/random") { respond(200, "text/html", randomLesson()) }
+        get("/fragments/lessons/extensions") { respond(200, "text/html", extensionsLesson()) }
     }
 }

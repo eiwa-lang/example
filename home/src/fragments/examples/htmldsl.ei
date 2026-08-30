@@ -1,0 +1,23 @@
+import { fragment } from "html"
+
+fun htmlExample(): String {
+    return fragment {
+        div {
+            div(class = "editor-bar") {
+                div(class = "file-title") {
+                    img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
+                    write("html.ei")
+                }
+            }
+            div(class = "editor-content") {
+            h3("HTML DSL")
+            p("Build pages with a declarative DSL — no string templates.")
+            pre {
+                code(class = "language-kotlin") {
+                    write("import { html } from \"html\"\n\nval page = html {\n    head {\n        title(\"Title\")\n    }\n    body {\n        h1(\"Welcome to Eiwa!\")\n        ul {\n            li(\"Native performance\")\n            li(\"Strict null safety\")\n        }\n    }\n}\n\n// serve with the Arest HTTP server\nrespond(200, \"text/html\", page)")
+                }
+            }
+            }
+        }
+    }
+}
