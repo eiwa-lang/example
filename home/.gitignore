@@ -3,5 +3,6 @@ test_runner
 synthetic_test.ei
 bin/
 app
-app.*
+app.exe
+app.pdb
 .DS_Store
