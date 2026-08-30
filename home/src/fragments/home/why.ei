@@ -35,9 +35,9 @@ fun whyEiwa(): String {
                                 write("Dedicated singletons for global configs and static utilities.")
                             }
                         }
-                        div(class = "editor why-editor") {
+                        div(class = "editor") {
                             div(class = "editor-bar") {
-                                div(class = "file-title source-code") {
+                                div(class = "file-title") {
                                     img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
                                     write("composition.ei")
                                 }
@@ -79,9 +79,9 @@ fun whyEiwa(): String {
                                 write("Thousands of concurrent tasks consume mere megabytes of memory.")
                             }
                         }
-                        div(class = "editor why-editor") {
+                        div(class = "editor") {
                             div(class = "editor-bar") {
-                                div(class = "file-title source-code") {
+                                div(class = "file-title") {
                                     img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
                                     write("coroutines.ei")
                                 }

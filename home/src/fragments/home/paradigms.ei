@@ -16,9 +16,9 @@ fun paradigms(): String {
                         }
                         p("Methods live inside the type body for classic object-oriented cohesion.", class = "paradigm-desc")
                     }
-                    div(class = "editor paradigm-editor") {
+                    div(class = "editor") {
                         div(class = "editor-bar") {
-                            div(class = "file-title source-code") {
+                            div(class = "file-title") {
                                 img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
                                 write("user_oop.ei")
                             }
@@ -40,9 +40,9 @@ fun paradigms(): String {
                         }
                         p("Clean struct-like types with behavior attached externally via receivers.", class = "paradigm-desc")
                     }
-                    div(class = "editor paradigm-editor") {
+                    div(class = "editor") {
                         div(class = "editor-bar") {
-                            div(class = "file-title source-code") {
+                            div(class = "file-title") {
                                 img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
                                 write("user_modular.ei")
                             }

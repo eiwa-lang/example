@@ -1,5 +1,5 @@
 :root {
-  --bg: #040510;
+  --bg: #00020c;
   --surface: #0C0F18;
   --surface-2: #0B0C16;
   --border: #151620;
@@ -56,7 +56,7 @@ header {
   margin-bottom: 16px;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  background: rgba(4, 5, 16, .82);
+  background: rgba(0, 2, 12, .82);
   border-bottom: 1px solid rgba(255, 255, 255, .07);
 }
 
@@ -280,13 +280,13 @@ header {
   overflow: hidden;
 
   background-image:
-    linear-gradient(rgba(4, 5, 16, 0.45), rgba(4, 5, 16, 0.45)),
+    linear-gradient(rgba(0, 2, 12, 0.70), rgba(0, 2, 12, 0.30)),
     url("/assets/eiwa-hero-bg.avif");
 
   background-repeat: no-repeat, no-repeat;
   background-position: center, center;
   background-size: contain, contain;
-  background-color: #040510;
+  background-color: #00020c;
 }
 
 .stars {
@@ -991,19 +991,6 @@ code.language-bash {
   line-height: 1.5;
 }
 
-.paradigm-editor {
-  margin-top: auto;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  background: rgba(4, 5, 16, 0.7);
-}
-
-.paradigm-editor .editor-content {
-  padding: 16px;
-  min-height: 220px;
-}
-
 .dot-purple {
   background: var(--purple-2) !important;
   box-shadow: 0 0 8px var(--purple-2);
@@ -1143,18 +1130,6 @@ code.language-bash {
 
 .why-points strong {
   color: #f1eee9;
-}
-
-.why-editor {
-  margin-top: auto;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  background: rgba(4, 5, 16, 0.7);
-}
-
-.why-editor .editor-content {
-  padding: 16px;
 }
 
 /* ==========================================================================
