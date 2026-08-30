@@ -18,8 +18,8 @@ fun paradigms(): String {
                     }
                     div(class = "editor paradigm-editor") {
                         div(class = "editor-bar") {
-                            div(class = "file-title") {
-                                span(class = "dot dot-purple") {}
+                            div(class = "file-title source-code") {
+                                img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
                                 write("user_oop.ei")
                             }
                         }
@@ -42,8 +42,8 @@ fun paradigms(): String {
                     }
                     div(class = "editor paradigm-editor") {
                         div(class = "editor-bar") {
-                            div(class = "file-title") {
-                                span(class = "dot dot-blue") {}
+                            div(class = "file-title source-code") {
+                                img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
                                 write("user_modular.ei")
                             }
                         }

@@ -11,8 +11,8 @@ fun packages(): String {
             div(class = "packages-grid code-grid-440") {
                 div(class = "editor") {
                     div(class = "editor-bar") {
-                        div {
-                            span("📄", class = "icon-file")
+                        div(class = "file-title") {
+                            span(class = "dot dot-blue") {}
                             write("eiwa.yaml")
                         }
                     }

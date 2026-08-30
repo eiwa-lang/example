@@ -37,8 +37,8 @@ fun whyEiwa(): String {
                         }
                         div(class = "editor why-editor") {
                             div(class = "editor-bar") {
-                                div(class = "file-title") {
-                                    span(class = "dot dot-purple") {}
+                                div(class = "file-title source-code") {
+                                    img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
                                     write("composition.ei")
                                 }
                             }
@@ -81,8 +81,8 @@ fun whyEiwa(): String {
                         }
                         div(class = "editor why-editor") {
                             div(class = "editor-bar") {
-                                div(class = "file-title") {
-                                    span(class = "dot dot-blue") {}
+                                div(class = "file-title source-code") {
+                                    img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
                                     write("coroutines.ei")
                                 }
                             }
