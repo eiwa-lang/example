@@ -3,4 +3,5 @@ test_runner
 synthetic_test.ei
 bin/
 app
+app.*
 .DS_Store
