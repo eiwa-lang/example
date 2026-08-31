@@ -1,0 +1,187 @@
+type LessonInfo(
+    val id: String,
+    val title: String,
+    val summary: String,
+    val code: String
+)
+
+type LessonsData() {
+} object {
+
+    fun list(): String {
+        return "# Eiwa Language Tour - 28 Lessons Index\n\n" +
+            "01. Import symbols (`import { ... } from \".path\"`)\n" +
+            "02. Write without main (Top-level statements & scripting)\n" +
+            "03. Sum a list (List<T>, `for (items) { it -> }`)\n" +
+            "04. Repeat and loops (`repeat(n)`, `while`, `loop`, `retry`)\n" +
+            "05. Escape sequences (String escapes & `+` concat)\n" +
+            "06. Avoid unsafe null (`T | Null`, `T?`, `?.`, `?:`, `!!`)\n" +
+            "07. Exceptions (`try-catch`, `Throwable`, `throw`)\n" +
+            "08. Create maps (`Map<K, V>`, `MutableMap<K, V>`)\n" +
+            "09. Use ternary (`condition ? a : b`)\n" +
+            "10. Overload + (Operator overloading `.plus()`, `.minus()`)\n" +
+            "11. Standardize branches (`when (x) { val -> ... else -> ... }`)\n" +
+            "12. Compose types and objects (`type`, `contract`, `skill`, `object`, `implement`)\n" +
+            "13. Run tasks (Stackless coroutines `task {}`, `.await()`)\n" +
+            "14. Serialize without reflection (`toJson()`, `fromJson()`)\n" +
+            "15. Narrow contracts with casts (`is Contract`, `is Type`, smart cast)\n" +
+            "16. Model variants with enum (Algebraic Data Types)\n" +
+            "17. Write once with generics (`List<T>`, generic types/functions)\n" +
+            "18. Chain with scope functions (`let`, `apply`, `also`, `run`, `with`)\n" +
+            "19. Talk to native C (`cimport`, `@Header`, `@CFunction`, `Pointer`)\n" +
+            "20. Build, then freeze (Mutability `.mut()` and `.freeze()`)\n" +
+            "21. Generate unique IDs (`std.uuid`)\n" +
+            "22. Manage money (`std.money` currency-safe arithmetic)\n" +
+            "23. Work with epoch time (`std.time` timestamps & durations)\n" +
+            "24. Sortable ULIDs (`std.ulid` lexicographically sortable)\n" +
+            "25. Structured logging (`std.log` JSON / plain)\n" +
+            "26. Environment & .env (`std.env` config loader)\n" +
+            "27. Random & collections (`std.random` sampling & shuffling)\n" +
+            "28. Extension functions (`fun Type.extension(): Ret`)"
+    }
+
+    fun get(query: String): String {
+        if (query == "1" || query == "01" || query == "imports") {
+            return "### Lesson 01: Import Symbols\n" +
+                "Eiwa uses explicit destructuring imports. Module paths use dots (e.g. `.fragments.user`).\n\n" +
+                "```kotlin\nimport { add, Vector } from \".math\"\n\nfun main() {\n    val v = Vector(1, 1)\n    val r = add(5, 5)\n    println(r)\n}\n```"
+        }
+        if (query == "2" || query == "02" || query == "toplevel") {
+            return "### Lesson 02: Write Without Main\n" +
+                "Top-level execution is valid in the root entry file for fast scripting.\n\n" +
+                "```kotlin\nval message = \"Fast script in Eiwa\"\nprintln(message)\n```"
+        }
+        if (query == "3" || query == "03" || query == "collections") {
+            return "### Lesson 03: Sum a List\n" +
+                "Collections are immutable by default (`[1, 2, 3]`). `for` loop injects `it` implicitly.\n\n" +
+                "```kotlin\nfun main() {\n    val numbers = [1, 2, 3, 4, 5]\n    var sum = 0\n    for (numbers) {\n        sum = sum + it\n    }\n    println(\"Sum = \" + sum)\n}\n```"
+        }
+        if (query == "4" || query == "04" || query == "loops") {
+            return "### Lesson 04: Repeat and Loops\n" +
+                "`repeat(n) { ... }`, `while (cond) { ... }`, and `loop { ... }`.\n\n" +
+                "```kotlin\nfun main() {\n    repeat(3) { idx ->\n        println(\"Step \" + idx)\n    }\n}\n```"
+        }
+        if (query == "5" || query == "05" || query == "strings") {
+            return "### Lesson 05: Escape Sequences & Stringable\n" +
+                "Backslash escapes `\\n`, `\\t`, `\\\"`, and string concatenation with `+` automatically calls `toString()`.\n\n" +
+                "```kotlin\nfun main() {\n    val text = \"Line 1\\nLine 2\\tTabbed\"\n    println(text)\n}\n```"
+        }
+        if (query == "6" || query == "06" || query == "nullsafety") {
+            return "### Lesson 06: Avoid Unsafe Null\n" +
+                "Strict compile-time null safety with union type `Type?` (`Type | Null`), safe navigation `?.`, and elvis `?:`.\n\n" +
+                "```kotlin\nfun main() {\n    val name: String? = null\n    val display = name ?: \"Guest\"\n    println(display)\n}\n```"
+        }
+        if (query == "7" || query == "07" || query == "exceptions") {
+            return "### Lesson 07: Exceptions\n" +
+                "Any type implementing `Throwable` can be thrown and caught with `try-catch`.\n\n" +
+                "```kotlin\ntype AppError(val msg: String) : Throwable {\n    implement fun message(): String = msg\n}\n\nfun main() {\n    try {\n        throw AppError(\"Failed operation\")\n    } catch (e: AppError) {\n        println(\"Caught: \" + e.message())\n    }\n}\n```"
+        }
+        if (query == "8" || query == "08" || query == "maps") {
+            return "### Lesson 08: Create Maps\n" +
+                "`Map<K, V>` and `MutableMap<K, V>` with union values support.\n\n" +
+                "```kotlin\nimport { MutableMap } from \"std.collections\"\n\nfun main() {\n    val map = MutableMap<String, String>()\n    map[\"lang\"] = \"Eiwa\"\n    println(map[\"lang\"])\n}\n```"
+        }
+        if (query == "9" || query == "09" || query == "ternary") {
+            return "### Lesson 09: Ternary Operator\n" +
+                "Standard ternary expression `condition ? ifTrue : ifFalse`.\n\n" +
+                "```kotlin\nfun main() {\n    val score = 85\n    val result = score >= 60 ? \"Pass\" : \"Fail\"\n    println(result)\n}\n```"
+        }
+        if (query == "10" || query == "operators") {
+            return "### Lesson 10: Operator Overloading\n" +
+                "Types can overload operators by implementing `.plus()`, `.minus()`, `.times()`, `.div()`.\n\n" +
+                "```kotlin\ntype Vector(val x: Int, val y: Int) {\n    fun plus(other: Vector): Vector = Vector(x + other.x, y + other.y)\n}\n\nfun main() {\n    val v1 = Vector(1, 2)\n    val v2 = Vector(3, 4)\n    val v3 = v1 + v2\n    println(v3.x)\n}\n```"
+        }
+        if (query == "11" || query == "when") {
+            return "### Lesson 11: Standardize Branches (when)\n" +
+                "Pattern matching and branch execution with `when`.\n\n" +
+                "```kotlin\nfun main() {\n    val status = 200\n    val desc = when (status) {\n        200 -> \"OK\"\n        404 -> \"Not Found\"\n        else -> \"Unknown\"\n    }\n    println(desc)\n}\n```"
+        }
+        if (query == "12" || query == "compositionobject") {
+            return "### Lesson 12: Compose Types and Objects (ADR 25)\n" +
+                "Eiwa uses composition instead of inheritance. `type` implements `contract` and composes `skill` using `implement`.\n\n" +
+                "```kotlin\ncontract Greeter { fun greet(): String }\nskill Friendly : Greeter { fun salute(): String = greet() + \"! Welcome!\" }\n\ntype Host(val name: String) : Greeter + Friendly {\n    implement fun greet(): String = \"Hello, I am \" + name\n}\n\nfun main() {\n    val h = Host(\"Eiwa\")\n    println(h.salute())\n}\n```"
+        }
+        if (query == "13" || query == "tasks") {
+            return "### Lesson 13: Run Tasks (Stackless Coroutines)\n" +
+                "`task { ... }` spawns a coroutine, `.await()` pauses execution cooperatively.\n\n" +
+                "```kotlin\nimport { task, sleep } from \"std.coroutines\"\n\nfun main() {\n    val t = task {\n        sleep(50)\n        return 42\n    }\n    println(t.await())\n}\n```"
+        }
+        if (query == "14" || query == "serialization") {
+            return "### Lesson 14: Serialize Without Reflection\n" +
+                "High speed native JSON serialization via `toJson()` and `fromJson()`.\n\n" +
+                "```kotlin\nimport { Json } from \"std.json\"\n\ntype User(val id: Int, val name: String)\n\nfun main() {\n    val user = User(1, \"Alice\")\n    val json = Json.encode(user)\n    println(json)\n}\n```"
+        }
+        if (query == "15" || query == "smartcast") {
+            return "### Lesson 15: Smart Casts\n" +
+                "Checking `when (x) is Contract` or `if (x is Type)` automatically casts the variable.\n\n" +
+                "```kotlin\ncontract Shape { fun area(): Double }\ntype Circle(val r: Double) : Shape { implement fun area(): Double = 3.14 * r * r }\n\nfun printShape(s: Shape) {\n    if (s is Circle) {\n        println(\"Radius: \" + s.r)\n    }\n}\n```"
+        }
+        if (query == "16" || query == "enum") {
+            return "### Lesson 16: Model Variants with Enum\n" +
+                "Enums model discrete variants and state sets.\n\n" +
+                "```kotlin\nenum Status { PENDING, RUNNING, DONE }\n\nfun main() {\n    val s = Status.RUNNING\n    println(s.name())\n}\n```"
+        }
+        if (query == "17" || query == "generics") {
+            return "### Lesson 17: Write Once with Generics\n" +
+                "Parametric polymorphism for types and functions: `Box<T>(val item: T)`.\n\n" +
+                "```kotlin\ntype Box<T>(val value: T) {\n    fun get(): T = value\n}\n\nfun main() {\n    val b = Box<String>(\"Eiwa\")\n    println(b.get())\n}\n```"
+        }
+        if (query == "18" || query == "scopefunc") {
+            return "### Lesson 18: Scope Functions\n" +
+                "Kotlin-style scope functions: `let`, `apply`, `also`, `run`, `with`.\n\n" +
+                "```kotlin\ntype Config(var host: String = \"\", var port: Int = 0)\n\nfun main() {\n    val cfg = Config().apply {\n        host = \"localhost\"\n        port = 8080\n    }\n    println(cfg.host + \":\" + cfg.port)\n}\n```"
+        }
+        if (query == "19" || query == "cinterop") {
+            return "### Lesson 19: Talk to Native C\n" +
+                "Zero-overhead native C interop with `@Header` and `@CFunction`.\n\n" +
+                "```kotlin\n@Header(\"stdlib.h\")\nlib {\n    @CFunction fun abs(n: Int): Int\n}\n\nfun main() {\n    println(abs(-42))\n}\n```"
+        }
+        if (query == "20" || query == "mutability") {
+            return "### Lesson 20: Build, Then Freeze\n" +
+                "Convert mutable collections to immutable views using `.freeze()` or `.mut()`.\n\n" +
+                "```kotlin\nfun main() {\n    val mut = [1, 2].mut()\n    mut.add(3)\n    val frozen = mut.freeze()\n    println(frozen.size())\n}\n```"
+        }
+        if (query == "21" || query == "uuid") {
+            return "### Lesson 21: Generate Unique IDs\n" +
+                "`std.uuid` provides standard RFC 4122 v4 UUIDs.\n\n" +
+                "```kotlin\nimport { Uuid } from \"std.uuid\"\n\nfun main() {\n    val id = Uuid.v4()\n    println(id.toString())\n}\n```"
+        }
+        if (query == "22" || query == "money") {
+            return "### Lesson 22: Manage Money\n" +
+                "`std.money` provides precision-safe arithmetic for currency amounts.\n\n" +
+                "```kotlin\nimport { Money } from \"std.money\"\n\nfun main() {\n    val price = Money.usd(19.99)\n    val tax = Money.usd(1.50)\n    val total = price + tax\n    println(total.formatted())\n}\n```"
+        }
+        if (query == "23" || query == "time") {
+            return "### Lesson 23: Work with Epoch Time\n" +
+                "`std.time` handles epoch timestamps, durations and formatting.\n\n" +
+                "```kotlin\nimport { Time } from \"std.time\"\n\nfun main() {\n    val now = Time.now()\n    println(now.epochSeconds())\n}\n```"
+        }
+        if (query == "24" || query == "ulid") {
+            return "### Lesson 24: Sortable ULIDs\n" +
+                "`std.ulid` generates 128-bit lexicographically sortable identifiers.\n\n" +
+                "```kotlin\nimport { Ulid } from \"std.ulid\"\n\nfun main() {\n    val id = Ulid.generate()\n    println(id.toString())\n}\n```"
+        }
+        if (query == "25" || query == "logging") {
+            return "### Lesson 25: Structured Logging\n" +
+                "`std.log` provides structured logging with levels and metadata.\n\n" +
+                "```kotlin\nimport { Log } from \"std.log\"\n\nfun main() {\n    Log.info(\"Server starting\", [\"port\": \"8080\"])\n}\n```"
+        }
+        if (query == "26" || query == "env") {
+            return "### Lesson 26: Environment & .env\n" +
+                "`std.env` reads OS environment variables and parses local `.env` files.\n\n" +
+                "```kotlin\nimport { Env } from \"std.env\"\n\nfun main() {\n    val port = Env.get(\"PORT\") ?: \"8080\"\n    println(\"Port: \" + port)\n}\n```"
+        }
+        if (query == "27" || query == "random") {
+            return "### Lesson 27: Random & Collections\n" +
+                "`std.random` provides pseudo and cryptographically secure random values.\n\n" +
+                "```kotlin\nimport { Random } from \"std.random\"\n\nfun main() {\n    val roll = Random.int(1, 6)\n    println(\"Roll: \" + roll)\n}\n```"
+        }
+        if (query == "28" || query == "extensions") {
+            return "### Lesson 28: Extension Functions\n" +
+                "Extend existing types with custom methods without subclassing.\n\n" +
+                "```kotlin\nfun String.shout(): String = this + \"!!!\"\n\nfun main() {\n    println(\"hello\".shout())\n}\n```"
+        }
+
+        return "Lesson not found for: " + query + ". Call list_lessons to see all 28 lessons."
+    }
+}

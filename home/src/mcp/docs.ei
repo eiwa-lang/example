@@ -1,0 +1,270 @@
+type Docs() {
+} object {
+
+    fun overview(): String {
+        return "# Eiwa Language Overview\n\n" +
+            "Eiwa is a modern, statically typed, natively compiled systems language with a Kotlin-inspired syntax.\n\n" +
+            "## Key Highlights:\n" +
+            "- **Native Performance:** Compiles directly to native machine code via LLVM with Boehm GC memory management.\n" +
+            "- **Zero JVM, Zero Runtime Overhead:** No virtual machine, instant startup, lightweight binaries.\n" +
+            "- **Composition-Only Type System (ADR 25):** NO implementation inheritance (`class`, `abstract`, `open`, `override` DO NOT EXIST). Uses `type`, `contract`, `skill`, and `object` with `implement`.\n" +
+            "- **Compile-Time Null Safety & Union Types:** `T | Null` or `T?`, safe calls `?.`, elvis `?:`, and force unwrap `!!`.\n" +
+            "- **Stackless Coroutines:** Cooperative concurrency with `task {}`, `.await()`, `sleep()`, and `yield()` powered by a pure Eiwa FIFO Scheduler.\n" +
+            "- **Explicit Declarations:** Every standard API is formally declared in `src/std/` (`std.core`, `std.collections`, `std.http`, `std.json`, `std.postgres`, `arest`, `html`)."
+    }
+
+    fun section1Modules(): String {
+        return "# Section 1: Module System & Imports\n\n" +
+            "Every `.ei` file is an implicit module. Import syntax uses destructuring: `import { SymbolA, SymbolB } from \".path.to.module\"`.\n\n" +
+            "## Module Resolution Rules:\n" +
+            "| Form | Resolves Against | Example |\n" +
+            "|---|---|---|\n" +
+            "| `.x` | Project root (entry file directory) | `import { ArestBuilder } from \".arest_builder\"` |\n" +
+            "| `x` / `x.y` | Importing file's directory | `import { McpCall } from \"mcp_call\"` |\n" +
+            "| `std.x` | Standard library package | `import { Time } from \"std.time\"` |\n\n" +
+            "**Case Sensitivity:** Module paths are strictly case-sensitive on all OSes. Use `snake_case` / `lowercase` file names."
+    }
+
+    fun section2TopLevel(): String {
+        return "# Section 2: Top-Level Statements & Side-Effects\n\n" +
+            "`fun main()` is optional in the root entry file. You can write top-level statements for scripts.\n\n" +
+            "**Golden Rule of Modules:** Top-level side effects are ONLY allowed in the entry file. Imported files must be passive libraries (declaring types, functions, tests) without top-level executable statements, otherwise the compiler raises `ImportSideEffectsNotAllowed`."
+    }
+
+    fun section3Loops(): String {
+        return "# Section 3: Arrays and Loops\n\n" +
+            "- `[Type]` is sugar for immutable `List<T>`.\n" +
+            "- **Lambda-style `for` loops:**\n" +
+            "  - `for (numbers) { sum = sum + it }` (implicit `it`)\n" +
+            "  - `for (numbers) { n -> product = product * n }` (named param)\n" +
+            "  - `for (numbers) { idx, n -> println(idx.toString() + \": \" + n) }` (index & item)\n" +
+            "- `while (cond) { ... }`\n" +
+            "- Higher-order loops: `repeat(count) { it -> ... }`, `loop { ... }` (infinite), `retry(times) { attempt -> ... }`."
+    }
+
+    fun section4Strings(): String {
+        return "# Section 4: String Escape Sequences & Concatenation\n\n" +
+            "- Supported escapes: `\\\"`, `\\\\`, `\\n`, `\\r`, `\\t`, `\\b`, `\\'`.\n" +
+            "- String concatenation (`+`) automatically converts operands to String if they implement `Stringable` (`implement fun toString(): String`)."
+    }
+
+    fun section5NullSafety(): String {
+        return "# Section 5: Union Types & Compile-Time Null Safety\n\n" +
+            "- **Union Types:** `var val: String | Int = \"Eiwa\"`\n" +
+            "- **Null Safety:** `null` is a union variant (`T | Null` or `T?`). Unsafe access is a compile-time error.\n" +
+            "- **Operators:**\n" +
+            "  - Safe navigation: `user?.address?.city`\n" +
+            "  - Elvis unwrap: `val name = user?.name ?: \"Guest\"`\n" +
+            "  - Force unwrap: `val name = user!!.name`"
+    }
+
+    fun section6Exceptions(): String {
+        return "# Section 6: Exception Handling (try-catch)\n\n" +
+            "- Any type implementing `Throwable` (`implement fun message(): String`) can be thrown via `throw`.\n" +
+            "- **Standard catch:** `try { ... } catch (e: MyError) { ... }`\n" +
+            "- **Multi-catch:** `try { ... } catch (e: ErrorA | ErrorB) { ... }`\n" +
+            "- **Bare try:** `try { optionalCall() }` (swallows exceptions silently)\n" +
+            "- **Catch-all:** `try { ... } catch { println(\"Error occurred\") }`"
+    }
+
+    fun section7Collections(): String {
+        return "# Section 7: Collections (List, Map, Set)\n\n" +
+            "- `List<T>`: Immutable list `[1, 2, 3]`\n" +
+            "- `MutableList<T>`: `list.mut()` or `MutableList<T>()` with `.add()`, `.set()`, `.remove()`\n" +
+            "- `Map<K, V>`: Created via infix `of`: `val capitals = [\"Brazil\" of \"Brasília\", \"Japan\" of \"Tokyo\"]`\n" +
+            "- `MutableMap<K, V>`: `map.mut()` with `m[\"key\"] = val`\n" +
+            "- `Set<T>` / `MutableSet<T>`: Unique elements container\n" +
+            "- **Immutability Conversion (O(1)):** `.mut()` (wraps mutably) and `.freeze()` (locks as immutable snapshot)."
+    }
+
+    fun section8Ternary(): String {
+        return "# Section 8: Ternary Operators\n\n" +
+            "- **Standard Ternary:** `condition ? true_expr : false_expr` (right-associative, type inferred)\n" +
+            "- **Short Ternary:** `condition ? true_expr` (omits else branch; returns `null` if false, promoting return type to `Type?`)."
+    }
+
+    fun section9OperatorOverloading(): String {
+        return "# Section 9: Operator Overloading\n\n" +
+            "In Eiwa, operator functions MUST be explicitly tagged with the `operator` modifier:\n" +
+            "```kotlin\ntype Vector(val x: Int, val y: Int) {\n    operator fun plus(other: Vector): Vector = Vector(x + other.x, y + other.y)\n    operator fun minus(other: Vector): Vector = Vector(x - other.x, y - other.y)\n}\n```\n" +
+            "Supported operator methods: `plus` (+), `minus` (-), `times` (*), `div` (/), `rem` (%), `unaryMinus` (-x), `not` (!x)."
+    }
+
+    fun section10When(): String {
+        return "# Section 10: Pattern Matching (when Expressions)\n\n" +
+            "`when` acts as an expression or statement:\n" +
+            "```kotlin\nval label = when (status) {\n    200 -> \"OK\"\n    404 -> \"Not Found\"\n    else -> \"Unknown\"\n}\n```\n" +
+            "Supports multiple matches (`200, 201 -> ...`), ranges, contract checks (`is Contract -> ...`), and type casts."
+    }
+
+    fun typeSystem(): String {
+        return "# Section 11: Composition Type System (ADR 25)\n\n" +
+            "Eiwa eliminates traditional OOP inheritance in favor of pure composition. `class`, `open`, `abstract`, and `override` DO NOT EXIST.\n\n" +
+            "1. **`type`:** Holds state and identity. Cannot be subclassed. Implements contracts (`:`) and composes skills (`+`).\n" +
+            "2. **`contract`:** Pure API signature without state or method bodies.\n" +
+            "3. **`skill`:** Reusable behavior with method bodies. Borrows contracts via `:` which are fulfilled by the host `type`.\n" +
+            "4. **`object`:** Singleton for static state and companion namespaces (`} object {`).\n" +
+            "5. **`implement`:** Mandatory keyword inside `type` to implement contract methods or resolve ambiguities.\n\n" +
+            "```kotlin\ncontract Named { fun getName(): String }\nskill FormalGreeter : Named { fun greet(): String = \"Hello, \" + getName() }\ntype User(val name: String) : Named + FormalGreeter {\n    implement fun getName(): String = this.name\n}\n```"
+    }
+
+    fun coroutines(): String {
+        return "# Section 12: Tasks & Stackless Coroutines\n\n" +
+            "Stackless cooperative coroutines compiled into state machines (heap Continuation objects) managed by a FIFO Scheduler.\n\n" +
+            "- `task { ... }`: Spawns a background cooperative coroutine returning a `Task<T>`.\n" +
+            "- `.await()`: Cooperatively suspends until task completion and yields result.\n" +
+            "- `sleep(millis: Int)`: Non-blocking cooperative sleep.\n" +
+            "- `yield()`: Yields execution back to the scheduler queue."
+    }
+
+    fun section13Serialization(): String {
+        return "# Section 13: Reflectionless JSON Serialization\n\n" +
+            "Direct LLVM compile-time schema generation with zero runtime reflection overhead.\n\n" +
+            "```kotlin\nimport { Json } from \"std.json\"\ntype User(val id: Int, val name: String)\n\nval u = User(1, \"Alice\")\nval json = Json.encode(u)\nval decoded: User = Json.decode<User>(json)\n```"
+    }
+
+    fun section14SmartCast(): String {
+        return "# Section 14: Smart Casts & Type Inspection\n\n" +
+            "Checking `if (x is Type)` or `when (x) is Contract` automatically promotes `x` to the target type without explicit casting.\n\n" +
+            "Explicit cast syntax: `val user = value as User`."
+    }
+
+    fun section15Enums(): String {
+        return "# Section 15: Enums & Algebraic Data Types\n\n" +
+            "```kotlin\nenum HttpMethod {\n    GET, POST, PUT, DELETE\n}\n\nfun main() {\n    val m = HttpMethod.GET\n    println(m.name())\n}\n```"
+    }
+
+    fun section16Generics(): String {
+        return "# Section 16: Generics & Parametric Polymorphism\n\n" +
+            "Supports generic types `type Box<T>(val value: T)` and generic functions `fun <T> identity(item: T): T = item`."
+    }
+
+    fun section17ScopeFunctions(): String {
+        return "# Section 17: Scope Functions\n\n" +
+            "- `apply`: `obj.apply { field = 1 }` (returns receiver `this`)\n" +
+            "- `let`: `obj.let { it.transform() }` (returns lambda result)\n" +
+            "- `also`: `obj.also { log(it) }` (returns receiver)\n" +
+            "- `run`: `obj.run { compute() }` (returns lambda result)\n" +
+            "- `with`: `with(obj) { doSomething() }`"
+    }
+
+    fun section18CInterop(): String {
+        return "# Section 18: C Interoperability (cimport & lib)\n\n" +
+            "Zero-overhead native C interoperability using `@Header` and `@CFunction`:\n\n" +
+            "```kotlin\n@Header(\"math.h\")\nlib {\n    @CFunction fun sqrt(x: Double): Double\n}\n```\n" +
+            "Types map directly to C ABI: `Int` -> `int64_t`/`int32_t`, `Double` -> `double`, `Pointer` -> `void*`."
+    }
+
+    fun section19Extensions(): String {
+        return "# Section 19: Extension Functions\n\n" +
+            "Extend existing types without inheritance or wrapper allocations:\n\n" +
+            "```kotlin\nfun String.shout(): String = this + \"!\"\nfun Int.squared(): Int = this * this\n```"
+    }
+
+    fun syntaxRules(): String {
+        return "# Strict Syntax Rules for LLMs & Developers\n\n" +
+            "1. **NEVER use `class`, `open`, `abstract`, or `override`:** They do NOT exist in Eiwa.\n" +
+            "2. **ALWAYS use `type`, `contract`, `skill`, `object`, and `implement`:**\n" +
+            "   - `type MyType(...) : MyContract + MySkill { implement fun myMethod() { ... } }`\n" +
+            "3. **Variable Declarations:** Immutable with `val`, mutable with `var`.\n" +
+            "4. **No Raw Primitive Types:** Everything is a type declared in std (`Int`, `Double`, `Bool`, `String`, `Pointer`).\n" +
+            "5. **Collections:**\n" +
+            "   - `List<T>`: `val list = [1, 2, 3]`\n" +
+            "   - `MutableList<T>`: `val mutList = list.mut()` or `MutableList<T>()`\n" +
+            "   - `Map<K, V>`: `[\"key\" of \"value\"]`\n" +
+            "6. **Loops:** `for (items) { ... }`, `for (items) { it -> ... }`, `for (items) { idx, it -> ... }`, `while (cond) { ... }`, `repeat(n) { ... }`.\n" +
+            "7. **Null Safety:** `Type?` or `Type | Null`, safe call `obj?.prop`, elvis `a ?: b`, force `obj!!`.\n" +
+            "8. **Import Syntax:** `import { SymbolA, SymbolB } from \".path.to.module\"` (relative to project root with leading `.`)."
+    }
+
+    fun stdlib(): String {
+        return "# Eiwa Standard Library & Ecosystem\n\n" +
+            "## Core Packages:\n" +
+            "- `std.core`: Base types (`Int`, `Double`, `Bool`, `String`, `Pointer`, `Throwable`, `Stringable`, `Comparable`).\n" +
+            "- `std.collections`: `List`, `MutableList`, `Map`, `MutableMap`, `Set`, `MutableSet`.\n" +
+            "- `std.time`: Epoch timestamps, duration calculations, formatting.\n" +
+            "- `std.money`: High-precision financial arithmetic with currency safety.\n" +
+            "- `std.ulid` & `std.uuid`: Unique identifier generation (time-sortable ULID and standard UUID v4).\n" +
+            "- `std.log`: Structured JSON and text logging.\n" +
+            "- `std.env`: Environment variables and `.env` loader.\n" +
+            "- `std.random`: Cryptographic and pseudo-random generators.\n" +
+            "- `std.http`: HTTP client and native HTTP socket server.\n" +
+            "- `std.json`: Fast serialization and deserialization without reflection.\n" +
+            "- `std.postgres`: Asynchronous PostgreSQL driver.\n\n" +
+            "## Web & MCP Frameworks:\n" +
+            "- `arest`: Declarative REST & MCP framework for microservices.\n" +
+            "- `html`: Type-safe HTML DSL for server-rendered interfaces."
+    }
+
+    fun cli(): String {
+        return "# Eiwa CLI Toolchain Guide\n\n" +
+            "## Commands:\n" +
+            "- `eiwa init <name>`: Initializes a new Eiwa project with `eiwa.yaml`.\n" +
+            "- `eiwa add <github-repo>`: Adds a Git dependency to `eiwa.yaml`.\n" +
+            "- `eiwa run [file.ei]`: Compiles and executes code instantly with JIT/AOT.\n" +
+            "- `eiwa build [file.ei] -o <binary>`: Generates an optimized native static binary.\n" +
+            "- `eiwa test`: Executes all `test \"name\" { ... }` blocks across the project."
+    }
+
+    fun getSection(query: String): String {
+        if (query == "1" || query == "01" || query == "modules" || query == "imports") {
+            return section1Modules()
+        }
+        if (query == "2" || query == "02" || query == "toplevel") {
+            return section2TopLevel()
+        }
+        if (query == "3" || query == "03" || query == "loops" || query == "arrays") {
+            return section3Loops()
+        }
+        if (query == "4" || query == "04" || query == "strings") {
+            return section4Strings()
+        }
+        if (query == "5" || query == "05" || query == "nullsafety" || query == "unions") {
+            return section5NullSafety()
+        }
+        if (query == "6" || query == "06" || query == "exceptions" || query == "try") {
+            return section6Exceptions()
+        }
+        if (query == "7" || query == "07" || query == "collections" || query == "maps" || query == "sets") {
+            return section7Collections()
+        }
+        if (query == "8" || query == "08" || query == "ternary") {
+            return section8Ternary()
+        }
+        if (query == "9" || query == "09" || query == "operators" || query == "operator_overloading") {
+            return section9OperatorOverloading()
+        }
+        if (query == "10" || query == "when" || query == "pattern_matching") {
+            return section10When()
+        }
+        if (query == "11" || query == "types" || query == "composition" || query == "type_system") {
+            return typeSystem()
+        }
+        if (query == "12" || query == "coroutines" || query == "tasks" || query == "concurrency") {
+            return coroutines()
+        }
+        if (query == "13" || query == "serialization" || query == "json") {
+            return section13Serialization()
+        }
+        if (query == "14" || query == "smartcast" || query == "casts") {
+            return section14SmartCast()
+        }
+        if (query == "15" || query == "enums") {
+            return section15Enums()
+        }
+        if (query == "16" || query == "generics") {
+            return section16Generics()
+        }
+        if (query == "17" || query == "scopefunc" || query == "scope_functions") {
+            return section17ScopeFunctions()
+        }
+        if (query == "18" || query == "cinterop" || query == "c") {
+            return section18CInterop()
+        }
+        if (query == "19" || query == "extensions") {
+            return section19Extensions()
+        }
+
+        return overview()
+    }
+}

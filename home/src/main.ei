@@ -14,6 +14,8 @@ import { paradigms } from ".fragments.home.paradigms"
 import { start } from ".fragments.home.start"
 import { footer } from ".fragments.home.footer"
 import { packages } from ".fragments.home.packages"
+import { mcpCard } from ".fragments.home.mcp"
+import { setupMcp } from ".mcp.server"
 import { imports } from ".fragments.lessons.imports"
 import { topLevel } from ".fragments.lessons.toplevel"
 import { collections } from ".fragments.lessons.collections"
@@ -81,6 +83,7 @@ fun homePage() = html {
                     a(text = "Language", href = "#tour")
                     a(text = "Examples", href = "#examples")
                     a(text = "Packages", href = "#packages")
+                    a(text = "MCP AI", href = "#mcp")
                     a(text = "Start", href = "#start")
                     a(text = "GitHub", href = "https://github.com/eiwa-lang/eiwa", target = "_blank", rel = "noreferrer")
                 }
@@ -101,6 +104,7 @@ fun homePage() = html {
                 a(text = "Language Tour", href = "#tour", class = "mobile-link")
                 a(text = "Examples", href = "#examples", class = "mobile-link")
                 a(text = "Packages", href = "#packages", class = "mobile-link")
+                a(text = "MCP AI", href = "#mcp", class = "mobile-link")
                 a(text = "Quick Start", href = "#start", class = "mobile-link")
                 a(text = "GitHub", href = "https://github.com/eiwa-lang/eiwa", target = "_blank", rel = "noreferrer", class = "mobile-link")
                 a(text = "Get Started", href = "#start", class = "btn btn-primary mobile-menu-btn")
@@ -255,6 +259,7 @@ fun homePage() = html {
                     }
                 }
             }
+            section(id = "mcp", class = "section", hxGet = "/fragments/home/mcp", hxTrigger = "load", hxSwap = "innerHTML") {}
             section(id = "start", class = "section") {
                 div(class = "wrap code-grid") {
                     div(class = "editor") {
@@ -312,12 +317,14 @@ fun homePage() = html {
 
 arest(8081) {
     health()
+    setupMcp(this)
     routing {
         static("/", "static")
         get("/") { respond(200, "text/html", homePage()) }
         get("/fragments/home/hero") { respond(200, "text/html", hero()) }
         get("/fragments/home/why") { respond(200, "text/html", whyEiwa()) }
         get("/fragments/home/features") { respond(200, "text/html", features()) }
+        get("/fragments/home/mcp") { respond(200, "text/html", mcpCard()) }
         get("/fragments/home/paradigms") { respond(200, "text/html", paradigms()) }
         get("/fragments/home/start") { respond(200, "text/html", start()) }
         get("/fragments/home/footer") { respond(200, "text/html", footer()) }

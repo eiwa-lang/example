@@ -1,0 +1,63 @@
+import { fragment } from "html"
+
+fun mcpCard(): String {
+    return fragment {
+        div(class = "wrap") {
+            div(class = "section-heading") {
+                span("AI & IDE INTEGRATION", class = "pill")
+                h2("Connect any LLM to Eiwa via MCP")
+                p("Give Claude, Cursor, Antigravity, and other AI agents 100% native knowledge of Eiwa's syntax, composition type system, coroutines, and stdlib.")
+            }
+            div(class = "mcp-grid") {
+                div(class = "mcp-info-card") {
+                    div(class = "mcp-header") {
+                        div(class = "mcp-badge") { write("LIVE MCP ENDPOINT") }
+                        span(class = "mcp-proto") { write("JSON-RPC 2.0 / HTTP") }
+                    }
+                    div(class = "mcp-url-box") {
+                        span(class = "mcp-label") { write("Endpoint URL:") }
+                        code(class = "mcp-url") { write("https://eiwa.dev/mcp") }
+                    }
+                    div(class = "mcp-capabilities") {
+                        h3("What your AI agent learns:")
+                        ul {
+                            li {
+                                strong("Composition Type System: ")
+                                write("Strict use of type, contract, skill, object, implement (no class/override).")
+                            }
+                            li {
+                                strong("Stackless Coroutines: ")
+                                write("task {}, .await(), sleep(), yield(), and Scheduler.")
+                            }
+                            li {
+                                strong("28 Language Lessons: ")
+                                write("Direct access to all Language Tour snippets & explanations.")
+                            }
+                            li {
+                                strong("Standard Library: ")
+                                write("std.core, std.collections, std.http, std.json, std.postgres, arest, html.")
+                            }
+                        }
+                    }
+                }
+                div(class = "mcp-config-card") {
+                    div(class = "editor-bar") {
+                        div(class = "file-title") {
+                            write("claude_desktop_config.json / .cursor/mcp.json")
+                        }
+                    }
+                    pre(class = "mcp-code-block") {
+                        code(class = "language-json") {
+                            write("{\n  \"mcpServers\": {\n    \"eiwa\": {\n      \"url\": \"https://eiwa.dev/mcp\"\n    }\n  }\n}")
+                        }
+                    }
+                    div(class = "mcp-setup-hint") {
+                        p {
+                            write("Add the snippet above to your IDE's MCP configuration to enable full Eiwa language intelligence.")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,44 @@
+type ExamplesData() {
+} object {
+
+    fun list(): String {
+        return "# Functional Eiwa Examples\n\n" +
+            "- `http`: Declarative HTTP routing with arest\n" +
+            "- `html`: Type-safe HTML DSL with html builder\n" +
+            "- `tasks`: Concurrency and parallel background coroutines\n" +
+            "- `postgres`: Async database queries with std.postgres\n" +
+            "- `mcp`: Publishing MCP Tools and Resources with arest\n" +
+            "- `time`: Timestamp formatting and calculation\n" +
+            "- `money`: Precision financial arithmetic\n" +
+            "- `tests`: Native unit testing with `test \"name\" { ... }` blocks"
+    }
+
+    fun get(topic: String): String {
+        if (topic == "http") {
+            return "```kotlin\nimport { arest } from \"arest.arest\"\n\narest(8080) {\n    health()\n    routing {\n        get(\"/hello\") { respond(200, \"text/plain\", \"Hello from Eiwa!\") }\n        post(\"/echo\") { respond(200, \"application/json\", request.body) }\n    }\n}\n```"
+        }
+        if (topic == "html") {
+            return "```kotlin\nimport { html } from \"html\"\n\nfun page() = html {\n    head {\n        title(\"Eiwa App\")\n        link(rel = \"stylesheet\", href = \"/app.css\")\n    }\n    body {\n        h1(\"Welcome to Eiwa\")\n        p(\"Compiled to native machine code with zero overhead.\")\n    }\n}\n```"
+        }
+        if (topic == "tasks") {
+            return "```kotlin\nimport { task, sleep } from \"std.coroutines\"\n\nfun fetchItem(id: Int): String {\n    sleep(100)\n    return \"Item #\" + id\n}\n\nfun main() {\n    val t1 = task { fetchItem(1) }\n    val t2 = task { fetchItem(2) }\n    println(t1.await() + \" and \" + t2.await())\n}\n```"
+        }
+        if (topic == "postgres") {
+            return "```kotlin\nimport { Postgres } from \"std.postgres\"\n\nfun main() {\n    val db = Postgres.connect(\"postgresql://user:pass@localhost:5432/app\")\n    val rows = db.query(\"SELECT id, name FROM users WHERE active = $1\", [\"true\"])\n    for (rows) { r ->\n        println(r[\"name\"])\n    }\n}\n```"
+        }
+        if (topic == "mcp") {
+            return "```kotlin\nimport { arest } from \"arest.arest\"\n\narest(8080) {\n    mcp {\n        name(\"Calculator\")\n        version(\"1.0.0\")\n        tool(\"sum\") {\n            val a = arguments[\"a\"]!!.asNumber()\n            val b = arguments[\"b\"]!!.asNumber()\n            respond(a + b)\n        }\n    }\n}\n```"
+        }
+        if (topic == "time") {
+            return "```kotlin\nimport { Time, Duration } from \"std.time\"\n\nfun main() {\n    val start = Time.now()\n    val elapsed = start.elapsed()\n    println(\"Elapsed: \" + elapsed.toMillis() + \"ms\")\n}\n```"
+        }
+        if (topic == "money") {
+            return "```kotlin\nimport { Money } from \"std.money\"\n\nfun main() {\n    val subtotal = Money.brl(100.00)\n    val discount = Money.brl(15.50)\n    val total = subtotal - discount\n    println(\"Total: \" + total.formatted())\n}\n```"
+        }
+        if (topic == "tests") {
+            return "```kotlin\nfun add(a: Int, b: Int): Int = a + b\n\ntest \"addition works correctly\" {\n    assert(add(2, 3) == 5)\n    assert(add(-1, 1) == 0)\n}\n```"
+        }
+
+        return "Example not found for: " + topic + ". Available: http, html, tasks, postgres, mcp, time, money, tests."
+    }
+}

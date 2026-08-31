@@ -1,0 +1,112 @@
+import { ArestBuilder } from "arest.arest_builder"
+import { Docs } from ".mcp.docs"
+import { LessonsData } from ".mcp.lessons_data"
+import { ExamplesData } from ".mcp.examples_data"
+
+fun setupMcp(server: ArestBuilder) {
+    server.mcp {
+        name("Eiwa Language Server")
+        version("1.0.0")
+        http("/mcp")
+        instructions(
+            "Official MCP documentation and specification server for the Eiwa programming language (https://eiwa.dev).\n" +
+            "Eiwa is a statically typed, natively compiled language with Kotlin-inspired syntax.\n" +
+            "CRITICAL ARCHITECTURE RULES:\n" +
+            "1. NO class, open, abstract, or override keywords exist.\n" +
+            "2. Type system is 100% composition-based: type, contract, skill, object, implement.\n" +
+            "3. Stackless coroutines: task {} and .await().\n" +
+            "4. All APIs are explicitly declared in std/."
+        )
+
+        // Resources
+        resource("eiwa://spec/overview") {
+            respond(Docs.overview())
+        }
+
+        resource("eiwa://spec/type-system") {
+            respond(Docs.typeSystem())
+        }
+
+        resource("eiwa://spec/coroutines") {
+            respond(Docs.coroutines())
+        }
+
+        resource("eiwa://spec/syntax-rules") {
+            respond(Docs.syntaxRules())
+        }
+
+        resource("eiwa://spec/stdlib") {
+            respond(Docs.stdlib())
+        }
+
+        resource("eiwa://spec/cli") {
+            respond(Docs.cli())
+        }
+
+        resource("eiwa://spec/lessons") {
+            respond(LessonsData.list())
+        }
+
+        resource("eiwa://spec/examples") {
+            respond(ExamplesData.list())
+        }
+
+        // Tools
+        tool("list_lessons") {
+            respond(LessonsData.list())
+        }
+
+        tool("get_lesson") {
+            val query = hasArgument("lesson") ? arguments.get("lesson")!!.asString() : (hasArgument("id") ? arguments.get("id")!!.asString() : "")
+            if (query == "") {
+                error("Missing required parameter 'lesson' (e.g. '1', '12', 'tasks', 'compositionobject').")
+            } else {
+                respond(LessonsData.get(query))
+            }
+        }
+
+        tool("list_examples") {
+            respond(ExamplesData.list())
+        }
+
+        tool("get_example") {
+            val topic = hasArgument("topic") ? arguments.get("topic")!!.asString() : (hasArgument("name") ? arguments.get("name")!!.asString() : "http")
+            respond(ExamplesData.get(topic))
+        }
+
+        tool("get_doc_topic") {
+            val topic = hasArgument("topic") ? arguments.get("topic")!!.asString() : (hasArgument("section") ? arguments.get("section")!!.asString() : "overview")
+            respond(Docs.getSection(topic))
+        }
+
+        tool("get_tour_section") {
+            val section = hasArgument("section") ? arguments.get("section")!!.asString() : (hasArgument("number") ? arguments.get("number")!!.asString() : "1")
+            respond(Docs.getSection(section))
+        }
+
+        tool("get_syntax_rules") {
+            respond(Docs.syntaxRules())
+        }
+
+        // Prompts
+        prompt("eiwa_expert") {
+            respond(
+                "You are an expert systems programmer in Eiwa (https://eiwa.dev).\n" +
+                "Follow these strict language rules:\n" +
+                "1. NEVER use `class`, `open`, `abstract`, or `override`.\n" +
+                "2. ALWAYS use `type`, `contract`, `skill`, `object`, and `implement`.\n" +
+                "3. Concurrency is stackless: use `task { ... }` and `.await()`.\n" +
+                "4. Enforce strict null safety (`Type?`, `?.`, `?:`, `!!`).\n" +
+                "5. Only use standard library APIs declared in `src/std/`."
+            )
+        }
+
+        prompt("explain_concept") {
+            val topic = hasArgument("topic") ? arguments.get("topic")!!.asString() : "composition"
+            respond(
+                "Explain the concept of '" + topic + "' in the Eiwa programming language.\n" +
+                "Contrast it with other languages (Kotlin, Rust, Go, TypeScript) and provide a concise, working code example."
+            )
+        }
+    }
+}
