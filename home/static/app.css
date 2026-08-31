@@ -366,11 +366,79 @@ header {
   margin-bottom: 18px;
 }
 
+.install-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(440px, 100%);
+}
+
+.os-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.os-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #85828d;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.os-tab:hover {
+  color: #d1ceda;
+}
+
+.os-tab.active {
+  color: #f1eee9;
+  background: rgba(120, 92, 252, 0.15);
+  border-color: rgba(120, 92, 252, 0.35);
+}
+
+.terminal-os-tabs {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  gap: 4px;
+}
+
+.terminal-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #71717a;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.terminal-tab:hover {
+  color: #d4d4d8;
+}
+
+.terminal-tab.active {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.hidden {
+  display: none !important;
+}
+
 .install {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: min(420px, 100%);
+  width: 100%;
   height: 42px;
   padding: 0 12px;
   color: #a8a4b0;

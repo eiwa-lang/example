@@ -268,39 +268,76 @@ fun homePage() = html {
                                 span(class = "dot") {}
                                 write("Quick start")
                             }
+                            div(class = "terminal-os-tabs") {
+                                button(text = "macOS / Linux", id = "terminal-tab-unix", class = "terminal-tab active")
+                                button(text = "Windows", id = "terminal-tab-win", class = "terminal-tab")
+                            }
                         }
-                        div(class = "terminal") {
-                            div {
-                                span("$", class = "prompt")
-                                write(" curl -fsSL https://eiwa.dev/install.sh | sh")
+                        div(class = "terminal", id = "start-terminal-body") {
+                            div(id = "terminal-unix-commands") {
+                                div {
+                                    span("$", class = "prompt")
+                                    write(" curl -fsSL https://eiwa.dev/install.sh | sh")
+                                }
+                                div {
+                                    span("$", class = "prompt")
+                                    span(" eiwa", class = "eiwa")
+                                    write(" init my-app && cd my-app")
+                                }
+                                div {
+                                    span("$", class = "prompt")
+                                    span(" eiwa", class = "eiwa")
+                                    write(" add eiwa-lang/arest")
+                                }
+                                div {
+                                    span("$", class = "prompt")
+                                    span(" eiwa", class = "eiwa")
+                                    write(" run")
+                                }
+                                div {
+                                    span("$", class = "prompt")
+                                    span(" eiwa", class = "eiwa")
+                                    write(" test")
+                                }
+                                div {
+                                    span("$", class = "prompt")
+                                    span(" eiwa", class = "eiwa")
+                                    write(" build")
+                                }
+                            }
+                            div(id = "terminal-win-commands", class = "hidden") {
+                                div {
+                                    span("PS >", class = "prompt")
+                                    write(" irm https://eiwa.dev/install.ps1 | iex")
+                                }
+                                div {
+                                    span("PS >", class = "prompt")
+                                    span(" eiwa", class = "eiwa")
+                                    write(" init my-app; cd my-app")
+                                }
+                                div {
+                                    span("PS >", class = "prompt")
+                                    span(" eiwa", class = "eiwa")
+                                    write(" add eiwa-lang/arest")
+                                }
+                                div {
+                                    span("PS >", class = "prompt")
+                                    span(" eiwa", class = "eiwa")
+                                    write(" run")
+                                }
+                                div {
+                                    span("PS >", class = "prompt")
+                                    span(" eiwa", class = "eiwa")
+                                    write(" test")
+                                }
+                                div {
+                                    span("PS >", class = "prompt")
+                                    span(" eiwa", class = "eiwa")
+                                    write(" build")
+                                }
                             }
                             div {
-                                span("$", class = "prompt")
-                                span(" eiwa", class = "eiwa")
-                                write(" init my-app && cd my-app")
-                            }
-                            div {
-                                span("$", class = "prompt")
-                                span(" eiwa", class = "eiwa")
-                                write(" add eiwa-lang/arest")
-                            }
-                            div {
-                                span("$", class = "prompt")
-                                span(" eiwa", class = "eiwa")
-                                write(" run")
-                            }
-                            div {
-                                span("$", class = "prompt")
-                                span(" eiwa", class = "eiwa")
-                                write(" test")
-                            }
-                            div {
-                                span("$", class = "prompt")
-                                span(" eiwa", class = "eiwa")
-                                write(" build")
-                            }
-                            div {
-                                span("$", class = "prompt")
+                                span("$", class = "prompt", id = "terminal-cursor-prompt")
                                 write(" ")
                                 span("", class = "cursor")
                             }

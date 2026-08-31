@@ -1,9 +1,76 @@
 function initApp() {
+  let currentOs = "unix"; // "unix" or "win"
+
+  // Detect user operating system
+  const ua = navigator.userAgent || "";
+  const platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+  if (/Win/i.test(ua) || /Win/i.test(platform)) {
+    currentOs = "win";
+  }
+
   function highlightAll(scope) {
     const root = scope || document;
     root.querySelectorAll("pre code").forEach(function (block) {
       if (window.hljs) hljs.highlightElement(block);
     });
+  }
+
+  function setOs(os) {
+    currentOs = os;
+
+    // Update Hero install box
+    const heroPrompt = document.getElementById("hero-install-prompt");
+    const heroCode = document.getElementById("hero-install-code");
+    const heroTabUnix = document.getElementById("tab-os-unix");
+    const heroTabWin = document.getElementById("tab-os-win");
+
+    if (heroPrompt && heroCode) {
+      if (os === "win") {
+        heroPrompt.textContent = "PS >";
+        heroCode.textContent = "irm https://eiwa.dev/install.ps1 | iex";
+      } else {
+        heroPrompt.textContent = "$";
+        heroCode.textContent = "curl -fsSL https://eiwa.dev/install.sh | sh";
+      }
+    }
+    if (heroTabUnix && heroTabWin) {
+      if (os === "win") {
+        heroTabUnix.classList.remove("active");
+        heroTabWin.classList.add("active");
+      } else {
+        heroTabUnix.classList.add("active");
+        heroTabWin.classList.remove("active");
+      }
+    }
+
+    // Update Quickstart terminal
+    const terminalTabUnix = document.getElementById("terminal-tab-unix");
+    const terminalTabWin = document.getElementById("terminal-tab-win");
+    const unixLines = document.getElementById("terminal-unix-commands");
+    const winLines = document.getElementById("terminal-win-commands");
+    const cursorPrompt = document.getElementById("terminal-cursor-prompt");
+
+    if (terminalTabUnix && terminalTabWin) {
+      if (os === "win") {
+        terminalTabUnix.classList.remove("active");
+        terminalTabWin.classList.add("active");
+      } else {
+        terminalTabUnix.classList.add("active");
+        terminalTabWin.classList.remove("active");
+      }
+    }
+    if (unixLines && winLines) {
+      if (os === "win") {
+        unixLines.classList.add("hidden");
+        winLines.classList.remove("hidden");
+      } else {
+        unixLines.classList.remove("hidden");
+        winLines.classList.add("hidden");
+      }
+    }
+    if (cursorPrompt) {
+      cursorPrompt.textContent = os === "win" ? "PS >" : "$";
+    }
   }
 
   function bindTabs(selector) {
@@ -18,6 +85,17 @@ function initApp() {
           tab.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
         }
       });
+    });
+  }
+
+  function bindOsSelectors() {
+    document.body.addEventListener("click", function (e) {
+      const target = e.target;
+      if (target.id === "tab-os-unix" || target.id === "terminal-tab-unix") {
+        setOs("unix");
+      } else if (target.id === "tab-os-win" || target.id === "terminal-tab-win") {
+        setOs("win");
+      }
     });
   }
 
@@ -86,11 +164,17 @@ function initApp() {
   bindTabs(".lesson-tab");
   bindLessonRun();
   bindMobileMenu();
+  bindOsSelectors();
+  setOs(currentOs);
 
   document.body.addEventListener("click", function (event) {
     const copyBtn = event.target.closest("#copy-install");
     if (!copyBtn) return;
-    navigator.clipboard.writeText("curl -fsSL https://eiwa.dev/install.sh | sh");
+    const textToCopy = currentOs === "win"
+      ? "irm https://eiwa.dev/install.ps1 | iex"
+      : "curl -fsSL https://eiwa.dev/install.sh | sh";
+
+    navigator.clipboard.writeText(textToCopy);
     copyBtn.classList.add("copied");
     setTimeout(function () {
       copyBtn.classList.remove("copied");
@@ -99,6 +183,7 @@ function initApp() {
 
   document.body.addEventListener("htmx:afterSwap", function (event) {
     highlightAll(event.target);
+    setOs(currentOs);
   });
 }
 
@@ -107,4 +192,3 @@ if (document.readyState === "loading") {
 } else {
   initApp();
 }
-
