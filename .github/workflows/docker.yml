@@ -29,5 +29,5 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            leodouglas/eiwa-home:latest
-            leodouglas/eiwa-home:${{ github.sha }}
+            eiwac/eiwa-home:latest
+            eiwac/eiwa-home:${{ github.sha }}
