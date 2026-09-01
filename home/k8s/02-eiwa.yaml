@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: eiwa-home
-          image: leodouglas/eiwa-home:latest
+          image: eiwac/eiwa-home:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8081

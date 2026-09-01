@@ -1,5 +1,5 @@
 # Compile stage
-FROM leodouglas/eiwa AS compile
+FROM eiwac/eiwa AS compile
 WORKDIR /app
 
 COPY ./ ./

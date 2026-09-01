@@ -1,8 +1,8 @@
 build-push:
 	docker buildx build \
 	--platform linux/amd64 \
-	-t leodouglas/eiwa-home:$(shell date +%Y%m%d-%H%M) \
-	-t leodouglas/eiwa-home:latest \
+	-t eiwac/eiwa-home:$(shell date +%Y%m%d-%H%M) \
+	-t eiwac/eiwa-home:latest \
 	--push .
 
 run:
