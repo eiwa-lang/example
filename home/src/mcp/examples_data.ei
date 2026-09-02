@@ -13,19 +13,171 @@ object ExamplesData {
 
     fun get(topic: String): String {
         if (topic == "http") {
-            return "```kotlin\nimport { arest } from \"arest.arest\"\n\narest(8080) {\n    health()\n    routing {\n        get(\"/hello\") { respond(200, \"text/plain\", \"Hello from Eiwa!\") }\n        post(\"/echo\") { respond(200, \"application/json\", request.body) }\n    }\n}\n```"
+            return "## HTTP Server with arest\n\n" +
+                "Declarative routing, typed JSON responses, and a health check in one compact server.\n\n" +
+                "### 1. Declare the dependency (eiwa.yaml)\n\n" +
+                "```yaml\n" +
+                "name: api\n" +
+                "version: 0.1.0\n\n" +
+                "dependencies:\n" +
+                "  arest:\n" +
+                "    github: eiwa-lang/arest\n" +
+                "    branch: main\n" +
+                "```\n\n" +
+                "### 2. Server (http.ei)\n\n" +
+                "```kotlin\n" +
+                "import { arest } from \"arest.arest\"\n" +
+                "import { MutableMap } from \"std.collections\"\n\n" +
+                "arest(8080) {\n" +
+                "    health()\n\n" +
+                "    routing {\n" +
+                "        get(\"/hello\") {\n" +
+                "            respondText(\"Hello from Eiwa!\")\n" +
+                "        }\n\n" +
+                "        get(\"/user\") {\n" +
+                "            val body = MutableMap<String, String>()\n" +
+                "            body.put(\"name\", \"Ana\")\n" +
+                "            body.put(\"role\", \"admin\")\n" +
+                "            respondJson(body.freeze().toJson())\n" +
+                "        }\n\n" +
+                "        post(\"/echo\") {\n" +
+                "            respondJson(request.body)\n" +
+                "        }\n" +
+                "    }\n" +
+                "}\n" +
+                "```\n\n" +
+                "### 3. Run and test\n\n" +
+                "```bash\n" +
+                "eiwa run\n" +
+                "curl http://localhost:8080/hello\n" +
+                "curl http://localhost:8080/user\n" +
+                "```\n\n" +
+                "Routes are plain functions over ApplicationCall: respond, respondText, respondJson, respondHtml. Static files and health checks are built in."
         }
         if (topic == "html") {
-            return "```kotlin\nimport { html } from \"html\"\n\nfun page() = html {\n    head {\n        title(\"Eiwa App\")\n        link(rel = \"stylesheet\", href = \"/app.css\")\n    }\n    body {\n        h1(\"Welcome to Eiwa\")\n        p(\"Compiled to native machine code with zero overhead.\")\n    }\n}\n```"
+            return "## HTML DSL with the html package\n\n" +
+                "Build pages with a declarative, type-safe DSL — no string templates.\n\n" +
+                "### 1. Declare the dependencies (eiwa.yaml)\n\n" +
+                "```yaml\n" +
+                "name: site\n" +
+                "version: 0.1.0\n\n" +
+                "dependencies:\n" +
+                "  html:\n" +
+                "    github: eiwa-lang/html\n" +
+                "    branch: main\n" +
+                "  arest:\n" +
+                "    github: eiwa-lang/arest\n" +
+                "    branch: main\n" +
+                "```\n\n" +
+                "### 2. Page (page.ei)\n\n" +
+                "```kotlin\n" +
+                "import { html } from \"html\"\n" +
+                "import { arest } from \"arest.arest\"\n\n" +
+                "fun page(): String = html {\n" +
+                "    head {\n" +
+                "        title(\"Eiwa App\")\n" +
+                "    }\n" +
+                "    body {\n" +
+                "        h1(\"Welcome to Eiwa\")\n" +
+                "        ul {\n" +
+                "            li { write(\"Native performance\") }\n" +
+                "            li { write(\"Strict null safety\") }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}\n\n" +
+                "arest(8080) {\n" +
+                "    routing {\n" +
+                "        get(\"/\") { respond(200, \"text/html\", page()) }\n" +
+                "    }\n" +
+                "}\n" +
+                "```\n\n" +
+                "### 3. Run\n\n" +
+                "```bash\n" +
+                "eiwa run\n" +
+                "```\n\n" +
+                "The html builder escapes attributes automatically and returns a ready-to-serve String."
         }
         if (topic == "tasks") {
             return "```kotlin\nimport { task, sleep } from \"std.coroutines\"\n\nfun fetchItem(id: Int): String {\n    sleep(100)\n    return \"Item #\" + id\n}\n\nfun main() {\n    val t1 = task { fetchItem(1) }\n    val t2 = task { fetchItem(2) }\n    println(t1.await() + \" and \" + t2.await())\n}\n```"
         }
         if (topic == "postgres") {
-            return "```kotlin\nimport { Postgres } from \"std.postgres\"\n\nfun main() {\n    val db = Postgres.connect(\"postgresql://user:pass@localhost:5432/app\")\n    val rows = db.query(\"SELECT id, name FROM users WHERE active = $1\", [\"true\"])\n    for (rows) { r ->\n        println(r[\"name\"])\n    }\n}\n```"
+            return "## PostgreSQL Native Driver\n\n" +
+                "Direct native connection and parameterized queries — no ORM.\n\n" +
+                "### 1. Declare the dependency (eiwa.yaml)\n\n" +
+                "```yaml\n" +
+                "name: users\n" +
+                "version: 0.1.0\n\n" +
+                "dependencies:\n" +
+                "  postgres:\n" +
+                "    github: eiwa-lang/postgres\n" +
+                "    branch: main\n" +
+                "```\n\n" +
+                "### 2. Query (database.ei)\n\n" +
+                "```kotlin\n" +
+                "import { Postgres } from \"postgres\"\n\n" +
+                "val db = Postgres.connect(\"postgres://user:pass@localhost:5432/mydb\")\n\n" +
+                "val result = db.query(\"SELECT id, name, email FROM users WHERE active = $1\", [\"true\"])\n\n" +
+                "for (result.rows()) {\n" +
+                "    println(\"User: \" + it.string(\"name\") + \" <\" + it.string(\"email\") + \">\")\n" +
+                "}\n" +
+                "```\n\n" +
+                "### 3. Run\n\n" +
+                "```bash\n" +
+                "eiwa run\n" +
+                "```\n\n" +
+                "Rows expose typed accessors: string(name), int(name), double(name), bool(name). Queries are parameterized — no string concatenation."
         }
         if (topic == "mcp") {
-            return "```kotlin\nimport { arest } from \"arest.arest\"\nimport { Argument, JsonType } from \"arest.mcp.mcp_builder\"\n\narest(8080) {\n    mcp {\n        name(\"Calculator\")\n        version(\"1.0.0\")\n        tool(\"sum\", description = \"Soma dois números\", arguments = [\n            Argument(\"a\", JsonType.INTEGER, \"Primeiro número\", true),\n            Argument(\"b\", JsonType.INTEGER, \"Segundo número\", true)\n        ]) {\n            val a = arguments.get(\"a\")!!.asNumber()\n            val b = arguments.get(\"b\")!!.asNumber()\n            respond((a + b).toString())\n        }\n    }\n}\n```"
+            return "## MCP Server with arest\n\n" +
+                "arest publishes MCP tools, resources, and prompts over HTTP/JSON-RPC — no extra server needed. " +
+                "This example builds a Calculator tool with declared argument schemas that MCP clients render automatically.\n\n" +
+                "### 1. Declare the dependency (eiwa.yaml)\n\n" +
+                "```yaml\n" +
+                "name: mcp-app\n" +
+                "version: 0.1.0\n\n" +
+                "dependencies:\n" +
+                "  arest:\n" +
+                "    github: eiwa-lang/arest\n" +
+                "    branch: main\n" +
+                "```\n\n" +
+                "### 2. Server (mcp.ei)\n\n" +
+                "```kotlin\n" +
+                "import { arest } from \"arest.arest\"\n" +
+                "import { Argument, JsonType } from \"arest.mcp.mcp_builder\"\n\n" +
+                "arest(8080) {\n" +
+                "    mcp {\n" +
+                "        name(\"Calculator\")\n" +
+                "        version(\"1.0.0\")\n" +
+                "        instructions(\"Soma dois números e retorna o total.\")\n\n" +
+                "        tool(\"sum\", description = \"Soma dois números\", arguments = [\n" +
+                "            Argument(\"a\", JsonType.INTEGER, \"Primeiro número\"),\n" +
+                "            Argument(\"b\", JsonType.INTEGER, \"Segundo número\")\n" +
+                "        ]) {\n" +
+                "            val a = arguments.get(\"a\")!!.asNumber()\n" +
+                "            val b = arguments.get(\"b\")!!.asNumber()\n" +
+                "            respond(a + b)\n" +
+                "        }\n\n" +
+                "        resource(\"calc://historico\") {\n" +
+                "            respond(\"Nenhum cálculo ainda\")\n" +
+                "        }\n\n" +
+                "        prompt(\"calculadora\") {\n" +
+                "            respond(\"Você é uma calculadora. Use a tool 'sum' para somar números.\")\n" +
+                "        }\n" +
+                "    }\n" +
+                "}\n" +
+                "```\n\n" +
+                "### 3. Run\n\n" +
+                "```bash\n" +
+                "eiwa run\n" +
+                "```\n\n" +
+                "### 4. Test the endpoint\n\n" +
+                "```bash\n" +
+                "curl -s -X POST http://localhost:8080/mcp \\\n" +
+                "  -H \"Content-Type: application/json\" \\\n" +
+                "  -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{}}'\n" +
+                "```\n\n" +
+                "The MCP endpoint is served at http://localhost:8080/mcp. Point Claude, Cursor, or any MCP client at it — " +
+                "tools/list returns the declared schema (type, required, description) so clients render the arguments and call tools/call."
         }
         if (topic == "time") {
             return "```kotlin\nimport { Time, Duration } from \"std.time\"\n\nfun main() {\n    val start = Time.now()\n    val elapsed = start.elapsed()\n    println(\"Elapsed: \" + elapsed.toMillis() + \"ms\")\n}\n```"

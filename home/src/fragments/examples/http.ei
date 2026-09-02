@@ -6,17 +6,31 @@ fun httpExample(): String {
             div(class = "editor-bar") {
                 div(class = "file-title") {
                     img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
-                    write("http.ei")
+                    write("eiwa.yaml + http.ei")
                 }
             }
             div(class = "editor-content") {
-            h3("JSON routes with Arest")
-            p("Return map-based JSON and serialize typed objects in one compact server.")
-            pre {
-                code(class = "language-kotlin") {
-                    write("import { arest } from \"arest.arest\"\n\narest(8082) {\n    routing {\n        get(\"/map\") {\n            val body = MutableMap<String, String>()\n            body[\"content\"] = \"Welcome to Eiwa!\"\n            body[\"page\"] = request.queries[\"page\"] ?: \"home\"\n\n            respond(200, \"application/json\", body.toJson())\n        }\n\n        get(\"/json\") {\n            val addr = Address(\"Sao Paulo\", \"01000-000\")\n            val person = Person(\"Ana\", 30, addr, date(1987, 10, 10), [\"friend\", \"coder\"])\n\n            respond(200, \"application/json\", person.toJson())\n        }\n    }\n}")
+                h3("HTTP routes with arest")
+                p("Declarative routing, typed JSON responses, and a health check in one compact server. Declare the arest dependency once in eiwa.yaml, then run.")
+                p { strong("1. eiwa.yaml — declare the dependency") }
+                pre {
+                    code(class = "language-yaml") {
+                        write("name: api\nversion: 0.1.0\n\ndependencies:\n  arest:\n    github: eiwa-lang/arest\n    branch: main")
+                    }
                 }
-            }
+                p { strong("2. http.ei — the server") }
+                pre {
+                    code(class = "language-kotlin") {
+                        write("import { arest } from \"arest.arest\"\nimport { MutableMap } from \"std.collections\"\n\narest(8080) {\n    health()\n\n    routing {\n        get(\"/hello\") {\n            respondText(\"Hello from Eiwa!\")\n        }\n\n        get(\"/user\") {\n            val body = MutableMap<String, String>()\n            body.put(\"name\", \"Ana\")\n            body.put(\"role\", \"admin\")\n            respondJson(body.freeze().toJson())\n        }\n\n        post(\"/echo\") {\n            respondJson(request.body)\n        }\n    }\n}")
+                    }
+                }
+                p { strong("3. Run and test") }
+                pre {
+                    code(class = "language-bash") {
+                        write("$ eiwa run\n[Arest] Server listening on http://localhost:8080 ...\n\n$ curl http://localhost:8080/hello\nHello from Eiwa!\n\n$ curl http://localhost:8080/user\n{\"name\":\"Ana\",\"role\":\"admin\"}\n\n$ curl -X POST http://localhost:8080/echo -d '{\"oi\":\"mundo\"}'\n{\"oi\":\"mundo\"}")
+                    }
+                }
+                p("Routes are plain functions over ApplicationCall: respond, respondText, respondJson, respondHtml — plus static files and health checks built in.")
             }
         }
     }

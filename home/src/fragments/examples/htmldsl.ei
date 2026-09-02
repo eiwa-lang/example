@@ -6,17 +6,31 @@ fun htmlExample(): String {
             div(class = "editor-bar") {
                 div(class = "file-title") {
                     img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
-                    write("html.ei")
+                    write("eiwa.yaml + page.ei")
                 }
             }
             div(class = "editor-content") {
-            h3("HTML DSL")
-            p("Build pages with a declarative DSL — no string templates.")
-            pre {
-                code(class = "language-kotlin") {
-                    write("import { html } from \"html\"\n\nval page = html {\n    head {\n        title(\"Title\")\n    }\n    body {\n        h1(\"Welcome to Eiwa!\")\n        ul {\n            li(\"Native performance\")\n            li(\"Strict null safety\")\n        }\n    }\n}\n\n// serve with the Arest HTTP server\nrespond(200, \"text/html\", page)")
+                h3("HTML DSL")
+                p("Build pages with a declarative, type-safe DSL — no string templates. Compose head, body, and elements with builders.")
+                p { strong("1. eiwa.yaml — declare the dependencies") }
+                pre {
+                    code(class = "language-yaml") {
+                        write("name: site\nversion: 0.1.0\n\ndependencies:\n  html:\n    github: eiwa-lang/html\n    branch: main\n  arest:\n    github: eiwa-lang/arest\n    branch: main")
+                    }
                 }
-            }
+                p { strong("2. page.ei — the page") }
+                pre {
+                    code(class = "language-kotlin") {
+                        write("import { html } from \"html\"\nimport { arest } from \"arest.arest\"\n\nfun page(): String = html {\n    head {\n        title(\"Eiwa App\")\n        link(rel = \"stylesheet\", href = \"/app.css\")\n    }\n    body {\n        h1(\"Welcome to Eiwa\")\n        p(\"Compiled to native machine code with zero overhead.\")\n        ul {\n            li { write(\"Native performance\") }\n            li { write(\"Strict null safety\") }\n        }\n    }\n}\n\narest(8080) {\n    routing {\n        get(\"/\") { respond(200, \"text/html\", page()) }\n    }\n}")
+                    }
+                }
+                p { strong("3. Run and test") }
+                pre {
+                    code(class = "language-bash") {
+                        write("$ eiwa run\n[Arest] Server listening on http://localhost:8080 ...\n\n$ curl http://localhost:8080/\n<html><head><title>Eiwa App</title></head><body><h1>Welcome to Eiwa</h1><p>Compiled to native machine code with zero overhead.</p>...")
+                    }
+                }
+                p("The html builder escapes attribute values automatically and returns a ready-to-serve String.")
             }
         }
     }

@@ -6,17 +6,31 @@ fun postgresExample(): String {
             div(class = "editor-bar") {
                 div(class = "file-title") {
                     img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
-                    write("database.ei")
+                    write("eiwa.yaml + database.ei")
                 }
             }
             div(class = "editor-content") {
-            h3("PostgreSQL Native Driver")
-            p("Direct native connection pooling and parameterized query execution.")
-            pre {
-                code(class = "language-kotlin") {
-                    write("import { Postgres, Pool } from \"postgres\"\n\nval pool = Pool(\"postgres://user:pass@localhost:5432/mydb\", maxConnections = 10)\n\nval users = pool.query(\"SELECT id, name, email FROM users WHERE active = $1\", [true])\n\nfor (users) {\n    println(\"User: \" + it.get(\"name\") + \" <\" + it.get(\"email\") + \">\")\n}")
+                h3("PostgreSQL native driver")
+                p("Direct native connection with parameterized queries — no ORM. Declare the postgres dependency once in eiwa.yaml, then run.")
+                p { strong("1. eiwa.yaml — declare the dependency") }
+                pre {
+                    code(class = "language-yaml") {
+                        write("name: users\nversion: 0.1.0\n\ndependencies:\n  postgres:\n    github: eiwa-lang/postgres\n    branch: main")
+                    }
                 }
-            }
+                p { strong("2. database.ei — the query") }
+                pre {
+                    code(class = "language-kotlin") {
+                        write("import { Postgres } from \"postgres\"\n\nval db = Postgres.connect(\"postgres://user:pass@localhost:5432/mydb\")\n\nval result = db.query(\"SELECT id, name, email FROM users WHERE active = $1\", [\"true\"])\n\nfor (result.rows()) {\n    println(\"User: \" + it.string(\"name\") + \" <\" + it.string(\"email\") + \">\")\n}")
+                    }
+                }
+                p { strong("3. Run") }
+                pre {
+                    code(class = "language-bash") {
+                        write("$ eiwa run\nUser: Ana <ana@eiwa.dev>\nUser: Leo <leo@eiwa.dev>")
+                    }
+                }
+                p("Rows expose typed accessors: string(name), int(name), double(name), bool(name). Queries are parameterized — no string concatenation.")
             }
         }
     }

@@ -6,17 +6,31 @@ fun mcpExample(): String {
             div(class = "editor-bar") {
                 div(class = "file-title") {
                     img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
-                    write("mcp.ei")
+                    write("eiwa.yaml + mcp.ei")
                 }
             }
             div(class = "editor-content") {
-            h3("MCP tool in Arest")
-            p("The same syntax can publish a tool consumed by MCP agents and clients.")
-            pre {
-                code(class = "language-kotlin") {
-                    write("import { arest } from \"arest.arest\"\nimport { Argument, JsonType } from \"arest.mcp.mcp_builder\"\n\narest(8080) {\n    mcp {\n        name(\"Calculator\")\n        version(\"1.0.0\")\n        tool(\"sum\", description = \"Soma dois números\", arguments = [\n            Argument(\"a\", JsonType.INTEGER, \"Primeiro número\", true),\n            Argument(\"b\", JsonType.INTEGER, \"Segundo número\", true)\n        ]) {\n            val a = arguments.get(\"a\")!!.asNumber()\n            val b = arguments.get(\"b\")!!.asNumber()\n            respond((a + b).toString())\n        }\n    }\n}")
+                h3("MCP tools in arest")
+                p("No extra server: arest publishes tools, resources, and prompts over HTTP/JSON-RPC. Declare the arest dependency once in eiwa.yaml, then expose typed tool schemas that MCP clients (Claude, Cursor, ...) render automatically.")
+                p { strong("1. eiwa.yaml — declare the dependency") }
+                pre {
+                    code(class = "language-yaml") {
+                        write("name: mcp-app\nversion: 0.1.0\n\ndependencies:\n  arest:\n    github: eiwa-lang/arest\n    branch: main")
+                    }
                 }
-            }
+                p { strong("2. mcp.ei — the server") }
+                pre {
+                    code(class = "language-kotlin") {
+                        write("import { arest } from \"arest.arest\"\nimport { Argument, JsonType } from \"arest.mcp.mcp_builder\"\n\narest(8080) {\n    mcp {\n        name(\"Calculator\")\n        version(\"1.0.0\")\n        instructions(\"Soma dois números e retorna o total.\")\n\n        tool(\"sum\", description = \"Soma dois números\", arguments = [\n            Argument(\"a\", JsonType.INTEGER, \"Primeiro número\"),\n            Argument(\"b\", JsonType.INTEGER, \"Segundo número\")\n        ]) {\n            val a = arguments.get(\"a\")!!.asNumber()\n            val b = arguments.get(\"b\")!!.asNumber()\n            respond(a + b)\n        }\n\n        resource(\"calc://historico\") {\n            respond(\"Nenhum cálculo ainda\")\n        }\n\n        prompt(\"calculadora\") {\n            respond(\"Você é uma calculadora. Use a tool 'sum' para somar números.\")\n        }\n    }\n}")
+                    }
+                }
+                p { strong("3. Run and test") }
+                pre {
+                    code(class = "language-bash") {
+                        write("$ eiwa run\n[Arest] Server listening on http://localhost:8080 ...\n\n$ curl -s -X POST http://localhost:8080/mcp \\\n    -H \"Content-Type: application/json\" \\\n    -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{}}'")
+                    }
+                }
+                p("The MCP endpoint is served at /mcp. Clients call tools/list and render the declared arguments (type, required, description), then call tools/call to invoke the handler.")
             }
         }
     }
