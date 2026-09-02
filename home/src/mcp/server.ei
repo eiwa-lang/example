@@ -1,4 +1,5 @@
 import { ArestBuilder } from "arest.arest_builder"
+import { Argument, JsonType } from "arest.mcp.mcp_builder"
 import { Docs } from ".mcp.docs"
 import { LessonsData } from ".mcp.lessons_data"
 import { ExamplesData } from ".mcp.examples_data"
@@ -56,7 +57,10 @@ fun setupMcp(server: ArestBuilder) {
             respond(LessonsData.list())
         }
 
-        tool("get_lesson") {
+        tool("get_lesson", description = "Get a language tour lesson by number or name", arguments = [
+            Argument("lesson", JsonType.STRING, "Lesson number, slug, or name (e.g. '1', '12', 'tasks', 'compositionobject')", true),
+            Argument("id", JsonType.STRING, "Alias for lesson (kept for compatibility)", false)
+        ]) {
             val query = hasArgument("lesson") ? arguments.get("lesson")!!.asString() : (hasArgument("id") ? arguments.get("id")!!.asString() : "")
             if (query == "") {
                 error("Missing required parameter 'lesson' (e.g. '1', '12', 'tasks', 'compositionobject').")
@@ -69,17 +73,26 @@ fun setupMcp(server: ArestBuilder) {
             respond(ExamplesData.list())
         }
 
-        tool("get_example") {
+        tool("get_example", description = "Get a functional example by topic", arguments = [
+            Argument("topic", JsonType.STRING, "Example topic (http, html, mcp, tasks, postgres, money, tests, time)", true),
+            Argument("name", JsonType.STRING, "Alias for topic (kept for compatibility)", false)
+        ]) {
             val topic = hasArgument("topic") ? arguments.get("topic")!!.asString() : (hasArgument("name") ? arguments.get("name")!!.asString() : "http")
             respond(ExamplesData.get(topic))
         }
 
-        tool("get_doc_topic") {
+        tool("get_doc_topic", description = "Get a documentation section", arguments = [
+            Argument("topic", JsonType.STRING, "Documentation section (overview, type-system, coroutines, syntax-rules, stdlib, cli)", true),
+            Argument("section", JsonType.STRING, "Alias for topic (kept for compatibility)", false)
+        ]) {
             val topic = hasArgument("topic") ? arguments.get("topic")!!.asString() : (hasArgument("section") ? arguments.get("section")!!.asString() : "overview")
             respond(Docs.getSection(topic))
         }
 
-        tool("get_tour_section") {
+        tool("get_tour_section", description = "Get a language tour section by number", arguments = [
+            Argument("section", JsonType.STRING, "Tour section number (1-28)", true),
+            Argument("number", JsonType.STRING, "Alias for section (kept for compatibility)", false)
+        ]) {
             val section = hasArgument("section") ? arguments.get("section")!!.asString() : (hasArgument("number") ? arguments.get("number")!!.asString() : "1")
             respond(Docs.getSection(section))
         }
