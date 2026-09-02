@@ -14,7 +14,7 @@ fun mcpExample(): String {
             p("The same syntax can publish a tool consumed by MCP agents and clients.")
             pre {
                 code(class = "language-kotlin") {
-                    write("import { arest } from \"arest.arest\"\n\narest(8080) {\n    mcp {\n        name(\"Calculator\")\n        version(\"1.0.0\")\n        tool(\"sum\") {\n            val a = arguments[\"a\"]!!.asNumber()\n            val b = arguments[\"b\"]!!.asNumber()\n            respond(a + b)\n        }\n    }\n}")
+                    write("import { arest } from \"arest.arest\"\nimport { Argument, JsonType } from \"arest.mcp.mcp_builder\"\n\narest(8080) {\n    mcp {\n        name(\"Calculator\")\n        version(\"1.0.0\")\n        tool(\"sum\", description = \"Soma dois números\", arguments = [\n            Argument(\"a\", JsonType.INTEGER, \"Primeiro número\", true),\n            Argument(\"b\", JsonType.INTEGER, \"Segundo número\", true)\n        ]) {\n            val a = arguments.get(\"a\")!!.asNumber()\n            val b = arguments.get(\"b\")!!.asNumber()\n            respond((a + b).toString())\n        }\n    }\n}")
                 }
             }
             }
