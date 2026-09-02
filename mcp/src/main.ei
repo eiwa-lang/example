@@ -1,0 +1,41 @@
+import { arest } from "arest.arest"
+import { Json } from "std.json"
+
+// MCP (Model Context Protocol) server example using arest.
+// Run with `eiwa run`, then connect any MCP client to http://localhost:8082/mcp
+// (e.g. the MCP Inspector, or `mcp --transport http` in Claude Code / opencode).
+
+type DbConfig(val host: String, val port: Int) : Serializable + Json
+
+arest(8082) {
+    mcp {
+        name("Calculator")
+        version("1.0.0")
+        http("/mcp")
+        instructions(
+            "Example MCP server built with arest. Exposes one tool (sum), " +
+            "one resource (config://database) and one prompt (review)."
+        )
+
+        // Tool: validates its arguments and reports errors via error() instead
+        // of crashing when the client omits a required parameter.
+        tool("sum") {
+            if (hasArgument("a") && hasArgument("b")) {
+                val a = arguments.get("a")!!.asNumber()
+                val b = arguments.get("b")!!.asNumber()
+                respond(a + b)
+            } else {
+                error("Missing required arguments 'a' and 'b' (numbers).")
+            }
+        }
+
+        // Resource: structured content serialized with the std Json skill.
+        resource("config://database") {
+            respond(DbConfig("localhost", 5432).toJson())
+        }
+
+        prompt("review") {
+            respond("Review this code for bugs and suggestions.")
+        }
+    }
+}

@@ -21,6 +21,7 @@ type Person(
     val tags: List<String>
 ) : Serializable + Json + Yaml
 type User(val id: Int, val name: String) : Serializable + Json + Yaml
+type DbConfig(val host: String, val port: Int) : Serializable + Json
 
 fun main() {
     printWelcome()
@@ -103,13 +104,17 @@ fun main() {
             http("/mcp")
 
             tool("sum") {
-                val a = arguments["a"]!!.asNumber()
-                val b = arguments["b"]!!.asNumber()
-                respond(a + b)
+                if (hasArgument("a") && hasArgument("b")) {
+                    val a = arguments.get("a")!!.asNumber()
+                    val b = arguments.get("b")!!.asNumber()
+                    respond(a + b)
+                } else {
+                    error("Missing required arguments 'a' and 'b' (numbers).")
+                }
             }
 
             resource("config://database") {
-                respond("{\"host\":\"localhost\",\"port\":5432}")
+                respond(DbConfig("localhost", 5432).toJson())
             }
 
             prompt("review") {
