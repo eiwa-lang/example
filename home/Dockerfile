@@ -1,5 +1,6 @@
 # Compile stage
 FROM eiwac/eiwa AS compile
+ARG EIWA_CACHE_BUST=1
 WORKDIR /app
 
 COPY ./ ./
