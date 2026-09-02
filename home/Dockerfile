@@ -1,6 +1,7 @@
 # Compile stage
+# eiwac/eiwa:v0.0.50 includes the std.http body-read fix (MCP behind Traefik).
 FROM eiwac/eiwa AS compile
-ARG EIWA_CACHE_BUST=1
+ARG EIWA_CACHE_BUST=2
 WORKDIR /app
 
 COPY ./ ./
