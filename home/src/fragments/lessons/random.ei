@@ -6,7 +6,7 @@ fun randomLesson(): String {
             p("Generate numbers, percentages, and pick elements from collections.", class = "text-slate-300")
             pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
                 code(class = "language-kotlin") {
-                    write("import { Random } from \"std.random\"\n\nval dice = Random.nextInt(1, 6)\nprintln(\"Roll: \" + dice)\n\nval team = [\"Alice\", \"Bob\", \"Charlie\"]\nval lucky = Random.choice(team)\nprintln(\"Winner: \" + lucky)")
+                    write("import { Random } from \"std.random\"\n\nval dice = Random.nextInt(1, 6)\nprintln(\"Roll: \$dice\")\n\nval team = [\"Alice\", \"Bob\", \"Charlie\"]\nval lucky = Random.choice(team)\nprintln(\"Winner: \$lucky\")")
                 }
             }
         }

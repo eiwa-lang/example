@@ -150,8 +150,8 @@ fun homePage() = html {
                                             write(" (numbers) {\n        ")
                                             span("println", class = "tok-fn")
                                             write("(")
-                                            span("\"n = \"", class = "tok-str")
-                                            write(" + it)\n    }\n}")
+                                            span("\"n = \$it\"", class = "tok-str")
+                                            write(")\n    }\n}")
                                         }
                                     }
                                 }

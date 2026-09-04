@@ -54,12 +54,12 @@ type LessonsData() {
         if (query == "3" || query == "03" || query == "collections") {
             return "### Lesson 03: Sum a List\n" +
                 "Collections are immutable by default (`[1, 2, 3]`). `for` loop injects `it` implicitly.\n\n" +
-                "```kotlin\nfun main() {\n    val numbers = [1, 2, 3, 4, 5]\n    var sum = 0\n    for (numbers) {\n        sum = sum + it\n    }\n    println(\"Sum = \" + sum)\n}\n```"
+                "```kotlin\nfun main() {\n    val numbers = [1, 2, 3, 4, 5]\n    var sum = 0\n    for (numbers) {\n        sum = sum + it\n    }\n    println(\"Sum = \$sum\")\n}\n```"
         }
         if (query == "4" || query == "04" || query == "loops") {
             return "### Lesson 04: Repeat and Loops\n" +
                 "`repeat(n) { ... }`, `while (cond) { ... }`, and `loop { ... }`.\n\n" +
-                "```kotlin\nfun main() {\n    repeat(3) { idx ->\n        println(\"Step \" + idx)\n    }\n}\n```"
+                "```kotlin\nfun main() {\n    repeat(3) { idx ->\n        println(\"Step \$idx\")\n    }\n}\n```"
         }
         if (query == "5" || query == "05" || query == "strings") {
             return "### Lesson 05: Escape Sequences & Stringable\n" +
@@ -74,7 +74,7 @@ type LessonsData() {
         if (query == "7" || query == "07" || query == "exceptions") {
             return "### Lesson 07: Exceptions\n" +
                 "Any type implementing `Throwable` can be thrown and caught with `try-catch`.\n\n" +
-                "```kotlin\ntype AppError(val msg: String) : Throwable {\n    implement fun message(): String = msg\n}\n\nfun main() {\n    try {\n        throw AppError(\"Failed operation\")\n    } catch (e: AppError) {\n        println(\"Caught: \" + e.message())\n    }\n}\n```"
+                "```kotlin\ntype AppError(val msg: String) : Throwable {\n    implement fun message(): String = msg\n}\n\nfun main() {\n    try {\n        throw AppError(\"Failed operation\")\n    } catch (e: AppError) {\n        println(\"Caught: \${e.message()}\")\n    }\n}\n```"
         }
         if (query == "8" || query == "08" || query == "maps") {
             return "### Lesson 08: Create Maps\n" +
@@ -99,7 +99,7 @@ type LessonsData() {
         if (query == "12" || query == "compositionobject") {
             return "### Lesson 12: Compose Types and Objects (ADR 25)\n" +
                 "Eiwa uses composition instead of inheritance. `type` implements `contract` and composes `skill` using `implement`.\n\n" +
-                "```kotlin\ncontract Greeter { fun greet(): String }\nskill Friendly : Greeter { fun salute(): String = greet() + \"! Welcome!\" }\n\ntype Host(val name: String) : Greeter + Friendly {\n    implement fun greet(): String = \"Hello, I am \" + name\n}\n\nfun main() {\n    val h = Host(\"Eiwa\")\n    println(h.salute())\n}\n```"
+                "```kotlin\ncontract Greeter { fun greet(): String }\nskill Friendly : Greeter { fun salute(): String = \"\${greet()}! Welcome!\" }\n\ntype Host(val name: String) : Greeter + Friendly {\n    implement fun greet(): String = \"Hello, I am \$name\"\n}\n\nfun main() {\n    val h = Host(\"Eiwa\")\n    println(h.salute())\n}\n```"
         }
         if (query == "13" || query == "tasks") {
             return "### Lesson 13: Run Tasks (Stackless Coroutines)\n" +
@@ -114,7 +114,7 @@ type LessonsData() {
         if (query == "15" || query == "smartcast") {
             return "### Lesson 15: Smart Casts\n" +
                 "Checking `when (x) is Contract` or `if (x is Type)` automatically casts the variable.\n\n" +
-                "```kotlin\ncontract Shape { fun area(): Double }\ntype Circle(val r: Double) : Shape { implement fun area(): Double = 3.14 * r * r }\n\nfun printShape(s: Shape) {\n    if (s is Circle) {\n        println(\"Radius: \" + s.r)\n    }\n}\n```"
+                "```kotlin\ncontract Shape { fun area(): Double }\ntype Circle(val r: Double) : Shape { implement fun area(): Double = 3.14 * r * r }\n\nfun printShape(s: Shape) {\n    if (s is Circle) {\n        println(\"Radius: \${s.r}\")\n    }\n}\n```"
         }
         if (query == "16" || query == "enum") {
             return "### Lesson 16: Model Variants with Enum\n" +
@@ -129,7 +129,7 @@ type LessonsData() {
         if (query == "18" || query == "scopefunc") {
             return "### Lesson 18: Scope Functions\n" +
                 "Kotlin-style scope functions: `let`, `apply`, `also`, `run`, `with`.\n\n" +
-                "```kotlin\ntype Config(var host: String = \"\", var port: Int = 0)\n\nfun main() {\n    val cfg = Config().apply {\n        host = \"localhost\"\n        port = 8080\n    }\n    println(cfg.host + \":\" + cfg.port)\n}\n```"
+                "```kotlin\ntype Config(var host: String = \"\", var port: Int = 0)\n\nfun main() {\n    val cfg = Config().apply {\n        host = \"localhost\"\n        port = 8080\n    }\n    println(\"\${cfg.host}:\${cfg.port}\")\n}\n```"
         }
         if (query == "19" || query == "cinterop") {
             return "### Lesson 19: Talk to Native C\n" +
@@ -169,19 +169,19 @@ type LessonsData() {
         if (query == "26" || query == "env") {
             return "### Lesson 26: Environment & .env\n" +
                 "`std.env` reads OS environment variables and parses local `.env` files.\n\n" +
-                "```kotlin\nimport { Env } from \"std.env\"\n\nfun main() {\n    val port = Env.get(\"PORT\") ?: \"8080\"\n    println(\"Port: \" + port)\n}\n```"
+                "```kotlin\nimport { Env } from \"std.env\"\n\nfun main() {\n    val port = Env.get(\"PORT\") ?: \"8080\"\n    println(\"Port: \$port\")\n}\n```"
         }
         if (query == "27" || query == "random") {
             return "### Lesson 27: Random & Collections\n" +
                 "`std.random` provides pseudo and cryptographically secure random values.\n\n" +
-                "```kotlin\nimport { Random } from \"std.random\"\n\nfun main() {\n    val roll = Random.int(1, 6)\n    println(\"Roll: \" + roll)\n}\n```"
+                "```kotlin\nimport { Random } from \"std.random\"\n\nfun main() {\n    val roll = Random.int(1, 6)\n    println(\"Roll: \$roll\")\n}\n```"
         }
         if (query == "28" || query == "extensions") {
             return "### Lesson 28: Extension Functions\n" +
                 "Extend existing types with custom methods without subclassing.\n\n" +
-                "```kotlin\nfun String.shout(): String = this + \"!!!\"\n\nfun main() {\n    println(\"hello\".shout())\n}\n```"
+                "```kotlin\nfun String.shout(): String = \"\$this!!!\"\n\nfun main() {\n    println(\"hello\".shout())\n}\n```"
         }
 
-        return "Lesson not found for: " + query + ". Call list_lessons to see all 28 lessons."
+        return "Lesson not found for: $query. Call list_lessons to see all 28 lessons."
     }
 }

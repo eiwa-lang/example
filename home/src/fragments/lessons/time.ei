@@ -6,7 +6,7 @@ fun time(): String {
             p("Perform epoch-first date math with standard durations.", class = "text-slate-300")
             pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
                 code(class = "language-kotlin") {
-                    write("import { now, date, hours } from \"std.time\"\n\nval base = date(2026, 7, 20)\nval deadline = base + hours(2)\n\nprintln(deadline.format(\"YYYY-MM-DD HH:mm:ss\"))\n\nval duration = deadline - base\nprintln(\"Hours: \" + duration.hours())")
+                    write("import { now, date, hours } from \"std.time\"\n\nval base = date(2026, 7, 20)\nval deadline = base + hours(2)\n\nprintln(deadline.format(\"YYYY-MM-DD HH:mm:ss\"))\n\nval duration = deadline - base\nprintln(\"Hours: \${duration.hours()}\")")
                 }
             }
         }

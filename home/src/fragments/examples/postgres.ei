@@ -21,7 +21,7 @@ fun postgresExample(): String {
                 p { strong("2. database.ei — the query") }
                 pre {
                     code(class = "language-kotlin") {
-                        write("import { Postgres } from \"postgres\"\n\nval db = Postgres.connect(\"postgres://user:pass@localhost:5432/mydb\")\n\nval result = db.query(\"SELECT id, name, email FROM users WHERE active = $1\", [\"true\"])\n\nfor (result.rows()) {\n    println(\"User: \" + it.string(\"name\") + \" <\" + it.string(\"email\") + \">\")\n}")
+                        write("import { Postgres } from \"postgres\"\n\nval db = Postgres.connect(\"postgres://user:pass@localhost:5432/mydb\")\n\nval result = db.query(\"SELECT id, name, email FROM users WHERE active = $1\", [\"true\"])\n\nfor (result.rows()) {\n    println(\"User: \${it.string(\\\"name\\\")} <\${it.string(\\\"email\\\")}>\")\n}")
                     }
                 }
                 p { strong("3. Run") }

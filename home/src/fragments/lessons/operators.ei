@@ -6,7 +6,7 @@ fun operators(): String {
             p("Use operator fun plus to make mathematical behavior explicit.", class = "text-slate-300")
             pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
                 code(class = "language-kotlin") {
-                    write("type Vector(val x: Int, val y: Int) {\n    operator fun plus(other: Vector): Vector {\n        return Vector(this.x + other.x, this.y + other.y)\n    }\n}\n\nval result = Vector(1, 2) + Vector(3, 4)\nprint(result.x)")
+                    write("type Vector(val x: Int, val y: Int) {\n    operator fun plus(other: Vector): Vector {\n        return Vector(x + other.x, y + other.y)\n    }\n}\n\nval result = Vector(1, 2) + Vector(3, 4)\nprint(result.x)")
                 }
             }
         }

@@ -98,7 +98,7 @@ object ExamplesData {
                 "The html builder escapes attributes automatically and returns a ready-to-serve String."
         }
         if (topic == "tasks") {
-            return "```kotlin\nimport { task, sleep } from \"std.coroutines\"\n\nfun fetchItem(id: Int): String {\n    sleep(100)\n    return \"Item #\" + id\n}\n\nfun main() {\n    val t1 = task { fetchItem(1) }\n    val t2 = task { fetchItem(2) }\n    println(t1.await() + \" and \" + t2.await())\n}\n```"
+            return "```kotlin\nimport { task, sleep } from \"std.coroutines\"\n\nfun fetchItem(id: Int): String {\n    sleep(100)\n    return \"Item #\$id\"\n}\n\nfun main() {\n    val t1 = task { fetchItem(1) }\n    val t2 = task { fetchItem(2) }\n    println(\"\${t1.await()} and \${t2.await()}\")\n}\n```"
         }
         if (topic == "postgres") {
             return "## PostgreSQL Native Driver\n\n" +
@@ -118,7 +118,7 @@ object ExamplesData {
                 "val db = Postgres.connect(\"postgres://user:pass@localhost:5432/mydb\")\n\n" +
                 "val result = db.query(\"SELECT id, name, email FROM users WHERE active = $1\", [\"true\"])\n\n" +
                 "for (result.rows()) {\n" +
-                "    println(\"User: \" + it.string(\"name\") + \" <\" + it.string(\"email\") + \">\")\n" +
+                "    println(\"User: \${it.string(\\\"name\\\")} <\${it.string(\\\"email\\\")}>\")\n" +
                 "}\n" +
                 "```\n\n" +
                 "### 3. Run\n\n" +
@@ -180,15 +180,15 @@ object ExamplesData {
                 "tools/list returns the declared schema (type, required, description) so clients render the arguments and call tools/call."
         }
         if (topic == "time") {
-            return "```kotlin\nimport { Time, Duration } from \"std.time\"\n\nfun main() {\n    val start = Time.now()\n    val elapsed = start.elapsed()\n    println(\"Elapsed: \" + elapsed.toMillis() + \"ms\")\n}\n```"
+            return "```kotlin\nimport { Time, Duration } from \"std.time\"\n\nfun main() {\n    val start = Time.now()\n    val elapsed = start.elapsed()\n    println(\"Elapsed: \${elapsed.toMillis()}ms\")\n}\n```"
         }
         if (topic == "money") {
-            return "```kotlin\nimport { Money } from \"std.money\"\n\nfun main() {\n    val subtotal = Money.brl(100.00)\n    val discount = Money.brl(15.50)\n    val total = subtotal - discount\n    println(\"Total: \" + total.formatted())\n}\n```"
+            return "```kotlin\nimport { Money } from \"std.money\"\n\nfun main() {\n    val subtotal = Money.brl(100.00)\n    val discount = Money.brl(15.50)\n    val total = subtotal - discount\n    println(\"Total: \${total.formatted()}\")\n}\n```"
         }
         if (topic == "tests") {
             return "```kotlin\nfun add(a: Int, b: Int): Int = a + b\n\ntest \"addition works correctly\" {\n    assert(add(2, 3) == 5)\n    assert(add(-1, 1) == 0)\n}\n```"
         }
 
-        return "Example not found for: " + topic + ". Available: http, html, tasks, postgres, mcp, time, money, tests."
+        return "Example not found for: $topic. Available: http, html, tasks, postgres, mcp, time, money, tests."
     }
 }

@@ -117,7 +117,7 @@ fun setupMcp(server: ArestBuilder) {
         prompt("explain_concept") {
             val topic = hasArgument("topic") ? arguments.get("topic")!!.asString() : "composition"
             respond(
-                "Explain the concept of '" + topic + "' in the Eiwa programming language.\n" +
+                "Explain the concept of '$topic' in the Eiwa programming language.\n" +
                 "Contrast it with other languages (Kotlin, Rust, Go, TypeScript) and provide a concise, working code example."
             )
         }

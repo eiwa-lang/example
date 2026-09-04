@@ -45,7 +45,7 @@ fun whyEiwa(): String {
                             div(class = "editor-content") {
                                 pre(class = "playground-code") {
                                     code(class = "language-kotlin") {
-                                        write("contract Notifier {\n    fun send(msg: String)\n}\n\nskill EmailAlert : Notifier {\n    fun alert(title: String) {\n        this.send(\"[ALERT] \" + title)\n    }\n}\n\ntype User(val email: String) : Notifier + EmailAlert {\n    implement fun send(msg: String) {\n        print(\"Sending to \" + this.email + \": \" + msg)\n    }\n}\n\nval user = User(\"alice@eiwa.dev\")\nuser.alert(\"Deploy finished!\")")
+                                        write("contract Notifier {\n    fun send(msg: String)\n}\n\nskill EmailAlert : Notifier {\n    fun alert(title: String) {\n        send(\"[ALERT] \$title\")\n    }\n}\n\ntype User(val email: String) : Notifier + EmailAlert {\n    implement fun send(msg: String) {\n        print(\"Sending to \$email: \$msg\")\n    }\n}\n\nval user = User(\"alice@eiwa.dev\")\nuser.alert(\"Deploy finished!\")")
                                     }
                                 }
                             }
@@ -89,7 +89,7 @@ fun whyEiwa(): String {
                             div(class = "editor-content") {
                                 pre(class = "playground-code") {
                                     code(class = "language-kotlin") {
-                                        write("fun main() {\n    // Launch two concurrent tasks\n    val taskA = task {\n        http.get(\"https://api.one\")\n    }\n    val taskB = task {\n        http.get(\"https://api.two\")\n    }\n\n    // Await both results cooperatively\n    val resA = taskA.await()\n    val resB = taskB.await()\n    print(resA + \" & \" + resB)\n}")
+                                        write("fun main() {\n    // Launch two concurrent tasks\n    val taskA = task {\n        http.get(\"https://api.one\")\n    }\n    val taskB = task {\n        http.get(\"https://api.two\")\n    }\n\n    // Await both results cooperatively\n    val resA = taskA.await()\n    val resB = taskB.await()\n    print(\"\$resA & \$resB\")\n}")
                                     }
                                 }
                             }

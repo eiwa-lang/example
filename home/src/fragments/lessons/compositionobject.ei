@@ -6,7 +6,7 @@ fun compositionObject(): String {
             p("Combine contracts, skills, and a type-bound object without inheritance.", class = "text-slate-300")
             pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
                 code(class = "language-kotlin") {
-                    write("contract Named {\n    fun name(): String\n}\n\nskill Greeter : Named {\n    fun greet(): String {\n        return \"Hello \" + this.name()\n    }\n}\n\ntype User(val value: String) : Named + Greeter {\n    implement fun name(): String {\n        return this.value\n    }\n} object {\n    fun guest(): User {\n        return User(\"Guest\")\n    }\n}\n\nprint(User(\"Eiwa\").greet())\nprint(User.guest().greet())")
+                    write("contract Named {\n    fun name(): String\n}\n\nskill Greeter : Named {\n    fun greet(): String {\n        return \"Hello \${name()}\"\n    }\n}\n\ntype User(val value: String) : Named + Greeter {\n    implement fun name(): String {\n        return value\n    }\n} object {\n    fun guest(): User {\n        return User(\"Guest\")\n    }\n}\n\nprint(User(\"Eiwa\").greet())\nprint(User.guest().greet())")
                 }
             }
         }

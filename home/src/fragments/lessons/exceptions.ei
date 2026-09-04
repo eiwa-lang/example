@@ -6,7 +6,7 @@ fun exceptions(): String {
             p("Declare a simple Throwable and handle the error.", class = "text-slate-300")
             pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
                 code(class = "language-kotlin") {
-                    write("type InvalidAgeException(val text: String) : Throwable {\n    implement fun message(): String {\n        return this.text\n    }\n}\n\nfun checkAge(age: Int) {\n    if (age < 18) {\n        throw InvalidAgeException(\"Invalid age\")\n    }\n}\n\ntry {\n    checkAge(15)\n} catch (e: InvalidAgeException) {\n    print(e.message())\n}")
+                    write("type InvalidAgeException(val text: String) : Throwable {\n    implement fun message(): String {\n        return text\n    }\n}\n\nfun checkAge(age: Int) {\n    if (age < 18) {\n        throw InvalidAgeException(\"Invalid age\")\n    }\n}\n\ntry {\n    checkAge(15)\n} catch (e: InvalidAgeException) {\n    print(e.message())\n}")
                 }
             }
         }

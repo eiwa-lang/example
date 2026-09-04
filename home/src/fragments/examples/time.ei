@@ -14,7 +14,7 @@ fun timeExample(): String {
             p("Dates and durations use explicit math and operator overloading without heavy objects.")
             pre {
                 code(class = "language-kotlin") {
-                    write("import { now, date, hours } from \"std.time\"\n\nval deploy = now()\nval release = date(2026, 7, 20) + hours(2)\n\nprint(release.format(\"YYYY-MM-DD HH:mm:ss\"))\nprint(\"Hours left: \" + (release - deploy).hours())")
+                    write("import { now, date, hours } from \"std.time\"\n\nval deploy = now()\nval release = date(2026, 7, 20) + hours(2)\n\nprint(release.format(\"YYYY-MM-DD HH:mm:ss\"))\nprint(\"Hours left: \${(release - deploy).hours()}\")")
                 }
             }
             }

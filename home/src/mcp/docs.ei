@@ -37,7 +37,7 @@ type Docs() {
             "- **Lambda-style `for` loops:**\n" +
             "  - `for (numbers) { sum = sum + it }` (implicit `it`)\n" +
             "  - `for (numbers) { n -> product = product * n }` (named param)\n" +
-            "  - `for (numbers) { idx, n -> println(idx.toString() + \": \" + n) }` (index & item)\n" +
+            "  - `for (numbers) { idx, n -> println(\"\$idx: \$n\") }` (index & item)\n" +
             "- `while (cond) { ... }`\n" +
             "- Higher-order loops: `repeat(count) { it -> ... }`, `loop { ... }` (infinite), `retry(times) { attempt -> ... }`."
     }
@@ -105,7 +105,7 @@ type Docs() {
             "3. **`skill`:** Reusable behavior with method bodies. Borrows contracts via `:` which are fulfilled by the host `type`.\n" +
             "4. **`object`:** Singleton for static state and companion namespaces (`} object {`).\n" +
             "5. **`implement`:** Mandatory keyword inside `type` to implement contract methods or resolve ambiguities.\n\n" +
-            "```kotlin\ncontract Named { fun getName(): String }\nskill FormalGreeter : Named { fun greet(): String = \"Hello, \" + getName() }\ntype User(val name: String) : Named + FormalGreeter {\n    implement fun getName(): String = this.name\n}\n```"
+            "```kotlin\ncontract Named { fun getName(): String }\nskill FormalGreeter : Named { fun greet(): String = \"Hello, \${getName()}\" }\ntype User(val name: String) : Named + FormalGreeter {\n    implement fun getName(): String = name\n}\n```"
     }
 
     fun coroutines(): String {
@@ -158,7 +158,7 @@ type Docs() {
     fun section19Extensions(): String {
         return "# Section 19: Extension Functions\n\n" +
             "Extend existing types without inheritance or wrapper allocations:\n\n" +
-            "```kotlin\nfun String.shout(): String = this + \"!\"\nfun Int.squared(): Int = this * this\n```"
+            "```kotlin\nfun String.shout(): String = \"\$this!\"\nfun Int.squared(): Int = this * this\n```"
     }
 
     fun syntaxRules(): String {

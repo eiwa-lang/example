@@ -14,7 +14,7 @@ fun tasksExample(): String {
             p("Cooperative state machine coroutines with zero OS thread overhead and no stack switching.")
             pre {
                 code(class = "language-kotlin") {
-                    write("fun fetchUser(id: Int): String {\n    return \"User #\" + id\n}\n\nfun fetchOrders(id: Int): String {\n    return \"Orders for #\" + id\n}\n\n// Launch concurrent stackless tasks\nval userTask = task { fetchUser(42) }\nval ordersTask = task { fetchOrders(42) }\n\n// Await both results asynchronously\nval user = userTask.await()\nval orders = ordersTask.await()\n\nprintln(\"Profile: \" + user + \" | \" + orders)")
+                    write("fun fetchUser(id: Int): String {\n    return \"User #\$id\"\n}\n\nfun fetchOrders(id: Int): String {\n    return \"Orders for #\$id\"\n}\n\n// Launch concurrent stackless tasks\nval userTask = task { fetchUser(42) }\nval ordersTask = task { fetchOrders(42) }\n\n// Await both results asynchronously\nval user = userTask.await()\nval orders = ordersTask.await()\n\nprintln(\"Profile: \$user | \$orders\")")
                 }
             }
             }
