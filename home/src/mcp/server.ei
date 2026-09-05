@@ -28,6 +28,10 @@ fun setupMcp(server: ArestBuilder) {
             respond(Docs.typeSystem())
         }
 
+        resource("eiwa://spec/platform-parity") {
+            respond(Docs.section20PlatformParity())
+        }
+
         resource("eiwa://spec/coroutines") {
             respond(Docs.coroutines())
         }
@@ -82,7 +86,7 @@ fun setupMcp(server: ArestBuilder) {
         }
 
         tool("get_doc_topic", description = "Get a documentation section", arguments = [
-            Argument("topic", JsonType.STRING, "Documentation section (overview, type-system, coroutines, syntax-rules, stdlib, cli)", true),
+            Argument("topic", JsonType.STRING, "Documentation section (overview, type-system, platform-parity, coroutines, syntax-rules, stdlib, cli)", true),
             Argument("section", JsonType.STRING, "Alias for topic (kept for compatibility)", false)
         ]) {
             val topic = hasArgument("topic") ? arguments.get("topic")!!.asString() : (hasArgument("section") ? arguments.get("section")!!.asString() : "overview")
@@ -90,7 +94,7 @@ fun setupMcp(server: ArestBuilder) {
         }
 
         tool("get_tour_section", description = "Get a language tour section by number", arguments = [
-            Argument("section", JsonType.STRING, "Tour section number (1-28)", true),
+            Argument("section", JsonType.STRING, "Tour section number (1-29)", true),
             Argument("number", JsonType.STRING, "Alias for section (kept for compatibility)", false)
         ]) {
             val section = hasArgument("section") ? arguments.get("section")!!.asString() : (hasArgument("number") ? arguments.get("number")!!.asString() : "1")

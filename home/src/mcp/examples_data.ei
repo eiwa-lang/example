@@ -8,7 +8,8 @@ object ExamplesData {
             "- `mcp`: Publishing MCP Tools and Resources with arest\n" +
             "- `time`: Timestamp formatting and calculation\n" +
             "- `money`: Precision financial arithmetic\n" +
-            "- `tests`: Native unit testing with `test \"name\" { ... }` blocks"
+            "- `tests`: Native unit testing with `test \"name\" { ... }` blocks\n" +
+            "- `platform`: Declarative cross-platform parity and contracts (ADR 60)"
     }
 
     fun get(topic: String): String {
@@ -188,7 +189,69 @@ object ExamplesData {
         if (topic == "tests") {
             return "```kotlin\nfun add(a: Int, b: Int): Int = a + b\n\ntest \"addition works correctly\" {\n    assert(add(2, 3) == 5)\n    assert(add(-1, 1) == 0)\n}\n```"
         }
+        if (topic == "platform") {
+            return "## Cross-Platform Parity with\n\n" +
+                "Eiwa guarantees cross-platform API parity at compile time using a 3-tier architecture. " +
+                "Low-level FFI blocks use explicit, non-colliding names, while universal contracts ensure identical method signatures across all target platforms.\n\n" +
+                "### 1. Source Code (`platform_terminal.ei`)\n\n" +
+                "```kotlin\n" +
+                "// TIER 1: Low-level C FFI with explicit OS-specific names\n" +
+                "@Header(\"<unistd.h>\")\n" +
+                "lib(\"posix\") PosixTerminal {\n" +
+                "    fun isatty(fd: Int): Int\n" +
+                "}\n\n" +
+                "@Header(\"<windows.h>\")\n" +
+                "@Link(\"kernel32\")\n" +
+                "lib(\"windows\") Win32Terminal {\n" +
+                "    fun GetConsoleMode(handle: Pointer, mode: Pointer): Int\n" +
+                "}\n\n" +
+                "// TIER 2: Universal Specification (Contract)\n" +
+                "contract TerminalContract {\n" +
+                "    fun isInteractive(): Bool\n" +
+                "    fun writeAnsi(code: String)\n" +
+                "}\n\n" +
+                "// TIER 3: Platform Adapters (Must implement the contract)\n" +
+                "object(\"posix\") Terminal : TerminalContract {\n" +
+                "    implement fun isInteractive(): Bool {\n" +
+                "        return PosixTerminal.isatty(1) == 1\n" +
+                "    }\n" +
+                "    implement fun writeAnsi(code: String) {\n" +
+                "        print(code)\n" +
+                "    }\n" +
+                "}\n\n" +
+                "object(\"windows\") Terminal : TerminalContract {\n" +
+                "    implement fun isInteractive(): Bool {\n" +
+                "        return true // Win32 console check\n" +
+                "    }\n" +
+                "    implement fun writeAnsi(code: String) {\n" +
+                "        // Win32 console write\n" +
+                "        print(code)\n" +
+                "    }\n" +
+                "}\n\n" +
+                "// TIER 4: Portable User Code (Zero platform-specific leaks)\n" +
+                "fun main() {\n" +
+                "    if (Terminal.isInteractive()) {\n" +
+                "        Terminal.writeAnsi(\"\\u001b[32m[OK]\\u001b[0m Running on interactive terminal\\n\")\n" +
+                "    } else {\n" +
+                "        println(\"[BATCH] Running in redirected pipe\")\n" +
+                "    }\n" +
+                "}\n" +
+                "```\n\n" +
+                "### 2. Build for any target\n\n" +
+                "```bash\n" +
+                "# Build for active host:\n" +
+                "eiwa run platform_terminal.ei\n\n" +
+                "# Cross-compile native binaries for different targets:\n" +
+                "eiwa build --target linux platform_terminal.ei -o terminal_linux\n" +
+                "eiwa build --target windows platform_terminal.ei -o terminal.exe\n" +
+                "eiwa build --target macos platform_terminal.ei -o terminal_macos\n" +
+                "```\n\n" +
+                "### 3. How the compiler enforces parity\n\n" +
+                "- **No Asymmetric Methods:** The compiler forbids adding ad-hoc methods to `object(\"posix\")` without declaring them in `TerminalContract`.\n" +
+                "- **Identical Variant Contracts:** Every variant named `Terminal` (including any universal fallback) must declare `: TerminalContract`.\n" +
+                "- **Zero-Cost LLVM Emission:** At compile time, the LLVM emitter prunes the inactive platform branch and binds the active target statically."
+        }
 
-        return "Example not found for: $topic. Available: http, html, tasks, postgres, mcp, time, money, tests."
+        return "Example not found for: $topic. Available: http, html, tasks, postgres, mcp, time, money, tests, platform."
     }
 }

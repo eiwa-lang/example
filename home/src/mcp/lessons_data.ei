@@ -9,7 +9,7 @@ type LessonsData() {
 } object {
 
     fun list(): String {
-        return "# Eiwa Language Tour - 28 Lessons Index\n\n" +
+        return "# Eiwa Language Tour - 29 Lessons Index\n\n" +
             "01. Import symbols (`import { ... } from \".path\"`)\n" +
             "02. Write without main (Top-level statements & scripting)\n" +
             "03. Sum a list (List<T>, `for (items) { it -> }`)\n" +
@@ -37,7 +37,8 @@ type LessonsData() {
             "25. Structured logging (`std.log` JSON / plain)\n" +
             "26. Environment & .env (`std.env` config loader)\n" +
             "27. Random & collections (`std.random` sampling & shuffling)\n" +
-            "28. Extension functions (`fun Type.extension(): Ret`)"
+            "28. Extension functions (`fun Type.extension(): Ret`)\n" +
+            "29. Platform parity (`contract`, `object(\"posix\")`, `object(\"windows\")`)"
     }
 
     fun get(query: String): String {
@@ -182,6 +183,47 @@ type LessonsData() {
                 "```kotlin\nfun String.shout(): String = \"\$this!!!\"\n\nfun main() {\n    println(\"hello\".shout())\n}\n```"
         }
 
-        return "Lesson not found for: $query. Call list_lessons to see all 28 lessons."
+        if (query == "29" || query == "platform" || query == "parity") {
+            return "### Lesson 29: Declarative Platform Parity\n\n" +
+                "In traditional systems programming (C/C++ with `#ifdef` or Go build tags), platform-specific code easily diverges into **False Symmetry**: " +
+                "a Linux implementation exposes methods that Windows lacks, compiling locally but breaking CI or cross-platform builds.\n\n" +
+                "Eiwa eliminates this problem at compile time via **Strict Platform Parity** with a mandatory 3-Tier Architecture:\n\n" +
+                "1. **FFI Isolation:** Low-level C bindings must declare explicit, unique names (e.g. `PosixTerminal` vs `Win32Terminal`). Reusing the same `lib` name across platforms is prohibited.\n" +
+                "2. **Universal Specification:** A `contract` defines the pure semantic interface visible to user code.\n" +
+                "3. **Platform Adapters:** Specialized `object(\"...\")` or `type(\"...\")` blocks MUST implement the contract. All variants sharing the same name (including universal default fallbacks) must implement the identical contract list. Ad-hoc uncontracted public methods are rejected by the compiler.\n\n" +
+                "```kotlin\n" +
+                "// 1. UNIVERSAL CONTRACT\n" +
+                "contract TerminalContract {\n" +
+                "    fun clear(): Bool\n" +
+                "    fun getWidth(): Int\n" +
+                "}\n\n" +
+                "// 2. POSIX IMPLEMENTATION (Linux, macOS, BSD)\n" +
+                "object(\"posix\") Terminal : TerminalContract {\n" +
+                "    implement fun clear(): Bool {\n" +
+                "        println(\"\\u001b[2J\\u001b[H\")\n" +
+                "        return true\n" +
+                "    }\n" +
+                "    implement fun getWidth(): Int = 80\n" +
+                "}\n\n" +
+                "// 3. WINDOWS WIN32 IMPLEMENTATION\n" +
+                "object(\"windows\") Terminal : TerminalContract {\n" +
+                "    implement fun clear(): Bool {\n" +
+                "        // Win32 Console API calls\n" +
+                "        return true\n" +
+                "    }\n" +
+                "    implement fun getWidth(): Int = 80\n" +
+                "}\n\n" +
+                "// 4. PORTABLE USER CODE\n" +
+                "fun main() {\n" +
+                "    Terminal.clear()\n" +
+                "    println(\"Width: \${Terminal.getWidth()}\")\n" +
+                "}\n" +
+                "```\n\n" +
+                "### Compiler Guarantees:\n" +
+                "- **Compile-time parity validation:** If any platform variant lacks a method from the contract, compilation fails immediately.\n" +
+                "- **Zero runtime cost:** The LLVM emitter prunes inactive platform branches and binds the active target statically without virtual dispatch."
+        }
+
+        return "Lesson not found for: $query. Call list_lessons to see all 29 lessons."
     }
 }

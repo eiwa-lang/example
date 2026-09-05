@@ -46,6 +46,8 @@ import { logging } from ".fragments.lessons.logging"
 import { envLesson } from ".fragments.lessons.env"
 import { randomLesson } from ".fragments.lessons.random"
 import { extensionsLesson } from ".fragments.lessons.extensions"
+import { platformExample } from ".fragments.examples.platform"
+import { platformLesson } from ".fragments.lessons.platform"
 
 fun homePage() = html {
     head {
@@ -208,6 +210,7 @@ fun homePage() = html {
                             button(text = "Time", class = "tab-button example-tab", hxGet = "/fragments/examples/time", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "Money", class = "tab-button example-tab", hxGet = "/fragments/examples/money", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "Tests", class = "tab-button example-tab", hxGet = "/fragments/examples/tests", hxTarget = "#example-view", hxSwap = "innerHTML")
+                            button(text = "Platform", class = "tab-button example-tab", hxGet = "/fragments/examples/platform", hxTarget = "#example-view", hxSwap = "innerHTML")
                         }
                         div(id = "example-view", class = "editor", hxGet = "/fragments/examples/http", hxTrigger = "load", hxSwap = "innerHTML") {}
                     }
@@ -247,6 +250,7 @@ fun homePage() = html {
                             button(text = "26 Environment & .env", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/env", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                             button(text = "27 Random & collections", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/random", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                             button(text = "28 Extension functions", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/extensions", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "29 Platform parity", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/platform", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                         }
                         div(class = "lesson-workspace") {
                             div(id = "lesson-preview", class = "editor", hxGet = "/fragments/lessons/imports", hxTrigger = "load", hxSwap = "innerHTML") {}
@@ -402,5 +406,7 @@ arest(8081) {
         get("/fragments/lessons/env") { respond(200, "text/html", envLesson()) }
         get("/fragments/lessons/random") { respond(200, "text/html", randomLesson()) }
         get("/fragments/lessons/extensions") { respond(200, "text/html", extensionsLesson()) }
+        get("/fragments/examples/platform") { respond(200, "text/html", platformExample()) }
+        get("/fragments/lessons/platform") { respond(200, "text/html", platformLesson()) }
     }
 }

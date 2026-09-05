@@ -1,0 +1,23 @@
+import { fragment } from "html"
+
+fun platformExample(): String {
+    return fragment {
+        div {
+            div(class = "editor-bar") {
+                div(class = "file-title") {
+                    img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
+                    write("platform_service.ei")
+                }
+            }
+            div(class = "editor-content") {
+                h3("Declarative Platform Parity")
+                p("Cross-compilation with compile-time contract enforcement and clean FFI isolation.")
+                pre {
+                    code(class = "language-kotlin") {
+                        write("// 1. Portable Contract\ncontract NotifierContract {\n    fun notify(message: String)\n}\n\n// 2. Linux implementation\nobject(\"linux\") Notifier : NotifierContract {\n    implement fun notify(message: String) {\n        println(\"[Linux Notification] \$message\")\n    }\n}\n\n// 3. Windows Win32 implementation\nobject(\"windows\") Notifier : NotifierContract {\n    implement fun notify(message: String) {\n        println(\"[Windows Toast] \$message\")\n    }\n}\n\nfun main() {\n    // Cross-compiles with: eiwa build --target linux | windows | macos\n    Notifier.notify(\"System ready!\")\n}")
+                    }
+                }
+            }
+        }
+    }
+}

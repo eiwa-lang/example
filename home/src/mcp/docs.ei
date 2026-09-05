@@ -7,7 +7,8 @@ type Docs() {
             "## Key Highlights:\n" +
             "- **Native Performance:** Compiles directly to native machine code via LLVM with Boehm GC memory management.\n" +
             "- **Zero JVM, Zero Runtime Overhead:** No virtual machine, instant startup, lightweight binaries.\n" +
-            "- **Composition-Only Type System (ADR 25):** NO implementation inheritance (`class`, `abstract`, `open`, `override` DO NOT EXIST). Uses `type`, `contract`, `skill`, and `object` with `implement`.\n" +
+            "- **Composition-Only Type System:** NO implementation inheritance (`class`, `abstract`, `open`, `override` DO NOT EXIST). Uses `type`, `contract`, `skill`, and `object` with `implement`.\n" +
+            "- **Strict Platform Parity:** Compile-time guarantee of identical APIs across operating systems. Specialized types/objects must implement contracts with complete variant parity, banning false symmetry and ad-hoc platform divergence.\n" +
             "- **Compile-Time Null Safety & Union Types:** `T | Null` or `T?`, safe calls `?.`, elvis `?:`, and force unwrap `!!`.\n" +
             "- **Stackless Coroutines:** Cooperative concurrency with `task {}`, `.await()`, `sleep()`, and `yield()` powered by a pure Eiwa FIFO Scheduler.\n" +
             "- **Explicit Declarations:** Every standard API is formally declared in `src/std/` (`std.core`, `std.collections`, `std.http`, `std.json`, `std.postgres`, `arest`, `html`)."
@@ -161,6 +162,98 @@ type Docs() {
             "```kotlin\nfun String.shout(): String = \"\$this!\"\nfun Int.squared(): Int = this * this\n```"
     }
 
+    fun section20PlatformParity(): String {
+        return "# Section 20: Cross-Compilation & Platform Parity (ADR 60)\n\n" +
+            "## 1. The Architectural Problem: False Symmetry\n" +
+            "In traditional systems programming (C/C++ `#ifdef`, Rust `cfg`, Go build tags), conditional compilation easily suffers from **False Symmetry**:\n" +
+            "- A developer implements a feature on POSIX/Linux, adding methods like `fork()`, `waitpid()`, or `getPriority()`.\n" +
+            "- Another developer implements the Windows variant with `createProcess()` or omits `getPriority()` entirely.\n" +
+            "- Because the two variants share the same type or lib name, code written on Linux compiles cleanly locally, but breaks with cryptic linker or compile errors when built on Windows or in CI.\n\n" +
+            "Eiwa eliminates this class of bugs at compile time through **Strict Platform Parity (ADR 60)**.\n\n" +
+            "## 2. The 5 Core Principles of ADR 60\n\n" +
+            "| Rule | Requirement | Compiler Enforcement |\n" +
+            "|---|---|---|\n" +
+            "| **1. Unique FFI Names** | `lib` blocks can NEVER share the same name across platforms. | `TypeError.DuplicateDeclaration` via `seen_libs` map |\n" +
+            "| **2. Mandatory Contracts** | Every specialized `type(\"...\")` or `object(\"...\")` MUST implement contracts (`: Contract`). | `TypeError.PlatformSpecializationRequiresContract` |\n" +
+            "| **3. Variant Parity** | All variants of the same name (including universal default fallbacks) must implement the EXACT SAME contracts. | `TypeError.PlatformVariantContractsMismatch` via `areContractsEqual()` |\n" +
+            "| **4. Method Parity** | Specialized types cannot define ad-hoc public methods. Every method must carry `implement` or come from a skill. | `TypeError.PlatformSpecializationCannotIntroduceAdHocMethods` |\n" +
+            "| **5. Zero-Cost Pruning** | Inactive platform declarations are eliminated during LLVM IR generation. | Active symbol bound directly with static zero-overhead dispatch |\n\n" +
+            "## 3. The Three-Tier Architecture Pattern\n\n" +
+            "Every cross-platform subsystem in Eiwa follows a clean 3-tier boundary:\n\n" +
+            "```kotlin\n// ==========================================================================\n" +
+            "// TIER 1: LOW-LEVEL FFI BINDINGS (Explicit, Distinct Names)\n" +
+            "// ==========================================================================\n" +
+            "@Header(\"<unistd.h>\")\n" +
+            "lib(\"posix\") PosixProcess {\n" +
+            "    fun fork(): Int\n" +
+            "    fun waitpid(pid: Int, status: Pointer, options: Int): Int\n" +
+            "}\n\n" +
+            "@Header(\"<windows.h>\")\n" +
+            "@Link(\"kernel32\")\n" +
+            "lib(\"windows\") Win32Process {\n" +
+            "    fun GetCurrentProcessId(): Int\n" +
+            "}\n\n" +
+            "// ==========================================================================\n" +
+            "// TIER 2: UNIVERSAL SPECIFICATION (Pure Contract)\n" +
+            "// ==========================================================================\n" +
+            "contract ProcessOpsContract {\n" +
+            "    fun getPid(): Int\n" +
+            "    fun spawn(cmd: String): Int\n" +
+            "}\n\n" +
+            "// ==========================================================================\n" +
+            "// TIER 3: PLATFORM-SPECIALIZED BRIDGES (Must implement the Contract)\n" +
+            "// ==========================================================================\n" +
+            "object(\"posix\") ProcessOps : ProcessOpsContract {\n" +
+            "    implement fun getPid(): Int = 42\n" +
+            "    implement fun spawn(cmd: String): Int {\n" +
+            "        val pid = PosixProcess.fork()\n" +
+            "        return pid\n" +
+            "    }\n" +
+            "}\n\n" +
+            "object(\"windows\") ProcessOps : ProcessOpsContract {\n" +
+            "    implement fun getPid(): Int = Win32Process.GetCurrentProcessId()\n" +
+            "    implement fun spawn(cmd: String): Int {\n" +
+            "        // Win32 CreateProcess implementation\n" +
+            "        return 100\n" +
+            "    }\n" +
+            "}\n\n" +
+            "// ==========================================================================\n" +
+            "// TIER 4: PORTABLE APPLICATION CODE (Zero platform leak)\n" +
+            "// ==========================================================================\n" +
+            "fun main() {\n" +
+            "    val pid = ProcessOps.getPid()\n" +
+            "    println(\"Process running with PID: \$pid\")\n" +
+            "}\n" +
+            "```\n\n" +
+            "## 4. Compiler Internals & Verification Pipeline\n\n" +
+            "### A. Frontend Lexer & Parser (`src/frontend/parser.zig`)\n" +
+            "- The parser recognizes platform attributes on declarations: `lib(\"posix\")`, `type(\"windows\", \"x86_64\")`, `object(\"linux\")`.\n" +
+            "- Supported target tags: `posix`, `linux`, `macos`, `darwin`, `windows`, `win32`, architecture tags `x86_64`, `aarch64`, `arm64`, and negated tags `!windows`.\n" +
+            "- Target tags are stored in the `platform_targets` slice of the `ASTNode`.\n\n" +
+            "### B. Type Checker Parity Pass (`src/core/type_checker/core.zig`)\n" +
+            "1. **`seen_libs` Tracking:** When checking `lib` declarations, the compiler inserts each lib name into a `seen_libs` hashmap. If a duplicate name is encountered (even under differing platform attributes), compilation halts immediately with `TypeError.DuplicateDeclaration`.\n" +
+            "2. **Cross-Variant Grouping:** In `checkDeclarations()`, all `type_decl` and `object_decl` nodes are grouped by identifier name into a `StringHashMap(ArrayList(*ASTNode))`.\n" +
+            "3. **Contract Parity Validation (`areContractsEqual`):** If any declaration in a group has `platform_targets`:\n" +
+            "   - Every declaration in the group (specialized and universal fallback) MUST specify non-empty contracts.\n" +
+            "   - The compiler runs `areContractsEqual(first.contracts, other.contracts)` ensuring that every variant implements the exact same list of contracts.\n" +
+            "   - If any variant diverges, `TypeError.PlatformVariantContractsMismatch` is reported.\n\n" +
+            "### C. Method Parity Validation (`src/core/type_checker/infer_decl.zig`)\n" +
+            "- During declaration method inference, if `decl.platform_targets != null`, every method defined within the body is validated.\n" +
+            "- If a method lacks `kw_implement` and does not originate from a composed `skill`, the compiler rejects it with `TypeError.PlatformSpecializationCannotIntroduceAdHocMethods`.\n\n" +
+            "### D. LLVM Backend Emission (`src/backend/llvm_emitter/`)\n" +
+            "- When compiling for a specific target triple (e.g. `x86_64-linux-gnu` or `x86_64-windows-msvc`), the LLVM emitter checks `platform_targets`.\n" +
+            "- Inactive platform declarations are pruned from code emission. The active variant satisfies all contract calls with zero vtable indirection overhead.\n\n" +
+            "## 5. Standard Library Case Studies (Phase 60 Refactoring)\n" +
+            "- **`std.process`:** Split `NativeProcess` into `PosixProcess` and `Win32Process`. Both platforms implement `NativeProcessOpsContract` via `object NativeProcessOps`.\n" +
+            "- **`std.thread`:** Split `NativeThread` into `PosixThread` (pthread) and `Win32Thread`. Both implement `ThreadOpsContract` via `object NativeThread`.\n" +
+            "- **`std.coroutines`:** Split `NativePoll` into `PosixPoll` and `Win32Poll`. Both implement `PollLayoutContract` via `object PollLayout` used by the cooperative `Scheduler`.\n\n" +
+            "## 6. CLI Cross-Compilation Commands\n" +
+            "- Compile for Linux: `./bin/eiwac build --target x86_64-linux -o app_linux main.ei`\n" +
+            "- Compile for Windows: `./bin/eiwac build --target x86_64-windows -o app.exe main.ei`\n" +
+            "- Compile for macOS Apple Silicon: `./bin/eiwac build --target aarch64-macos -o app_mac main.ei`\n\n" +
+            "Parity is enforced during semantic analysis on the host machine before backend emission, guaranteeing that cross-compiled targets never fail due to API mismatches."
+    }
+
     fun syntaxRules(): String {
         return "# Strict Syntax Rules for LLMs & Developers\n\n" +
             "1. **NEVER use `class`, `open`, `abstract`, or `override`:** They do NOT exist in Eiwa.\n" +
@@ -174,7 +267,8 @@ type Docs() {
             "   - `Map<K, V>`: `[\"key\" of \"value\"]`\n" +
             "6. **Loops:** `for (items) { ... }`, `for (items) { it -> ... }`, `for (items) { idx, it -> ... }`, `while (cond) { ... }`, `repeat(n) { ... }`.\n" +
             "7. **Null Safety:** `Type?` or `Type | Null`, safe call `obj?.prop`, elvis `a ?: b`, force `obj!!`.\n" +
-            "8. **Import Syntax:** `import { SymbolA, SymbolB } from \".path.to.module\"` (relative to project root with leading `.`)."
+            "8. **Import Syntax:** `import { SymbolA, SymbolB } from \".path.to.module\"` (relative to project root with leading `.`).\n" +
+            "9. **Platform Parity (ADR 60):** Platform-specialized `type(\"...\")` and `object(\"...\")` MUST implement contracts. All platform variants sharing a name (including default fallback) MUST implement the exact same contract list. Ad-hoc uncontracted methods are forbidden in specialized declarations. `lib` blocks cannot share duplicate names across platforms (use explicit names like `PosixProcess` and `Win32Process`)."
     }
 
     fun stdlib(): String {
@@ -263,6 +357,9 @@ type Docs() {
         }
         if (query == "19" || query == "extensions") {
             return section19Extensions()
+        }
+        if (query == "20" || query == "platform" || query == "platform-parity" || query == "parity" || query == "cross-compilation" || query == "adr60") {
+            return section20PlatformParity()
         }
 
         return overview()
