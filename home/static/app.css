@@ -1544,8 +1544,46 @@ code.language-bash {
   color: #cbd5e1;
 }
 
-.mcp-capabilities li strong {
-  color: #f1eee9;
+.mcp-editor-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+
+.mcp-tabs {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.mcp-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mcp-tab:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mcp-tab.active {
+  color: #fff;
+  background: rgba(120, 92, 252, 0.2);
+  border-color: rgba(120, 92, 252, 0.4);
+  font-weight: 600;
 }
 
 .mcp-code-block {
@@ -1560,15 +1598,20 @@ code.language-bash {
 }
 
 .mcp-setup-hint {
-  padding: 14px 20px;
+  padding: 10px 16px;
   background: rgba(120, 92, 252, 0.05);
   border-top: 1px solid var(--border);
   font-size: 12.5px;
   color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .mcp-setup-hint p {
   margin: 0;
+  line-height: 1.4;
 }
 
 @media (max-width: 900px) {

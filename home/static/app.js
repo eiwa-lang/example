@@ -159,31 +159,95 @@ function initApp() {
     });
   }
 
+  const mcpConfigs = {
+    "mcp-tab-antigravity": {
+      lang: "json",
+      code: '{\n  "mcpServers": {\n    "eiwa": {\n      "serverUrl": "https://eiwa.dev/mcp"\n    }\n  }\n}',
+      hint: "Add to ~/.gemini/config/mcp_config.json (or project .agents/mcp_config.json)."
+    },
+    "mcp-tab-codex": {
+      lang: "yaml",
+      code: '[mcp_servers.eiwa]\nurl = "https://eiwa.dev/mcp"',
+      hint: "Run 'codex mcp add eiwa --url https://eiwa.dev/mcp' or add to ~/.codex/config.toml."
+    },
+    "mcp-tab-cursor": {
+      lang: "json",
+      code: '{\n  "mcpServers": {\n    "eiwa": {\n      "url": "https://eiwa.dev/mcp"\n    }\n  }\n}',
+      hint: "Add to .cursor/mcp.json or your VS Code MCP client (Cline, Roo Code)."
+    },
+    "mcp-tab-claude": {
+      lang: "json",
+      code: '{\n  "mcpServers": {\n    "eiwa": {\n      "type": "http",\n      "url": "https://eiwa.dev/mcp"\n    }\n  }\n}',
+      hint: "Run 'claude mcp add --transport http eiwa https://eiwa.dev/mcp' or add to .mcp.json."
+    }
+  };
+
+  function bindMcpTabs() {
+    const tabs = document.querySelectorAll(".mcp-tab");
+    const codeEl = document.getElementById("mcp-code-content");
+    const hintEl = document.getElementById("mcp-hint-text");
+    if (!tabs.length || !codeEl) return;
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        tabs.forEach(function (t) { t.classList.remove("active"); });
+        tab.classList.add("active");
+        const cfg = mcpConfigs[tab.id];
+        if (cfg) {
+          if (hintEl) hintEl.textContent = cfg.hint;
+          delete codeEl.dataset.highlighted;
+          codeEl.removeAttribute("data-highlighted");
+          codeEl.className = "language-" + (cfg.lang || "json");
+          codeEl.textContent = cfg.code;
+          if (window.hljs) {
+            hljs.highlightElement(codeEl);
+          }
+        }
+      });
+    });
+  }
+
   highlightAll();
   bindTabs(".example-tab");
   bindTabs(".lesson-tab");
   bindLessonRun();
   bindMobileMenu();
   bindOsSelectors();
+  bindMcpTabs();
   setOs(currentOs);
 
   document.body.addEventListener("click", function (event) {
     const copyBtn = event.target.closest("#copy-install");
-    if (!copyBtn) return;
-    const textToCopy = currentOs === "win"
-      ? "irm https://eiwa.dev/install.ps1 | iex"
-      : "curl -fsSL https://eiwa.dev/install.sh | sh";
+    if (copyBtn) {
+      const textToCopy = currentOs === "win"
+        ? "irm https://eiwa.dev/install.ps1 | iex"
+        : "curl -fsSL https://eiwa.dev/install.sh | sh";
 
-    navigator.clipboard.writeText(textToCopy);
-    copyBtn.classList.add("copied");
-    setTimeout(function () {
-      copyBtn.classList.remove("copied");
-    }, 900);
+      navigator.clipboard.writeText(textToCopy);
+      copyBtn.classList.add("copied");
+      setTimeout(function () {
+        copyBtn.classList.remove("copied");
+      }, 900);
+      return;
+    }
+
+    const copyMcpBtn = event.target.closest("#copy-mcp");
+    if (copyMcpBtn) {
+      const codeEl = document.getElementById("mcp-code-content");
+      if (!codeEl) return;
+      navigator.clipboard.writeText(codeEl.textContent.trim());
+      copyMcpBtn.classList.add("copied");
+      setTimeout(function () {
+        copyMcpBtn.classList.remove("copied");
+      }, 900);
+      return;
+    }
   });
 
   document.body.addEventListener("htmx:afterSwap", function (event) {
     highlightAll(event.target);
     setOs(currentOs);
+    bindMcpTabs();
   });
 }
 

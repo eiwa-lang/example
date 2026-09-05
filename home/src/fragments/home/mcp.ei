@@ -41,19 +41,25 @@ fun mcpCard(): String {
                     }
                 }
                 div(class = "mcp-config-card") {
-                    div(class = "editor-bar") {
-                        div(class = "file-title") {
-                            write("claude_desktop_config.json / .cursor/mcp.json")
+                    div(class = "editor-bar mcp-editor-bar") {
+                        div(class = "mcp-tabs") {
+                            button(text = "Antigravity", id = "mcp-tab-antigravity", class = "mcp-tab active")
+                            button(text = "Codex", id = "mcp-tab-codex", class = "mcp-tab")
+                            button(text = "Cursor / VS Code", id = "mcp-tab-cursor", class = "mcp-tab")
+                            button(text = "Claude Code", id = "mcp-tab-claude", class = "mcp-tab")
                         }
                     }
                     pre(class = "mcp-code-block") {
-                        code(class = "language-json") {
-                            write("{\n  \"mcpServers\": {\n    \"eiwa\": {\n      \"url\": \"https://eiwa.dev/mcp\"\n    }\n  }\n}")
+                        code(class = "language-json", id = "mcp-code-content") {
+                            write("{\n  \"mcpServers\": {\n    \"eiwa\": {\n      \"serverUrl\": \"https://eiwa.dev/mcp\"\n    }\n  }\n}")
                         }
                     }
                     div(class = "mcp-setup-hint") {
-                        p {
-                            write("Add the snippet above to your IDE's MCP configuration to enable full Eiwa language intelligence.")
+                        p(id = "mcp-hint-text") {
+                            write("Add to ~/.gemini/config/mcp_config.json (or project .agents/mcp_config.json).")
+                        }
+                        button(id = "copy-mcp", class = "copy-button") {
+                            svg(viewBox = "0 0 24 24", class = "copy-icon") { path(d = "M9 9h12v12H9zM5 15V5a2 2 0 012-2h10", fill = "none") }
                         }
                     }
                 }

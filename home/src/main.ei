@@ -60,6 +60,7 @@ fun homePage() = html {
         script(src = "https://unpkg.com/htmx.org@2.0.6")
         script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js")
         script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/kotlin.min.js")
+        script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js")
         script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/yaml.min.js")
 
         link(rel = "icon", linkType = "image/png", href = "/favicon/favicon-96x96.png", sizes = "96x96")
