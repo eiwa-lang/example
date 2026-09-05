@@ -11,7 +11,7 @@ fun httpExample(): String {
             }
             div(class = "editor-content") {
                 h3("HTTP routes with arest")
-                p("Declarative routing, typed JSON responses, and a health check in one compact server. Declare the arest dependency once in eiwa.yaml, then run.")
+                p("Typed JSON, path parameters, and a health check in one compact server. Declare the arest dependency in eiwa.yaml, then run.")
                 p { strong("1. eiwa.yaml — declare the dependency") }
                 pre {
                     code(class = "language-yaml") {
@@ -21,16 +21,16 @@ fun httpExample(): String {
                 p { strong("2. http.ei — the server") }
                 pre {
                     code(class = "language-kotlin") {
-                        write("import { arest } from \"arest.arest\"\nimport { MutableMap } from \"std.collections\"\n\narest(8080) {\n    health()\n\n    routing {\n        get(\"/hello\") {\n            respondText(\"Hello from Eiwa!\")\n        }\n\n        get(\"/user\") {\n            val body = MutableMap<String, String>()\n            body.put(\"name\", \"Ana\")\n            body.put(\"role\", \"admin\")\n            respondJson(body.freeze().toJson())\n        }\n\n        post(\"/echo\") {\n            respondJson(request.body)\n        }\n    }\n}")
+                        write("import { arest } from \"arest.arest\"\nimport { Json } from \"std.json\"\n\ntype User(val id: Int, val name: String) : Serializable + Json\n\narest(8080) {\n    health()\n\n    routing {\n        get(\"/hello\") {\n            respondText(\"Hello from Eiwa!\")\n        }\n\n        get(\"/users/me\") {\n            respond(User(1, \"Leo\"))\n        }\n\n        get(\"/users/:id\") {\n            val id = pathParam(\"id\") ?: \"unknown\"\n            respond(User(id.toInt(), \"User \$id\"))\n        }\n\n        post(\"/users\") {\n            val user = receive<User>()\n            respond(user, status = 201)\n        }\n    }\n}")
                     }
                 }
                 p { strong("3. Run and test") }
                 pre {
                     code(class = "language-bash") {
-                        write("$ eiwa run\n[Arest] Server listening on http://localhost:8080 ...\n\n$ curl http://localhost:8080/hello\nHello from Eiwa!\n\n$ curl http://localhost:8080/user\n{\"name\":\"Ana\",\"role\":\"admin\"}\n\n$ curl -X POST http://localhost:8080/echo -d '{\"oi\":\"mundo\"}'\n{\"oi\":\"mundo\"}")
+                        write("$ eiwa run\n[Arest] Server listening on http://localhost:8080 ...\n\n$ curl http://localhost:8080/hello\nHello from Eiwa!\n\n$ curl http://localhost:8080/users/me\n{\"id\":1,\"name\":\"Leo\"}\n\n$ curl http://localhost:8080/users/42\n{\"id\":42,\"name\":\"User 42\"}\n\n$ curl -X POST http://localhost:8080/users \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"id\":99,\"name\":\"Ana\"}'\n{\"id\":99,\"name\":\"Ana\"}")
                     }
                 }
-                p("Routes are plain functions over ApplicationCall: respond, respondText, respondJson, respondHtml — plus static files and health checks built in.")
+                p("Routes are receivers on ApplicationCall: respond(Serializable), receive<T>(), pathParam(), header(), query() — plus static files and health checks built in.")
             }
         }
     }
