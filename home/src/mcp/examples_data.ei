@@ -36,14 +36,18 @@ object ExamplesData {
                 "        get(\"/hello\") {\n" +
                 "            respondText(\"Hello from Eiwa!\")\n" +
                 "        }\n\n" +
-                "        get(\"/user\") {\n" +
-                "            val body = MutableMap<String, String>()\n" +
-                "            body.put(\"name\", \"Ana\")\n" +
-                "            body.put(\"role\", \"admin\")\n" +
-                "            respondJson(body.freeze().toJson())\n" +
-                "        }\n\n" +
                 "        post(\"/echo\") {\n" +
                 "            respondJson(request.body)\n" +
+                "        }\n" +
+                "        get(\"/user\") {\n" +
+                "            val body = MutableMap<String, String>()\n" +
+                "            body[\"name\"] = \"Ana\"\n" +
+                "            body[\"role\"] = \"admin\"\n" +
+                "            respond(body.freeze())\n" +
+                "        }\n\n" +
+                "        get(\"/users/:id\") {\n" +
+                "            val id = pathParam(\"id\") ?: \"unknown\"\n" +
+                "            respond(User(id.toInt(), \"User \$id\"))\n" +
                 "        }\n" +
                 "    }\n" +
                 "}\n" +
