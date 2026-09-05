@@ -1,0 +1,37 @@
+import { fragment } from "html"
+
+fun httpClientExample(): String {
+    return fragment {
+        div {
+            div(class = "editor-bar") {
+                div(class = "file-title") {
+                    img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
+                    write("eiwa.yaml + client.ei")
+                }
+            }
+            div(class = "editor-content") {
+                h3("HTTP Client with arest")
+                p("Expressive DSL, automatic Content Negotiation, pluggable transport engines (CurlEngine / MockEngine), and zero-reflection typed response parsing directly into DTOs.")
+                p { strong("1. eiwa.yaml — declare the dependency") }
+                pre {
+                    code(class = "language-yaml") {
+                        write("name: my-client\nversion: 0.1.0\n\ndependencies:\n  arest:\n    github: eiwa-lang/arest\n    branch: main")
+                    }
+                }
+                p { strong("2. client.ei — request and decode") }
+                pre {
+                    code(class = "language-kotlin") {
+                        write("import { arestClient } from \"arest.client.client\"\nimport { Serializable } from \"std.serde\"\nimport { Json } from \"std.json\"\n\ntype UserDto(val id: Int, val name: String, val email: String) : Serializable + Json\n\nval client = arestClient {\n    baseUrl(\"https://api.example.com\")\n    timeout(10000)\n    bearerAuth(\"secret-token\")\n}\n\n// GET with automatic typed deserialization:\nval res = client.get(\"/users/1\")\nif (res.ok) {\n    val user = res.body<UserDto>()\n    print(\"Found user: \${user.name} (\${user.email})\")\n}\n\n// POST with automatic JSON serialization:\nval newUser = UserDto(2, \"Ana\", \"ana@example.com\")\nval createRes = client.post(\"/users\", newUser)\nprint(\"Created: \${createRes.status}\")")
+                    }
+                }
+                p { strong("3. Run and test") }
+                pre {
+                    code(class = "language-bash") {
+                        write("$ eiwa run\nFound user: Ana (ana@example.com)\nCreated: 201")
+                    }
+                }
+                p("The client supports query parameters, custom headers, status predicates (isNotFound, isServerError), and pluggable transport engines like CurlEngine (libcurl) and MockEngine.")
+            }
+        }
+    }
+}

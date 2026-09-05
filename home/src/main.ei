@@ -2,6 +2,7 @@ import { html } from "html"
 import { arest } from "arest.arest"
 
 import { httpExample } from ".fragments.examples.http"
+import { httpClientExample } from ".fragments.examples.http_client"
 import { htmlExample } from ".fragments.examples.htmldsl"
 import { mcpExample } from ".fragments.examples.mcp"
 import { testExample } from ".fragments.examples.test"
@@ -204,6 +205,7 @@ fun homePage() = html {
                     div(class = "tabs-layout") {
                         div(class = "tab-list", id = "example-tabs") {
                             button(text = "HTTP Server", class = "tab-button active example-tab", hxGet = "/fragments/examples/http", hxTarget = "#example-view", hxSwap = "innerHTML")
+                            button(text = "HTTP Client", class = "tab-button example-tab", hxGet = "/fragments/examples/http_client", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "HTML", class = "tab-button example-tab", hxGet = "/fragments/examples/html", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "Tasks", class = "tab-button example-tab", hxGet = "/fragments/examples/tasks", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "Postgres", class = "tab-button example-tab", hxGet = "/fragments/examples/postgres", hxTarget = "#example-view", hxSwap = "innerHTML")
@@ -372,6 +374,7 @@ arest(8081) {
         get("/fragments/home/footer") { respond(200, "text/html", footer()) }
         get("/fragments/home/packages") { respond(200, "text/html", packages()) }
         get("/fragments/examples/http") { respond(200, "text/html", httpExample()) }
+        get("/fragments/examples/http_client") { respond(200, "text/html", httpClientExample()) }
         get("/fragments/examples/html") { respond(200, "text/html", htmlExample()) }
         get("/fragments/examples/mcp") { respond(200, "text/html", mcpExample()) }
         get("/fragments/examples/tests") { respond(200, "text/html", testExample()) }

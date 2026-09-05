@@ -2,6 +2,7 @@ object ExamplesData {
     fun list(): String {
         return "# Functional Eiwa Examples\n\n" +
             "- `http`: Declarative HTTP routing with arest\n" +
+            "- `http_client`: Type-safe HTTP Client with arest\n" +
             "- `html`: Type-safe HTML DSL with html builder\n" +
             "- `tasks`: Concurrency and parallel background coroutines\n" +
             "- `postgres`: Async database queries with std.postgres\n" +
@@ -54,6 +55,48 @@ object ExamplesData {
                 "curl http://localhost:8080/user\n" +
                 "```\n\n" +
                 "Routes are plain functions over ApplicationCall: respond, respondText, respondJson, respondHtml. Static files and health checks are built in."
+        }
+        if (topic == "http_client" || topic == "client") {
+            return "## HTTP Client with arest\n\n" +
+                "Expressive DSL, automatic Content Negotiation, pluggable transport engines (CurlEngine / MockEngine), and zero-reflection typed response parsing directly into DTOs.\n\n" +
+                "### 1. Declare the dependency (eiwa.yaml)\n\n" +
+                "```yaml\n" +
+                "name: my-client\n" +
+                "version: 0.1.0\n\n" +
+                "dependencies:\n" +
+                "  arest:\n" +
+                "    github: eiwa-lang/arest\n" +
+                "    branch: main\n" +
+                "```\n\n" +
+                "### 2. Client (client.ei)\n\n" +
+                "```kotlin\n" +
+                "import { arestClient } from \"arest.client.client\"\n" +
+                "import { Serializable } from \"std.serde\"\n" +
+                "import { Json } from \"std.json\"\n\n" +
+                "type UserDto(val id: Int, val name: String, val email: String) : Serializable + Json\n\n" +
+                "val client = arestClient {\n" +
+                "    baseUrl(\"https://api.example.com\")\n" +
+                "    timeout(10000)\n" +
+                "    bearerAuth(\"secret-token\")\n" +
+                "}\n\n" +
+                "// GET with automatic typed deserialization into UserDto:\n" +
+                "val res = client.get(\"/users/1\")\n" +
+                "if (res.ok) {\n" +
+                "    val user = res.body<UserDto>()\n" +
+                "    print(\"Found user: \${user.name} (\${user.email})\")\n" +
+                "}\n\n" +
+                "// POST with automatic JSON serialization:\n" +
+                "val newUser = UserDto(2, \"Ana\", \"ana@example.com\")\n" +
+                "val createRes = client.post(\"/users\", newUser)\n" +
+                "print(\"Created: \${createRes.status}\")\n" +
+                "```\n\n" +
+                "### 3. Run and test\n\n" +
+                "```bash\n" +
+                "eiwa run\n" +
+                "Found user: Ana (ana@example.com)\n" +
+                "Created: 201\n" +
+                "```\n\n" +
+                "The client supports query parameters, custom headers, status predicates (isNotFound, isServerError), and pluggable transport engines like CurlEngine (libcurl) and MockEngine."
         }
         if (topic == "html") {
             return "## HTML DSL with the html package\n\n" +
