@@ -4,7 +4,7 @@ version: 0.1.0
 dependencies:
   arest:
     github: eiwa-lang/arest
-    branch: main
+    branch: debug
   postgres:
     github: eiwa-lang/postgres
     branch: main

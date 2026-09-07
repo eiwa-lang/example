@@ -1,0 +1,125 @@
+import { date, now, Time } from "std.time"
+import { List, MutableList, MutableMap } from "std.collections"
+import { Serializable } from "std.serde"
+import { Json } from "std.json"
+import { Yaml } from "std.yaml"
+import { Log } from "std.log"
+import { brl } from "std.money"
+
+import { Postgres } from "postgres"
+import { html } from "html"
+import { arest } from "arest.arest"
+
+import { homePage } from ".learn"
+
+type Address(val city: String, val zip: String) : Serializable
+type Person(
+    val name: String,
+    val age: Int,
+    val address: Address,
+    val birthday: Time,
+    val tags: List<String>
+) : Serializable + Json + Yaml
+type User(val id: Int, val name: String) : Serializable + Json + Yaml
+type DbConfig(val host: String, val port: Int) : Serializable + Json
+
+fun main() {
+    printWelcome()
+    val pool = Postgres.pool("postgres://leodouglas@localhost/eiwa", maxConnections = 10)
+
+    arest(8082) {
+        routing {
+            get("/") {
+                homePage(this)
+            }
+
+            get("/map") {
+                val body = MutableMap<String, String>()
+                body["welcome"] = "Hi there!"
+                body["description"] = "Arest is a Web Framework for Eiwa!"
+                body["date"] = now().toString()
+                body["uuid"] = Uuid.generate().toString()
+                body["random_int"] = Random.nextInt().toString()
+                body["random_double"] = Random.nextDouble(1, 100).toString()
+                body["money"] = brl(Random.nextInt()).format()
+
+                respond(200, "application/json", body.toJson())
+            }
+
+            get("/json") {
+                val addr = Address("Sao Paulo", "01000-000")
+                val person = Person("Ana", 30, addr, date(1987, 10, 10), ["friend", "coder"])
+                respond(200, "application/json", person.toJson())
+            }
+
+            get("/yaml") {
+                val addr = Address("Sao Paulo", "01000-000")
+                val person = Person("Ana", 30, addr, date(1987, 10, 10), ["friend", "coder"])
+                respond(200, "text/yaml", person.toYaml())
+            }
+
+            get("/data") {
+                val result = pool.query("SELECT id, name FROM users")
+
+                val users = MutableList<User>()
+                for (result.rows()) { row ->
+                    users.add(User(row.int("id"), row.string("name")))
+                }
+                respond(200, "application/json", users.toJson())
+            }
+
+            post("/users") {
+                val name = request.queries["name"] ?: "Anonymous"
+                pool.prepare("INSERT INTO users (name) VALUES ($1)")
+                    .bind(name)
+                    .execute()
+
+                val msg = [
+                    "status" of "created",
+                    "name" of name
+                ]
+                respond(201, "application/json", msg.toJson())
+            }
+
+            get("/hello") {
+                val name = request.queries["name"] ?: "Guest"
+                respondText("Hello, " + name + "!")
+            }
+
+            post("/echo") {
+                val contentType = request.headers["Content-Type"] ?: "text/plain"
+                respond(200, contentType, request.body)
+            }
+
+            get("/shutdown") {
+                pool.close()
+                server.shutdown()
+                respondText("Server is shutting down...")
+            }
+        }
+
+        mcp {
+            name("Calculator")
+            version("1.0.0")
+            http("/mcp")
+
+            tool("sum") {
+                if (hasArgument("a") && hasArgument("b")) {
+                    val a = arguments.get("a")!!.asNumber()
+                    val b = arguments.get("b")!!.asNumber()
+                    respond(a + b)
+                } else {
+                    error("Missing required arguments 'a' and 'b' (numbers).")
+                }
+            }
+
+            resource("config://database") {
+                respond(DbConfig("localhost", 5432).toJson())
+            }
+
+            prompt("review") {
+                respond("Review this code for bugs and suggestions.")
+            }
+        }
+    }
+}
