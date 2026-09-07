@@ -4,6 +4,7 @@ output: app
 
 dependencies:
   arest:
+    # path: ../../arest
     github: eiwa-lang/arest
     branch: main
   postgres:

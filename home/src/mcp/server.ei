@@ -6,9 +6,8 @@ import { ExamplesData } from ".mcp.examples_data"
 
 fun setupMcp(server: ArestBuilder) {
     server.mcp {
-        name("Eiwa Language Server")
+        name("Eiwa Language")
         version("1.0.0")
-        http("/mcp")
         instructions(
             "Official MCP documentation and specification server for the Eiwa programming language (https://eiwa.dev).\n" +
             "Eiwa is a statically typed, natively compiled language with Kotlin-inspired syntax.\n" +
@@ -16,7 +15,8 @@ fun setupMcp(server: ArestBuilder) {
             "1. NO class, open, abstract, or override keywords exist.\n" +
             "2. Type system is 100% composition-based: type, contract, skill, object, implement.\n" +
             "3. Stackless coroutines: task {} and .await().\n" +
-            "4. All APIs are explicitly declared in std/."
+            "4. All APIs are explicitly declared in std/.\n" +
+            "5. Standard library APIs to work with mcp, http, ai, html and etc are declared in std and Arest framework."
         )
 
         // Resources
@@ -42,6 +42,10 @@ fun setupMcp(server: ArestBuilder) {
 
         resource("eiwa://spec/stdlib") {
             respond(Docs.stdlib())
+        }
+
+        resource("eiwa://spec/packages") {
+            respond(Docs.packages())
         }
 
         resource("eiwa://spec/cli") {

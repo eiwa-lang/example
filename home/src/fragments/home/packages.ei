@@ -19,7 +19,7 @@ fun packages(): String {
                     div(class = "editor-content") {
                         pre {
                             code(class = "language-yaml") {
-                                write("name: my-app\nversion: 0.1.0\noutput: app\n\ndependencies:\n  arest:\n    github: eiwa-lang/arest\n    branch: main\n  postgres:\n    github: eiwa-lang/postgres\n    tag: v1.0.0\n  html:\n    github: eiwa-lang/html\n    commit: 8c64d09\n  auth:\n    git: https://gitlab.com/company/auth.git\n    branch: main")
+                                write("name: my-app\nversion: 0.1.0\noutput: app\n\ndependencies:\n  arest:\n    github: eiwa-lang/arest\n    branch: main\n  postgres:\n    github: eiwa-lang/postgres\n    tag: v1.0.0\n  html:\n    github: eiwa-lang/html\n    commit: 8c64d09\n  auth:\n    git: https://gitlab.com/company/auth.git\n    branch: main\n  custom-lib:\n    path: ../custom-lib")
                             }
                         }
                     }

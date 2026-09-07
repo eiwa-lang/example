@@ -163,14 +163,14 @@ type Docs() {
     }
 
     fun section20PlatformParity(): String {
-        return "# Section 20: Cross-Compilation & Platform Parity (ADR 60)\n\n" +
+        return "# Section 20: Cross-Compilation & Platform Parity\n\n" +
             "## 1. The Architectural Problem: False Symmetry\n" +
             "In traditional systems programming (C/C++ `#ifdef`, Rust `cfg`, Go build tags), conditional compilation easily suffers from **False Symmetry**:\n" +
             "- A developer implements a feature on POSIX/Linux, adding methods like `fork()`, `waitpid()`, or `getPriority()`.\n" +
             "- Another developer implements the Windows variant with `createProcess()` or omits `getPriority()` entirely.\n" +
             "- Because the two variants share the same type or lib name, code written on Linux compiles cleanly locally, but breaks with cryptic linker or compile errors when built on Windows or in CI.\n\n" +
             "Eiwa eliminates this class of bugs at compile time through **Strict Platform Parity (ADR 60)**.\n\n" +
-            "## 2. The 5 Core Principles of ADR 60\n\n" +
+            "## 2. The 5 Core Principles\n\n" +
             "| Rule | Requirement | Compiler Enforcement |\n" +
             "|---|---|---|\n" +
             "| **1. Unique FFI Names** | `lib` blocks can NEVER share the same name across platforms. | `TypeError.DuplicateDeclaration` via `seen_libs` map |\n" +
@@ -290,11 +290,50 @@ type Docs() {
             "- `html`: Type-safe HTML DSL for server-rendered interfaces."
     }
 
+    fun packages(): String {
+        return "# Section 21: Package Management (eiwa.yaml)\n\n" +
+            "Eiwa has no central registry — dependencies come from git hosts or local directories, declared in the project manifest `eiwa.yaml`.\n\n" +
+            "## Manifest (`eiwa.yaml`)\n" +
+            "```yaml\n" +
+            "name: my-app\n" +
+            "version: 1.0.0\n" +
+            "output: bin/my-app   # optional, default: bin/<name>\n\n" +
+            "dependencies:\n" +
+            "  arest:\n" +
+            "    github: eiwa-lang/arest\n" +
+            "    branch: main\n" +
+            "  postgres:\n" +
+            "    github: eiwa-lang/postgres\n" +
+            "    tag: v1.0.0\n" +
+            "  auth:\n" +
+            "    git: https://gitlab.com/company/auth.git\n" +
+            "    commit: 84d2ab3\n" +
+            "  meulib:\n" +
+            "    path: ../meulib\n" +
+            "```\n\n" +
+            "## Dependency Sources\n" +
+            "- `github: org/repo` — GitHub shorthand (branch/tag/commit optional).\n" +
+            "- `gitlab: org/repo` — GitLab shorthand.\n" +
+            "- `git: <url>` — any git URL.\n" +
+            "- `path: <dir>` — **local path dependency (ADR 61)**: a directory used directly, no cloning, no versioning, no resolution cache. Changes are reflected on the very next `run`/`build`/`test`. Coexists with git deps; it is NOT an override. Path deps do not participate in `eiwa freeze`/`eiwa update`.\n\n" +
+            "## Commands\n" +
+            "- `eiwa init [dir]`: Scaffolds a project (`eiwa.yaml`, `src/main.ei`, `test/`).\n" +
+            "- `eiwa add <name> <source> [--branch|--tag|--commit <ref>]`: Adds a git dependency.\n" +
+            "- `eiwa add <name> --path <dir>` (or `path:<dir>`): Adds a local path dependency.\n" +
+            "- `eiwa remove <name>`: Removes a dependency.\n" +
+            "- `eiwa freeze`: Pins resolved commits into `eiwa.freeze` (path deps skipped).\n" +
+            "- `eiwa update [name]`: Re-resolves git deps from the manifest.\n" +
+            "- `eiwa build --frozen`: Fails unless `eiwa.freeze` exists (for CI).\n\n" +
+            "## Freeze & Reproducible Builds\n" +
+            "`eiwa freeze` writes `eiwa.freeze` with every git dependency pinned to its exact commit (`branch`/`tag` replaced by `commit`). When present, the freeze overrides the local resolution cache — commit it for deterministic CI/CD builds. `eiwa build` never upgrades dependencies on its own; only `eiwa update` re-resolves refs."
+    }
+
     fun cli(): String {
         return "# Eiwa CLI Toolchain Guide\n\n" +
             "## Commands:\n" +
             "- `eiwa init <name>`: Initializes a new Eiwa project with `eiwa.yaml`.\n" +
-            "- `eiwa add <github-repo>`: Adds a Git dependency to `eiwa.yaml`.\n" +
+            "- `eiwa add <source> [--branch|--tag|--commit <ref>]`: Adds a Git dependency to `eiwa.yaml`.\n" +
+            "- `eiwa add <name> --path <dir>`: Adds a local path dependency (no git required).\n" +
             "- `eiwa run [file.ei]`: Compiles and executes code instantly with JIT/AOT.\n" +
             "- `eiwa build [file.ei] -o <binary>`: Generates an optimized native static binary.\n" +
             "- `eiwa test`: Executes all `test \"name\" { ... }` blocks across the project."
