@@ -339,7 +339,63 @@ type Docs() {
             "- `eiwa test`: Executes all `test \"name\" { ... }` blocks across the project."
     }
 
+    fun listTopics(): String {
+        return "# Eiwa Documentation Topics\n\n" +
+            "Use `get_doc_topic` with one of:\n" +
+            "- `overview` — Language overview and core concepts\n" +
+            "- `type-system` — Composition-based type system (type, contract, skill, implement)\n" +
+            "- `platform-parity` — Platform parity and cross-compilation\n" +
+            "- `coroutines` — Stackless coroutines (task/await)\n" +
+            "- `syntax-rules` — Syntax rules and restrictions\n" +
+            "- `stdlib` — Standard library modules\n" +
+            "- `packages` — Packages and modules\n" +
+            "- `cli` — CLI toolchain guide"
+    }
+
+    fun listTourSections(): String {
+        return "# Eiwa Language Tour Sections (1-20)\n\n" +
+            "Use `get_tour_section` with a number (1-20) or slug:\n" +
+            "1. Modules and imports\n" +
+            "2. Top-level statements (optional main)\n" +
+            "3. Loops, ranges and arrays\n" +
+            "4. Strings\n" +
+            "5. Null safety and union types\n" +
+            "6. Exceptions (try/catch/throw)\n" +
+            "7. Collections (lists, maps, sets)\n" +
+            "8. Ternary operator\n" +
+            "9. Operator overloading\n" +
+            "10. When / pattern matching\n" +
+            "11. Type system (composition)\n" +
+            "12. Coroutines and tasks\n" +
+            "13. Serialization / JSON\n" +
+            "14. Smart casts\n" +
+            "15. Enums\n" +
+            "16. Generics\n" +
+            "17. Scope functions\n" +
+            "18. C interop\n" +
+            "19. Extension functions\n" +
+            "20. Platform parity / cross-compilation"
+    }
+
     fun getSection(query: String): String {
+        if (query == "overview") {
+            return overview()
+        }
+        if (query == "type-system") {
+            return typeSystem()
+        }
+        if (query == "syntax-rules") {
+            return syntaxRules()
+        }
+        if (query == "stdlib") {
+            return stdlib()
+        }
+        if (query == "packages") {
+            return packages()
+        }
+        if (query == "cli") {
+            return cli()
+        }
         if (query == "1" || query == "01" || query == "modules" || query == "imports") {
             return section1Modules()
         }

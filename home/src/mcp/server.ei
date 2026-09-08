@@ -89,6 +89,10 @@ fun setupMcp(server: ArestBuilder) {
             respond(ExamplesData.get(topic))
         }
 
+        tool("list_doc_topics") {
+            respond(Docs.listTopics())
+        }
+
         tool("get_doc_topic", description = "Get a documentation section", arguments = [
             Argument("topic", JsonType.STRING, "Documentation section (overview, type-system, platform-parity, coroutines, syntax-rules, stdlib, cli)", true),
             Argument("section", JsonType.STRING, "Alias for topic (kept for compatibility)", false)
@@ -97,8 +101,12 @@ fun setupMcp(server: ArestBuilder) {
             respond(Docs.getSection(topic))
         }
 
+        tool("list_tour_section") {
+            respond(Docs.listTourSections())
+        }
+
         tool("get_tour_section", description = "Get a language tour section by number", arguments = [
-            Argument("section", JsonType.STRING, "Tour section number (1-29)", true),
+            Argument("section", JsonType.STRING, "Tour section number (1-20)", true),
             Argument("number", JsonType.STRING, "Alias for section (kept for compatibility)", false)
         ]) {
             val section = hasArgument("section") ? arguments.get("section")!!.asString() : (hasArgument("number") ? arguments.get("number")!!.asString() : "1")
