@@ -8,6 +8,7 @@ import { mcpExample } from ".fragments.examples.mcp"
 import { testExample } from ".fragments.examples.test"
 import { timeExample } from ".fragments.examples.time"
 import { moneyExample } from ".fragments.examples.money"
+import { regexExample } from ".fragments.examples.regex"
 import { hero } from ".fragments.home.hero"
 import { whyEiwa } from ".fragments.home.why"
 import { features } from ".fragments.home.features"
@@ -15,6 +16,7 @@ import { paradigms } from ".fragments.home.paradigms"
 import { start } from ".fragments.home.start"
 import { footer } from ".fragments.home.footer"
 import { packages } from ".fragments.home.packages"
+import { tooling } from ".fragments.home.tooling"
 import { mcpCard } from ".fragments.home.mcp"
 import { setupMcp } from ".mcp.server"
 import { imports } from ".fragments.lessons.imports"
@@ -111,6 +113,7 @@ fun homePage() = html {
                 a(text = "Language Tour", href = "#tour", class = "mobile-link")
                 a(text = "Examples", href = "#examples", class = "mobile-link")
                 a(text = "Packages", href = "#packages", class = "mobile-link")
+                a(text = "Editors", href = "#tooling", class = "mobile-link")
                 a(text = "MCP AI", href = "#mcp", class = "mobile-link")
                 a(text = "Quick Start", href = "#start", class = "mobile-link")
                 a(text = "GitHub", href = "https://github.com/eiwa-lang/eiwa", target = "_blank", rel = "noreferrer", class = "mobile-link")
@@ -217,6 +220,7 @@ fun homePage() = html {
                             button(text = "Money", class = "tab-button example-tab", hxGet = "/fragments/examples/money", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "Tests", class = "tab-button example-tab", hxGet = "/fragments/examples/tests", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "Platform", class = "tab-button example-tab", hxGet = "/fragments/examples/platform", hxTarget = "#example-view", hxSwap = "innerHTML")
+                            button(text = "Regex", class = "tab-button example-tab", hxGet = "/fragments/examples/regex", hxTarget = "#example-view", hxSwap = "innerHTML")
                         }
                         div(id = "example-view", class = "editor", hxGet = "/fragments/examples/http", hxTrigger = "load", hxSwap = "innerHTML") {}
                     }
@@ -273,6 +277,7 @@ fun homePage() = html {
                 }
             }
             section(id = "mcp", class = "section", hxGet = "/fragments/home/mcp", hxTrigger = "load", hxSwap = "innerHTML") {}
+            section(id = "tooling", class = "section", hxGet = "/fragments/home/tooling", hxTrigger = "load", hxSwap = "innerHTML") {}
             section(id = "start", class = "section") {
                 div(class = "wrap code-grid") {
                     div(class = "editor") {
@@ -379,6 +384,7 @@ arest(8081) {
         get("/fragments/home/start") { respond(start(), 200, "text/html") }
         get("/fragments/home/footer") { respond(footer(), 200, "text/html") }
         get("/fragments/home/packages") { respond(packages(), 200, "text/html") }
+        get("/fragments/home/tooling") { respond(tooling(), 200, "text/html") }
         get("/fragments/examples/http") { respond(httpExample(), 200, "text/html") }
         get("/fragments/examples/http_client") { respond(httpClientExample(), 200, "text/html") }
         get("/fragments/examples/html") { respond(htmlExample(), 200, "text/html") }
@@ -417,6 +423,7 @@ arest(8081) {
         get("/fragments/lessons/random") { respond(randomLesson(), 200, "text/html") }
         get("/fragments/lessons/extensions") { respond(extensionsLesson(), 200, "text/html") }
         get("/fragments/examples/platform") { respond(platformExample(), 200, "text/html") }
+        get("/fragments/examples/regex") { respond(regexExample(), 200, "text/html") }
         get("/fragments/lessons/platform") { respond(platformLesson(), 200, "text/html") }
         get("/fragments/lessons/breaklesson") { respond(breakLesson(), 200, "text/html") }
         get("/fragments/lessons/formap") { respond(forMap(), 200, "text/html") }

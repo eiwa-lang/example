@@ -21,6 +21,9 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  scroll-padding-top: 88px;
+  scrollbar-width: thin;
+  scrollbar-color: #2b2a38 #00020c;
 }
 
 body {
@@ -31,6 +34,92 @@ body {
   line-height: 1.5;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbars - thin dark with purple accent */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262633;
+  border-radius: 999px;
+  border: 2px solid var(--bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 92, 252, .55);
+  border-color: var(--bg);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--purple);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Inner scroll areas - slimmer, overlay-friendly */
+.lesson-list,
+.editor-content,
+.terminal,
+.mobile-menu,
+.tab-list,
+.output-panel pre,
+.mcp-code-block,
+.cli-badge {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 92, 252, .35) transparent;
+}
+
+.lesson-list::-webkit-scrollbar,
+.editor-content::-webkit-scrollbar,
+.terminal::-webkit-scrollbar,
+.mobile-menu::-webkit-scrollbar,
+.tab-list::-webkit-scrollbar,
+.output-panel pre::-webkit-scrollbar,
+.mcp-code-block::-webkit-scrollbar,
+.cli-badge::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.lesson-list::-webkit-scrollbar-thumb,
+.editor-content::-webkit-scrollbar-thumb,
+.terminal::-webkit-scrollbar-thumb,
+.mobile-menu::-webkit-scrollbar-thumb,
+.tab-list::-webkit-scrollbar-thumb,
+.output-panel pre::-webkit-scrollbar-thumb,
+.mcp-code-block::-webkit-scrollbar-thumb,
+.cli-badge::-webkit-scrollbar-thumb {
+  background: rgba(120, 92, 252, .28);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.lesson-list::-webkit-scrollbar-thumb:hover,
+.editor-content::-webkit-scrollbar-thumb:hover,
+.terminal::-webkit-scrollbar-thumb:hover,
+.mobile-menu::-webkit-scrollbar-thumb:hover,
+.tab-list::-webkit-scrollbar-thumb:hover,
+.output-panel pre::-webkit-scrollbar-thumb:hover,
+.mcp-code-block::-webkit-scrollbar-thumb:hover,
+.cli-badge::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 92, 252, .55);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Anchor offset for sticky header */
+section[id],
+footer[id] {
+  scroll-margin-top: 84px;
 }
 
 a {
@@ -1612,6 +1701,119 @@ code.language-bash {
 .mcp-setup-hint p {
   margin: 0;
   line-height: 1.4;
+}
+
+.tooling-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.tooling-marketplace-link {
+  color: var(--purple-2);
+  font-size: 13px;
+  white-space: nowrap;
+  transition: color .15s;
+}
+
+.tooling-marketplace-link:hover {
+  color: #c4b5fd;
+}
+
+.tooling-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.tooling-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  background: rgba(12, 15, 24, .55);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.tooling-card-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tooling-card-icon img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.tooling-card-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.tooling-card h3 {
+  margin: 0 0 3px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.tooling-card p {
+  margin: 0 0 9px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.tooling-install {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: #777481;
+  font-size: 10.5px;
+}
+
+.tooling-install code {
+  min-width: 0;
+  color: #aaa7b3;
+  font-family: var(--mono);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.tooling-card a {
+  color: var(--purple-2);
+  font-size: 11.5px;
+  transition: color .15s;
+}
+
+.tooling-card a:hover {
+  color: #c4b5fd;
+}
+
+
+/* Mobile */
+@media (max-width: 780px) {
+  .tooling-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tooling-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .tooling-card {
+    padding: 14px;
+  }
 }
 
 @media (max-width: 900px) {

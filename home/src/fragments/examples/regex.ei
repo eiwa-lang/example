@@ -1,0 +1,24 @@
+import { fragment } from "html"
+
+fun regexExample(): String {
+    return fragment {
+        div {
+            div(class = "editor-bar") {
+                div(class = "file-title") {
+                    img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
+                    write("regex.ei")
+                }
+            }
+            div(class = "editor-content") {
+            h3(text = "std.regex pure-Eiwa engine")
+            p(text = "Regular expressions with a Kotlin-style API, powered by a backtracking engine written 100% in Eiwa — zero C dependencies.")
+            pre {
+                code(class = "language-kotlin") {
+                    write("// std.regex is default-imported, just like kotlin.text\n\nval nameRegex = Regex(\"^[a-z0-9._]{3,20}\$\")\nif (!nameRegex.matches(name)) {\n    error(\"invalid username\")\n}\n\n// Find with capture groups\nval m = Regex(\"([0-9]+)-([0-9]+)\").find(\"id 12-34 end\")\nif (m != null) {\n    print(m!!.value)     // \"12-34\"\n    print(m!!.group(1))  // \"12\"\n    print(m!!.group(2))  // \"34\"\n}\n\n// String shortcuts\n\"a1b2\".replaceRegex(\"[0-9]\", \"#\")   // \"a#b#\"\n\"hello123\".matchesRegex(\"[a-z]+[0-9]+\") // true")
+                }
+            }
+            p(text = "Supports literals, classes, anchors, greedy quantifiers, groups and alternation — compiled once per Regex instance and reusable.")
+            }
+        }
+    }
+}

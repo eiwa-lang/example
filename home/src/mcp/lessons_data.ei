@@ -92,8 +92,9 @@ type LessonsData() {
         }
         if (query == "10" || query == "operators") {
             return "### Lesson 10: Operator Overloading\n" +
-                "Types can overload operators by implementing `.plus()`, `.minus()`, `.times()`, `.div()`.\n\n" +
-                "```kotlin\ntype Vector(val x: Int, val y: Int) {\n    fun plus(other: Vector): Vector = Vector(x + other.x, y + other.y)\n}\n\nfun main() {\n    val v1 = Vector(1, 2)\n    val v2 = Vector(3, 4)\n    val v3 = v1 + v2\n    println(v3.x)\n}\n```"
+                "Types overload operators with the MANDATORY `operator` modifier: `operator fun plus(...)`. " +
+                "Without `operator` the method is ordinary and `+` will not resolve to it.\n\n" +
+                "```kotlin\ntype Vector(val x: Int, val y: Int) {\n    operator fun plus(other: Vector): Vector = Vector(x + other.x, y + other.y)\n}\n\nfun main() {\n    val v1 = Vector(1, 2)\n    val v2 = Vector(3, 4)\n    val v3 = v1 + v2\n    println(v3.x)\n}\n```"
         }
         if (query == "11" || query == "when") {
             return "### Lesson 11: Standardize Branches (when)\n" +
@@ -107,13 +108,15 @@ type LessonsData() {
         }
         if (query == "13" || query == "tasks") {
             return "### Lesson 13: Run Tasks (Stackless Coroutines)\n" +
-                "`task { ... }` spawns a coroutine, `.await()` pauses execution cooperatively.\n\n" +
-                "```kotlin\nimport { task, sleep } from \"std.coroutines\"\n\nfun main() {\n    val t = task {\n        sleep(50)\n        return 42\n    }\n    println(t.await())\n}\n```"
+                "`task { ... }` spawns a `StackTask<T>`, `.await()` suspends cooperatively until done. " +
+                "There is no top-level `sleep` in `std.coroutines` (blocking `sleep/sleepMs` live in `std.system`; cooperative sleep is `Coroutine.sleepMs`).\n\n" +
+                "```kotlin\nimport { task } from \"std.coroutines\"\n\nfun main() {\n    val t = task { 40 + 2 }\n    println(t.await())\n}\n```"
         }
         if (query == "14" || query == "serialization") {
             return "### Lesson 14: Serialize Without Reflection\n" +
-                "High speed native JSON serialization via `toJson()` and `fromJson()`.\n\n" +
-                "```kotlin\nimport { Json } from \"std.json\"\n\ntype User(val id: Int, val name: String)\n\nfun main() {\n    val user = User(1, \"Alice\")\n    val json = Json.encode(user)\n    println(json)\n}\n```"
+                "Types opt in with `: Serializable + Json`, then `toJson(): String`; decode with `fromJson<T>(raw)`. " +
+                "There is NO `Json.encode/Json.decode`.\n\n" +
+                "```kotlin\nimport { Serializable } from \"std.serde\"\nimport { Json } from \"std.json\"\nimport { fromJson } from \"std.json\"\n\ntype User(val id: Int, val name: String) : Serializable + Json\n\nfun main() {\n    val user = User(1, \"Alice\")\n    val raw = user.toJson()\n    println(raw)\n    val back: User = fromJson<User>(raw)\n    println(back.name)\n}\n```"
         }
         if (query == "15" || query == "smartcast") {
             return "### Lesson 15: Smart Casts\n" +
@@ -147,38 +150,49 @@ type LessonsData() {
         }
         if (query == "21" || query == "uuid") {
             return "### Lesson 21: Generate Unique IDs\n" +
-                "`std.uuid` provides standard RFC 4122 v4 UUIDs.\n\n" +
-                "```kotlin\nimport { Uuid } from \"std.uuid\"\n\nfun main() {\n    val id = Uuid.v4()\n    println(id.toString())\n}\n```"
+                "`std.uuid` provides RFC 4122 UUIDs: `Uuid.v4()` (random), `Uuid.v7()` / `Uuid.generate()` (time-ordered), " +
+                "`Uuid.parse(str): Uuid?`, `version(): Int`, `toString()`, `toBytes()`.\n\n" +
+                "```kotlin\nimport { Uuid } from \"std.uuid\"\n\nfun main() {\n    val id = Uuid.v4()\n    println(id.toString())\n    println(id.version())\n}\n```"
         }
         if (query == "22" || query == "money") {
             return "### Lesson 22: Manage Money\n" +
-                "`std.money` provides precision-safe arithmetic for currency amounts.\n\n" +
-                "```kotlin\nimport { Money } from \"std.money\"\n\nfun main() {\n    val price = Money.usd(19.99)\n    val tax = Money.usd(1.50)\n    val total = price + tax\n    println(total.formatted())\n}\n```"
+                "`std.money` provides precision-safe arithmetic in minor units (cents). Builders take `Int` cents: `brl/usd/eur/...(cents)`. " +
+                "`Money` supports `+`/`-` (throws on currency mismatch), `* factor`, `isZero/isPositive/isNegative`, " +
+                "`allocate(ratios: List<Int>)` (Fowler exact-sum split), `split(parts: Int)`, `format(): String`.\n\n" +
+                "```kotlin\nimport { brl } from \"std.money\"\n\nfun main() {\n    val price = brl(1999)\n    val tax = brl(150)\n    val total = price + tax\n    println(total.format())\n}\n```"
         }
         if (query == "23" || query == "time") {
             return "### Lesson 23: Work with Epoch Time\n" +
-                "`std.time` handles epoch timestamps, durations and formatting.\n\n" +
-                "```kotlin\nimport { Time } from \"std.time\"\n\nfun main() {\n    val now = Time.now()\n    println(now.epochSeconds())\n}\n```"
+                "`std.time` handles epoch timestamps and durations. `now(): Time`, `date(year, month, day): Time`, " +
+                "builders `hours/minutes/seconds(n): Duration`. `Time` has `second/minute/hour/year/month/day`, " +
+                "`format(pattern)` (tokens YYYY/MM/DD/HH/mm/ss), `+ Duration`, `- Time = Duration`.\n\n" +
+                "```kotlin\nimport { now, hours } from \"std.time\"\n\nfun main() {\n    val start = now()\n    val deadline = start + hours(2)\n    println(deadline.format(\"YYYY-MM-DD HH:mm:ss\"))\n}\n```"
         }
         if (query == "24" || query == "ulid") {
             return "### Lesson 24: Sortable ULIDs\n" +
-                "`std.ulid` generates 128-bit lexicographically sortable identifiers.\n\n" +
+                "`std.ulid` generates 128-bit lexicographically sortable identifiers: `Ulid.generate(): Ulid`, " +
+                "`Ulid.parse(str): Ulid?`, `timestamp(): Int`, `toString()` (26-char Crockford), `toBytes()`.\n\n" +
                 "```kotlin\nimport { Ulid } from \"std.ulid\"\n\nfun main() {\n    val id = Ulid.generate()\n    println(id.toString())\n}\n```"
         }
         if (query == "25" || query == "logging") {
             return "### Lesson 25: Structured Logging\n" +
-                "`std.log` provides structured logging with levels and metadata.\n\n" +
-                "```kotlin\nimport { Log } from \"std.log\"\n\nfun main() {\n    Log.info(\"Server starting\", [\"port\": \"8080\"])\n}\n```"
+                "`std.log` provides leveled logging (`TRACE/DEBUG/INFO/WARN/ERROR`). Loggers take lazy message lambdas: " +
+                "`Log.info { \"...\" }`, `Log.with(key, value)`, `Log.withFields(map)`, `Log.setLevel/setFormatter`.\n\n" +
+                "```kotlin\nimport { Log } from \"std.log\"\n\nfun main() {\n    Log.with(\"port\", \"8080\").info { \"Server starting\" }\n}\n```"
         }
         if (query == "26" || query == "env") {
             return "### Lesson 26: Environment & .env\n" +
-                "`std.env` reads OS environment variables and parses local `.env` files.\n\n" +
+                "`std.env` reads OS environment variables and parses local `.env` files (auto-loaded on first `get`). " +
+                "`Env.get(key): String?`, `Env.get(key, default: String/Int/Bool)`, `Env.set/unset/exists`, `Env.load(path?): Bool`.\n\n" +
                 "```kotlin\nimport { Env } from \"std.env\"\n\nfun main() {\n    val port = Env.get(\"PORT\") ?: \"8080\"\n    println(\"Port: \$port\")\n}\n```"
         }
         if (query == "27" || query == "random") {
             return "### Lesson 27: Random & Collections\n" +
-                "`std.random` provides pseudo and cryptographically secure random values.\n\n" +
-                "```kotlin\nimport { Random } from \"std.random\"\n\nfun main() {\n    val roll = Random.int(1, 6)\n    println(\"Roll: \$roll\")\n}\n```"
+                "`std.random` provides a CSPRNG `Random` object and deterministic `SeededRandom` generators. " +
+                "Both share skill `RandomOps`: `nextInt()`, `nextInt(min: Int, max: Int)` (inclusive), `nextPercent()` (0..100), " +
+                "`nextDouble()` / `nextDouble(min: Double, max: Double)`, `nextBool()`, `choice(list): T?` (null when empty), " +
+                "`shuffle(list): List<T>` (Fisher-Yates, returns a NEW list). `Random.seeded(seed: Int): SeededRandom` creates a reproducible generator.\n\n" +
+                "```kotlin\nimport { Random } from \"std.random\"\n\nfun main() {\n    val roll = Random.nextInt(1, 6)\n    val coin = Random.nextBool()\n    val pct = Random.nextPercent()\n    val pick = Random.choice([\"Alice\", \"Bob\", \"Charlie\"])\n    val deck = Random.shuffle([1, 2, 3])\n    val rng = Random.seeded(42)\n    println(\"Roll: \$roll\")\n}\n```"
         }
         if (query == "28" || query == "extensions") {
             return "### Lesson 28: Extension Functions\n" +

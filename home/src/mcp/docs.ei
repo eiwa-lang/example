@@ -11,7 +11,7 @@ type Docs() {
             "- **Strict Platform Parity:** Compile-time guarantee of identical APIs across operating systems. Specialized types/objects must implement contracts with complete variant parity, banning false symmetry and ad-hoc platform divergence.\n" +
             "- **Compile-Time Null Safety & Union Types:** `T | Null` or `T?`, safe calls `?.`, elvis `?:`, and force unwrap `!!`.\n" +
             "- **Stackless Coroutines:** Cooperative concurrency with `task {}`, `.await()`, `sleep()`, and `yield()` powered by a pure Eiwa FIFO Scheduler.\n" +
-            "- **Explicit Declarations:** Every standard API is formally declared in `src/std/` (`std.core`, `std.collections`, `std.http`, `std.json`, `std.postgres`, `arest`, `html`)."
+            "- **Explicit Declarations:** Every standard API is formally declared in `src/std/` (`std.core`, `std.collections`, `std.http`, `std.json`, `std.time`); web/DB frameworks are external packages (`arest`, `html`, `postgres`)."
     }
 
     fun section1Modules(): String {
@@ -120,8 +120,10 @@ type Docs() {
 
     fun section13Serialization(): String {
         return "# Section 13: Reflectionless JSON Serialization\n\n" +
-            "Direct LLVM compile-time schema generation with zero runtime reflection overhead.\n\n" +
-            "```kotlin\nimport { Json } from \"std.json\"\ntype User(val id: Int, val name: String)\n\nval u = User(1, \"Alice\")\nval json = Json.encode(u)\nval decoded: User = Json.decode<User>(json)\n```"
+            "Direct LLVM compile-time schema generation with zero runtime reflection overhead. " +
+            "Types opt in with `: Serializable + Json`, serialize with `toJson(): String`, decode with `fromJson<T>(raw: String): T`. " +
+            "There is NO `Json.encode/Json.decode`.\n\n" +
+            "```kotlin\nimport { Serializable } from \"std.serde\"\nimport { Json } from \"std.json\"\nimport { fromJson } from \"std.json\"\n\ntype User(val id: Int, val name: String) : Serializable + Json\n\nval u = User(1, \"Alice\")\nval raw = u.toJson()\nval decoded: User = fromJson<User>(raw)\n```"
     }
 
     fun section14SmartCast(): String {
@@ -272,22 +274,44 @@ type Docs() {
     }
 
     fun stdlib(): String {
-        return "# Eiwa Standard Library & Ecosystem\n\n" +
-            "## Core Packages:\n" +
-            "- `std.core`: Base types (`Int`, `Double`, `Bool`, `String`, `Pointer`, `Throwable`, `Stringable`, `Comparable`).\n" +
-            "- `std.collections`: `List`, `MutableList`, `Map`, `MutableMap`, `Set`, `MutableSet`.\n" +
-            "- `std.time`: Epoch timestamps, duration calculations, formatting.\n" +
-            "- `std.money`: High-precision financial arithmetic with currency safety.\n" +
-            "- `std.ulid` & `std.uuid`: Unique identifier generation (time-sortable ULID and standard UUID v4).\n" +
-            "- `std.log`: Structured JSON and text logging.\n" +
-            "- `std.env`: Environment variables and `.env` loader.\n" +
-            "- `std.random`: Cryptographic and pseudo-random generators.\n" +
-            "- `std.http`: HTTP client and native HTTP socket server.\n" +
-            "- `std.json`: Fast serialization and deserialization without reflection.\n" +
-            "- `std.postgres`: Asynchronous PostgreSQL driver.\n\n" +
-            "## Web & MCP Frameworks:\n" +
-            "- `arest`: Declarative REST & MCP framework for microservices.\n" +
-            "- `html`: Type-safe HTML DSL for server-rendered interfaces."
+        return "# Eiwa Standard Library & Ecosystem (26 std modules + 3 external packages)\n\n" +
+            "Per-module full API: `get_std_module(\"<name>\")` or resource `eiwa://spec/std/<name>`.\n\n" +
+            "## std packages:\n" +
+            "- `std.core`: `String/Int/Double/Bool/Pointer`, contracts (`Stringable/Equatable/Hashable/Runnable/Closeable/Awaitable`), skill `Scope<T>` (`let/also/apply/run/takeIf/takeUnless`), `with/use`, `Memory.alloc`.\n" +
+            "- `std.collections`: `List/MutableList` (`add/get/size/freeze/mut/contains`), `Map/MutableMap` (`put/get/keys/values/freeze/mut`), `Set/MutableSet`, `String.split(delimiter)`.\n" +
+            "- `std.math`: `Math` (`sin/cos/tan/sqrt/pow/abs/floor/ceil/round`) + top-level `mod(a, b)`.\n" +
+            "- `std.system`: `loop/repeat/retry/sleep/sleepMs/yield/exit`.\n" +
+            "- `std.exceptions`: `Throwable/Exception/AssertionException`, `error(msg)`, `assert(cond)`.\n" +
+            "- `std.io`: `print/println/echo/printWelcome`, skill `Echoable`.\n" +
+            "- `std.fs`: `File(path)` (`read/write/delete/exists`) + `File.read/write/delete/exists(path)` shortcuts.\n" +
+            "- `std.env`: `Env` (`load/get/set/unset/exists`, typed `get` defaults) + `env()` helpers, `.env` loader.\n" +
+            "- `std.log`: `LogLevel`, `Log/Logger` (`trace/debug/info/warn/error` with lazy lambdas, `with/withFields`, `setLevel/setFormatter`), `StandardLogFormatter/JsonLogFormatter`.\n" +
+            "- `std.random`: `Random` (CSPRNG) + `SeededRandom`, skill `RandomOps` (`nextInt/nextDouble/nextBool/nextPercent/choice/shuffle`), `Random.seeded(seed)`.\n" +
+            "- `std.time`: Epoch-first timestamps. `type Time(val sec: Int)` with `second/minute/hour/year/month/day`, " +
+            "`format(pattern)` (tokens YYYY/MM/DD/HH/mm/ss), `plus(Duration)` (`+`), `minus(Time): Duration` (`-`). " +
+            "Top-level: `now(): Time`, `nowMillis(): Int`, `date(year, month, day): Time`, `hours/minutes/seconds(n): Duration`, " +
+            "`type Duration(val seconds: Int)` with `minutes()/hours()`. " +
+            "NO `Clock.System` — port `Clock.System.now().toEpochMilliseconds() / 86400000L` as `nowMillis() / 86400000` or `now().sec / 86400`. " +
+            "Full signatures: `get_std_module(\"time\")` or resource `eiwa://spec/std-time`.\n" +
+            "- `std.money`: minor-unit `Money` (`plus/minus/times/allocate/split/format/isZero/isPositive/isNegative`), `Currency/Currencies`, builders take `Int` cents (`brl(14990)`), zero-decimal `clp/pyg/jpy/krw(amount)`.\n" +
+            "- `std.uuid`: `Uuid` (`v4/v7/generate/parse/version/toString/toBytes`) + `Identifier` contract.\n" +
+            "- `std.ulid`: `Ulid` (`generate/parse/timestamp/toString/toBytes`) + `decodeCrockford/crockfordVal`.\n" +
+            "- `std.regex`: `Regex` (`find/findAll/matches/replace/findFrom`), `MatchResult` (`group/groupCount`), extensions `matchesRegex/findRegex/findAllRegex/replaceRegex`.\n" +
+            "- `std.json`: `JsonValue` (`get/getIndex/asString/asNumber/asBool/isObject/.../write`), `JsonParser/parseJson`, skill `Json` (`toJson/writeJson`), `serializeJson/fromJson/parseJsonToSerde`. NO `Json.encode/decode`.\n" +
+            "- `std.serde`: `Serializable/Deserializable`, `SerdeValue/SerdeObject/SerdeList` (`get/getString/getInt/getDouble/getBool/getObject/getList`), `asString/asInt/asDouble/asBool/deserializeList`.\n" +
+            "- `std.yaml`: skill `Yaml` (`toYaml/writeYaml/...`).\n" +
+            "- `std.jsonrpc`: `JsonRpc` (`argument/argumentString/argumentInt/argumentDouble/argumentBool/response/errorResponse`, `JsonRpc.parse`).\n" +
+            "- `std.http`: `Client` (`get/post`), `Server/ServerConnection/Request/Response`, `urlEncode`.\n" +
+            "- `std.net`: `Socket` (`@Suspend read/write`, `close`), `SocketClient.connect`, `TCPServer` (`bind/@Suspend accept`). `@Suspend` IO must run inside `task {}`.\n" +
+            "- `std.db`: contracts `Row/Result/Statement/Connection`, `DbError`, `BoundStatement` (`bind`), `ConnectionPool` (`acquire/release/transaction`).\n" +
+            "- `std.coroutines`: `@Coroutine task {}` -> `StackTask<T>` (`@Suspend await/isDone`), `Scheduler/Dispatchers/Dispatcher`, `Coroutine` (`yield/sleep/sleepMs`), `EventLoop` (`waitReadable/waitWritable`). No top-level `sleep`.\n" +
+            "- `std.thread`: `Threads.spawn/join/numCores`, `Mutex.withLock/sync`, `RawMutex/CondVar`, `ThreadOpsContract` (posix/win32 parity).\n" +
+            "- `std.atomic`: `AtomicBool/AtomicInt` (`get/set/compareAndSet`, `addAndGet/incrementAndGet/decrementAndGet`).\n" +
+            "- `std.process`: `Process` (`exec/capture/chdir/realpath/args/argsCount/argAt`).\n\n" +
+            "## External packages (NOT std.*):\n" +
+            "- `arest` (`github: eiwa-lang/arest`): declarative REST (`arest(port) { health/routing/static }`) + MCP (`mcp { tool/resource/prompt }`) + typed client (`arestClient { baseUrl/timeout/bearerAuth }`).\n" +
+            "- `html` (`github: eiwa-lang/html`): type-safe DSL (`html { head/body }`, `fragment`, `escapeHtml`).\n" +
+            "- `postgres` (`github: eiwa-lang/postgres`): native driver (`Postgres.connect(url)`, `query/execute`, `Row.string/int/double/bool`). NOT `std.postgres`."
     }
 
     fun packages(): String {

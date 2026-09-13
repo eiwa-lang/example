@@ -5,12 +5,16 @@ object ExamplesData {
             "- `http_client`: Type-safe HTTP Client with arest\n" +
             "- `html`: Type-safe HTML DSL with html builder\n" +
             "- `tasks`: Concurrency and parallel background coroutines\n" +
-            "- `postgres`: Async database queries with std.postgres\n" +
+            "- `postgres`: Async database queries with the external `postgres` package\n" +
             "- `mcp`: Publishing MCP Tools and Resources with arest\n" +
             "- `time`: Timestamp formatting and calculation\n" +
             "- `money`: Precision financial arithmetic\n" +
             "- `tests`: Native unit testing with `test \"name\" { ... }` blocks\n" +
-            "- `platform`: Declarative cross-platform parity and contracts (ADR 60)"
+            "- `platform`: Declarative cross-platform parity and contracts (ADR 60)\n" +
+            "- `regex`: Pure-Eiwa regex (find/replace/matches)\n" +
+            "- `json`: Reflectionless JSON serialization (toJson/fromJson)\n" +
+            "- `uuid`: RFC 4122 UUIDs (v4/v7/parse)\n" +
+            "- `ulid`: Sortable Crockford ULIDs (generate/parse)"
     }
 
     fun get(topic: String): String {
@@ -146,11 +150,16 @@ object ExamplesData {
                 "The html builder escapes attributes automatically and returns a ready-to-serve String."
         }
         if (topic == "tasks") {
-            return "```kotlin\nimport { task, sleep } from \"std.coroutines\"\n\nfun fetchItem(id: Int): String {\n    sleep(100)\n    return \"Item #\$id\"\n}\n\nfun main() {\n    val t1 = task { fetchItem(1) }\n    val t2 = task { fetchItem(2) }\n    println(\"\${t1.await()} and \${t2.await()}\")\n}\n```"
+            return "## Stackless Coroutines (task & await)\n\n" +
+                "Cooperative state-machine coroutines with zero OS-thread overhead. `task { ... }` spawns a `StackTask<T>`, `.await()` suspends cooperatively until done. " +
+                "NOTE: there is no top-level `sleep` in `std.coroutines` — blocking sleeps live in `std.system` (`sleep(seconds)/sleepMs(ms)`), " +
+                "cooperative sleeps are `Coroutine.sleepMs(n)` inside a task.\n\n" +
+                "```kotlin\nimport { task } from \"std.coroutines\"\n\nfun fetchUser(id: Int): String = \"User #\$id\"\nfun fetchOrders(id: Int): String = \"Orders for #\$id\"\n\nfun main() {\n    val userTask = task { fetchUser(42) }\n    val ordersTask = task { fetchOrders(42) }\n    println(\"Profile: \${userTask.await()} | \${ordersTask.await()}\")\n}\n```"
         }
         if (topic == "postgres") {
-            return "## PostgreSQL Native Driver\n\n" +
-                "Direct native connection and parameterized queries — no ORM.\n\n" +
+            return "## PostgreSQL Driver (external `postgres` package)\n\n" +
+                "Direct native connection and parameterized queries — no ORM. NOTE: this is NOT `std.postgres`; " +
+                "it is the external `postgres` package (`github: eiwa-lang/postgres`).\n\n" +
                 "### 1. Declare the dependency (eiwa.yaml)\n\n" +
                 "```yaml\n" +
                 "name: users\n" +
@@ -228,16 +237,31 @@ object ExamplesData {
                 "tools/list returns the declared schema (type, required, description) so clients render the arguments and call tools/call."
         }
         if (topic == "time") {
-            return "```kotlin\nimport { Time, Duration } from \"std.time\"\n\nfun main() {\n    val start = Time.now()\n    val elapsed = start.elapsed()\n    println(\"Elapsed: \${elapsed.toMillis()}ms\")\n}\n```"
+            return "## Time with std.time (Epoch-First)\n\n" +
+                "`Time` is a zero-overhead wrapper around Unix epoch seconds (`Time.sec: Int`). " +
+                "There is NO `Clock.System` in Eiwa and NO `Time.now()` / `elapsed()` / `toMillis()`.\n\n" +
+                "Top-level functions: `now(): Time` (current epoch seconds), `nowMillis(): Int` (current epoch millis), " +
+                "`date(year: Int, month: Int, day: Int): Time` (midnight UTC), `hours/minutes/seconds(n: Int): Duration`.\n\n" +
+                "### 1. now(), nowMillis(), date() and .sec access\n\n" +
+                "```kotlin\nimport { now, nowMillis, date } from \"std.time\"\n\nfun main() {\n    val t = now()\n    println(t.sec)\n    println(nowMillis())\n    val release = date(2026, 7, 20)\n    println(release.format(\"YYYY-MM-DD HH:mm:ss\"))\n}\n```\n\n" +
+                "### 2. Porting Kotlin Clock.System.now().toEpochMilliseconds()\n\n" +
+                "```kotlin\nimport { now, nowMillis } from \"std.time\"\n\nfun main() {\n    // Kotlin: Clock.System.now().toEpochMilliseconds() / 86400000L\n    val daysSinceEpoch = nowMillis() / 86400000\n    // Equivalent using seconds: now().sec / 86400\n    val daysSinceEpoch2 = now().sec / 86400\n    println(daysSinceEpoch)\n}\n```\n\n" +
+                "### 3. Daily rotation (days since epoch)\n\n" +
+                "```kotlin\nimport { now } from \"std.time\"\n\nfun main() {\n    val dayIndex = now().sec / 86400\n    val rotation = dayIndex % 7\n    println(\"Day index: \$dayIndex, rotation slot: \$rotation\")\n}\n```\n\n" +
+                "### 4. Formatting YYYY-MM-DD HH:mm:ss\n\n" +
+                "```kotlin\nimport { now } from \"std.time\"\n\nfun main() {\n    println(now().format(\"YYYY-MM-DD HH:mm:ss\"))\n    println(now().toString())\n}\n```"
         }
         if (topic == "money") {
-            return "```kotlin\nimport { Money } from \"std.money\"\n\nfun main() {\n    val subtotal = Money.brl(100.00)\n    val discount = Money.brl(15.50)\n    val total = subtotal - discount\n    println(\"Total: \${total.formatted()}\")\n}\n```"
+            return "## Money with std.money (minor units, Int cents)\n\n" +
+                "Builders take MINOR units (`Int` cents — never `Double`): `brl(14990)` = R$ 149,90. " +
+                "Formatting is `format(): String` (there is no `formatted()`). `+`/`-` throw on currency mismatch.\n\n" +
+                "```kotlin\nimport { brl } from \"std.money\"\n\nfun main() {\n    val subtotal = brl(10000)\n    val discount = brl(1550)\n    val total = subtotal - discount\n    println(\"Total: \${total.format()}\")\n    println(brl(1000).split(3)[0].format())\n}\n```"
         }
         if (topic == "tests") {
             return "```kotlin\nfun add(a: Int, b: Int): Int = a + b\n\ntest \"addition works correctly\" {\n    assert(add(2, 3) == 5)\n    assert(add(-1, 1) == 0)\n}\n```"
         }
         if (topic == "platform") {
-            return "## Cross-Platform Parity with\n\n" +
+            return "## Cross-Platform Parity with contracts\n\n" +
                 "Eiwa guarantees cross-platform API parity at compile time using a 3-tier architecture. " +
                 "Low-level FFI blocks use explicit, non-colliding names, while universal contracts ensure identical method signatures across all target platforms.\n\n" +
                 "### 1. Source Code (`platform_terminal.ei`)\n\n" +
@@ -298,7 +322,27 @@ object ExamplesData {
                 "- **Identical Variant Contracts:** Every variant named `Terminal` (including any universal fallback) must declare `: TerminalContract`.\n" +
                 "- **Zero-Cost LLVM Emission:** At compile time, the LLVM emitter prunes the inactive platform branch and binds the active target statically."
         }
+        if (topic == "regex") {
+            return "## Regex with std.regex (pure-Eiwa engine)\n\n" +
+                "`Regex(pattern)`: `find(input): MatchResult?` (first match), `findAll(input): List<MatchResult>`, " +
+                "`matches(input): Bool` (FULL match), `replace(input, replacement): String`. " +
+                "String shortcuts: `matchesRegex/findRegex/findAllRegex/replaceRegex`.\n\n" +
+                "```kotlin\nimport { Regex } from \"std.regex\"\n\nfun main() {\n    println(Regex(\"[0-9]+\").find(\"abc123\")?.value)\n    println(\"hello\".replaceRegex(\"l+\", \"L\"))\n    println(\"abc\".matchesRegex(\"[a-z]+\"))\n}\n```"
+        }
+        if (topic == "json") {
+            return "## JSON with std.json (reflectionless)\n\n" +
+                "Types opt in with `: Serializable + Json`, then `toJson(): String`. " +
+                "Decode with `fromJson<T>(raw: String): T`, inspect schemaless payloads with `parseJson(raw): JsonValue` " +
+                "(`get(key): JsonValue?`, `asString()/asNumber()/asBool()`). There is NO `Json.encode/Json.decode`.\n\n" +
+                "```kotlin\nimport { Serializable } from \"std.serde\"\nimport { Json } from \"std.json\"\nimport { parseJson, fromJson } from \"std.json\"\n\ntype User(val id: Int, val name: String) : Serializable + Json\n\nfun main() {\n    val u = User(1, \"Alice\")\n    val raw = u.toJson()\n    println(raw)\n    val back: User = fromJson<User>(raw)\n    println(back.name)\n    println(parseJson(raw).get(\"name\")?.asString())\n}\n```"
+        }
+        if (topic == "uuid" || topic == "ulid" || topic == "ids") {
+            return "## IDs with std.uuid & std.ulid\n\n" +
+                "`Uuid.v4(): Uuid` (random), `Uuid.v7()/generate(): Uuid` (time-ordered), `Uuid.parse(str): Uuid?`, `version(): Int`. " +
+                "`Ulid.generate(): Ulid` (millis prefix + CSPRNG), `Ulid.parse(str): Ulid?`, `timestamp(): Int`, 26-char Crockford `toString()`.\n\n" +
+                "```kotlin\nimport { Uuid } from \"std.uuid\"\nimport { Ulid } from \"std.ulid\"\n\nfun main() {\n    println(Uuid.v4().toString())\n    println(Ulid.generate().toString())\n}\n```"
+        }
 
-        return "Example not found for: $topic. Available: http, html, tasks, postgres, mcp, time, money, tests, platform."
+        return "Example not found for: $topic. Available: http, http_client, html, tasks, postgres, mcp, time, money, tests, platform, regex, json, uuid, ulid."
     }
 }

@@ -3,6 +3,7 @@ import { Argument, JsonType } from "arest.mcp.mcp_builder"
 import { Docs } from ".mcp.docs"
 import { LessonsData } from ".mcp.lessons_data"
 import { ExamplesData } from ".mcp.examples_data"
+import { StdlibData } from ".mcp.stdlib_data"
 
 fun setupMcp(server: ArestBuilder) {
     server.mcp {
@@ -16,7 +17,8 @@ fun setupMcp(server: ArestBuilder) {
             "2. Type system is 100% composition-based: type, contract, skill, object, implement.\n" +
             "3. Stackless coroutines: task {} and .await().\n" +
             "4. All APIs are explicitly declared in std/.\n" +
-            "5. Standard library APIs to work with mcp, http, ai, html and etc are declared in std and Arest framework."
+            "5. Standard library APIs to work with mcp, http, ai, html and etc are declared in std and Arest framework.\n" +
+            "6. Complete per-module std API references (100% of methods) are available via the list_std_modules and get_std_module tools."
         )
 
         // Resources
@@ -42,6 +44,118 @@ fun setupMcp(server: ArestBuilder) {
 
         resource("eiwa://spec/stdlib") {
             respond(Docs.stdlib())
+        }
+
+        resource("eiwa://spec/std-time") {
+            respond(StdlibData.get("time"))
+        }
+
+        resource("eiwa://spec/std/core") {
+            respond(StdlibData.get("core"))
+        }
+
+        resource("eiwa://spec/std/collections") {
+            respond(StdlibData.get("collections"))
+        }
+
+        resource("eiwa://spec/std/math") {
+            respond(StdlibData.get("math"))
+        }
+
+        resource("eiwa://spec/std/system") {
+            respond(StdlibData.get("system"))
+        }
+
+        resource("eiwa://spec/std/exceptions") {
+            respond(StdlibData.get("exceptions"))
+        }
+
+        resource("eiwa://spec/std/io") {
+            respond(StdlibData.get("io"))
+        }
+
+        resource("eiwa://spec/std/fs") {
+            respond(StdlibData.get("fs"))
+        }
+
+        resource("eiwa://spec/std/env") {
+            respond(StdlibData.get("env"))
+        }
+
+        resource("eiwa://spec/std/log") {
+            respond(StdlibData.get("log"))
+        }
+
+        resource("eiwa://spec/std/random") {
+            respond(StdlibData.get("random"))
+        }
+
+        resource("eiwa://spec/std/time") {
+            respond(StdlibData.get("time"))
+        }
+
+        resource("eiwa://spec/std/money") {
+            respond(StdlibData.get("money"))
+        }
+
+        resource("eiwa://spec/std/uuid") {
+            respond(StdlibData.get("uuid"))
+        }
+
+        resource("eiwa://spec/std/ulid") {
+            respond(StdlibData.get("ulid"))
+        }
+
+        resource("eiwa://spec/std/regex") {
+            respond(StdlibData.get("regex"))
+        }
+
+        resource("eiwa://spec/std/json") {
+            respond(StdlibData.get("json"))
+        }
+
+        resource("eiwa://spec/std/serde") {
+            respond(StdlibData.get("serde"))
+        }
+
+        resource("eiwa://spec/std/yaml") {
+            respond(StdlibData.get("yaml"))
+        }
+
+        resource("eiwa://spec/std/jsonrpc") {
+            respond(StdlibData.get("jsonrpc"))
+        }
+
+        resource("eiwa://spec/std/http") {
+            respond(StdlibData.get("http"))
+        }
+
+        resource("eiwa://spec/std/net") {
+            respond(StdlibData.get("net"))
+        }
+
+        resource("eiwa://spec/std/db") {
+            respond(StdlibData.get("db"))
+        }
+
+        resource("eiwa://spec/std/coroutines") {
+            respond(StdlibData.get("coroutines"))
+        }
+
+        resource("eiwa://spec/std/thread") {
+            respond(StdlibData.get("thread"))
+        }
+
+        resource("eiwa://spec/std/atomic") {
+            respond(StdlibData.get("atomic"))
+        }
+
+        resource("eiwa://spec/std/process") {
+            respond(StdlibData.get("process"))
+        }
+
+        resource("eiwa://spec/stdlib/all") {
+            respond(StdlibData.list())
         }
 
         resource("eiwa://spec/packages") {
@@ -81,7 +195,7 @@ fun setupMcp(server: ArestBuilder) {
             respond(ExamplesData.list())
         }
 
-        tool("get_example", description = "Get a functional example by topic", arguments = [
+        tool("get_example", description = "Get a functional example by topic (http, http_client, html, tasks, postgres, mcp, time, money, tests, platform, regex, json, uuid, ulid)", arguments = [
             Argument("topic", JsonType.STRING, "Example topic (http, html, mcp, tasks, postgres, money, tests, time)", true),
             Argument("name", JsonType.STRING, "Alias for topic (kept for compatibility)", false)
         ]) {
@@ -117,16 +231,48 @@ fun setupMcp(server: ArestBuilder) {
             respond(Docs.syntaxRules())
         }
 
+        tool("list_std_modules") {
+            respond(StdlibData.list())
+        }
+
+        tool("get_std_module", description = "Get the complete API reference for one std module (100% of methods)", arguments = [
+            Argument("module", JsonType.STRING, "Std module (core, collections, math, system, exceptions, io, fs, env, log, random, time, money, uuid, ulid, regex, json, serde, yaml, jsonrpc, http, net, db, coroutines, thread, atomic, process)", true),
+            Argument("name", JsonType.STRING, "Alias for module (kept for compatibility)", false)
+        ]) {
+            val module = hasArgument("module") ? argument("module")!!.asString() : (hasArgument("name") ? argument("name")!!.asString() : "")
+            if (module == "") {
+                error("Missing required parameter 'module' (e.g. 'random', 'money', 'time').")
+            } else {
+                respond(StdlibData.get(module))
+            }
+        }
+
         // Prompts
         prompt("eiwa_expert") {
             respond(
                 "You are an expert systems programmer in Eiwa (https://eiwa.dev).\n" +
                 "Follow these strict language rules:\n" +
-                "1. NEVER use `class`, `open`, `abstract`, or `override`.\n" +
-                "2. ALWAYS use `type`, `contract`, `skill`, `object`, and `implement`.\n" +
-                "3. Concurrency is stackless: use `task { ... }` and `.await()`.\n" +
+                "1. NEVER use `class`, `open`, `abstract`, or `override` — they do not exist. Use `type`, `contract`, `skill`, `object`, `implement`.\n" +
+                "2. Operator overloads REQUIRE the `operator` modifier (`operator fun plus(...)`).\n" +
+                "3. Concurrency is stackless: `task { ... }` + `.await()`; no top-level `sleep` in std.coroutines (use `std.system` sleep/sleepMs or `Coroutine.sleepMs`).\n" +
                 "4. Enforce strict null safety (`Type?`, `?.`, `?:`, `!!`).\n" +
-                "5. Only use standard library APIs declared in `src/std/`."
+                "5. Money builders take Int minor units (`brl(14990)`), format with `format()` (no `formatted()`, no Double args).\n" +
+                "6. JSON: types use `: Serializable + Json`, `toJson()` / `fromJson<T>()` (no `Json.encode/decode`).\n" +
+                "7. Time: `now()/nowMillis()/date()`, `.sec` epoch seconds (no `Clock.System`, no `Time.now()/elapsed()/toMillis()`).\n" +
+                "8. Only use std APIs from `get_std_module` / `eiwa://spec/std/<module>`; `postgres`/`arest`/`html` are external packages, not `std.*`."
+            )
+        }
+
+        prompt("port_kotlin") {
+            respond(
+                "You are porting Kotlin/JVM code to Eiwa (https://eiwa.dev).\n" +
+                "Mapping rules: `Clock.System.now().toEpochMilliseconds()` -> `nowMillis()` (`std.time`); `/ 86400000L` days -> `nowMillis() / 86400000` or `now().sec / 86400`. " +
+                "`runCatching { f() }.getOrNull()` -> bare value-`try { f() }` (`T?`). " +
+                "Kotlin `map/filter` on lists -> value-position `for (list) { ... }` (null yields are skipped). " +
+                "Kotlin `class/open/override` -> Eiwa `type` + `contract` + `skill` + `implement`. " +
+                "Kotlin `BigDecimal` money -> `std.money` minor-unit `Money` (`brl(cents)`, `format()`). " +
+                "Kotlin `UUID.randomUUID()` -> `Uuid.v4()`; `kotlinx.datetime` formatting -> `Time.format(\"YYYY-MM-DD HH:mm:ss\")`. " +
+                "Always verify signatures via `get_std_module` before emitting code."
             )
         }
 

@@ -1,0 +1,47 @@
+import { fragment } from "html"
+
+fun tooling(): String {
+    return fragment {
+        div(class = "wrap") {
+            div(class = "section-heading tooling-heading") {
+                div {
+                    p(text = "Official Eiwa support for the editors you already use.")
+                }
+            }
+            div(class = "tooling-grid") {
+                article(class = "tooling-card") {
+                    div(class = "tooling-card-icon") {
+                        img(src = "/assets/vscode.svg", alt = "", class = "")
+                    }
+                    div(class = "tooling-card-content") {
+                        h3(text = "VS Code")
+                        p(text = "Syntax highlighting, IntelliSense, diagnostics and project support.")
+                        div(class = "tooling-install") {
+                            span(text = "Install")
+                            code(text = "code --install-extension eiwa-lang.eiwa-lang")
+                        }
+                        a(href = "https://marketplace.visualstudio.com/items?itemName=eiwa-lang.eiwa-lang", target = "_blank", rel = "noreferrer") {
+                            write("View on Marketplace ↗")
+                        }
+                    }
+                }
+                article(class = "tooling-card") {
+                    div(class = "tooling-card-icon") {
+                        img(src = "/assets/zed.svg", alt = "", class = "")
+                    }
+                    div(class = "tooling-card-content") {
+                        h3(text = "Zed")
+                        p(text = "Native Eiwa support with syntax highlighting and code navigation.")
+                        div(class = "tooling-install") {
+                            span(text = "Install")
+                            code(text = "Zed → Extensions → Eiwa → Install")
+                        }
+                        a(href = "https://zed.dev/extensions", target = "_blank", rel = "noreferrer") {
+                            write("View on Marketplace ↗")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
