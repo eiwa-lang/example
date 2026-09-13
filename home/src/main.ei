@@ -49,13 +49,16 @@ import { randomLesson } from ".fragments.lessons.random"
 import { extensionsLesson } from ".fragments.lessons.extensions"
 import { platformExample } from ".fragments.examples.platform"
 import { platformLesson } from ".fragments.lessons.platform"
+import { breakLesson } from ".fragments.lessons.breaklesson"
+import { forMap } from ".fragments.lessons.formap"
+import { tryValue } from ".fragments.lessons.tryvalue"
 
 fun homePage() = html {
     head {
         meta(charset = "UTF-8")
         meta(name = "viewport", contentValue = "width=device-width, initial-scale=1.0")
         meta(name = "description", contentValue = "Eiwa is a modern programming language for native APIs, MCP, and safe systems.")
-        title("Eiwa - Build software with clarity")
+        title(text = "Eiwa - Build software with clarity")
         link(rel = "stylesheet", href = "/app.css")
         link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/material-darker.min.css")
         script(src = "https://unpkg.com/htmx.org@2.0.6")
@@ -77,8 +80,8 @@ fun homePage() = html {
                 a(href = "#top", class = "brand") {
                     img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
                     span {
-                        strong("eiwa")
-                        small("lang")
+                        strong(text = "eiwa")
+                        small(text = "lang")
                     }
                 }
                 div(class = "nav-links") {
@@ -120,7 +123,7 @@ fun homePage() = html {
             section(id = "playground", class = "section") {
                 div(class = "wrap") {
                     div(class = "section-heading") {
-                        p("Modern syntax with native performance, strict null safety, and a composition-first type model.")
+                        p(text = "Modern syntax with native performance, strict null safety, and a composition-first type model.")
                     }
                     div(class = "code-grid") {
                         div(class = "editor") {
@@ -138,30 +141,30 @@ fun homePage() = html {
                                 div(class = "editor-content source-code") {
                                     pre(class = "playground-code") {
                                         code {
-                                            span("fun", class = "tok-kw")
+                                            span(text = "fun", class = "tok-kw")
                                             write(" ")
-                                            span("main", class = "tok-fn")
+                                            span(text = "main", class = "tok-fn")
                                             write("() {\n    ")
-                                            span("val", class = "tok-kw")
+                                            span(text = "val", class = "tok-kw")
                                             write(" message = ")
-                                            span("\"Hello, Eiwa!\"", class = "tok-str")
+                                            span(text = "\"Hello, Eiwa!\"", class = "tok-str")
                                             write("\n    ")
-                                            span("println", class = "tok-fn")
+                                            span(text = "println", class = "tok-fn")
                                             write("(message)\n\n    ")
-                                            span("val", class = "tok-kw")
+                                            span(text = "val", class = "tok-kw")
                                             write(" numbers = [1, 2, 3, 4, 5]\n    ")
-                                            span("for", class = "tok-kw")
+                                            span(text = "for", class = "tok-kw")
                                             write(" (numbers) {\n        ")
-                                            span("println", class = "tok-fn")
+                                            span(text = "println", class = "tok-fn")
                                             write("(")
-                                            span("\"n = \$it\"", class = "tok-str")
+                                            span(text = "\"n = \$it\"", class = "tok-str")
                                             write(")\n    }\n}")
                                         }
                                     }
                                 }
                                 div(class = "terminal") {
                                     div {
-                                        span("$", class = "prompt")
+                                        span(text = "$", class = "prompt")
                                         write(" eiwa run main.ei")
                                     }
                                     div {
@@ -186,9 +189,9 @@ fun homePage() = html {
                                         write("Finished in 0.23s")
                                     }
                                     div {
-                                        span("$", class = "prompt")
+                                        span(text = "$", class = "prompt")
                                         write(" ")
-                                        span("", class = "cursor")
+                                        span(text = "", class = "cursor")
                                     }
                                 }
                             }
@@ -201,7 +204,7 @@ fun homePage() = html {
             section(id = "why", class = "section", hxGet = "/fragments/home/why", hxTrigger = "load", hxSwap = "innerHTML") {}
             section(id = "examples", class = "section") {
                 div(class = "wrap") {
-                    div(class = "section-heading") { h2("Small code, clear intent")  p("Switch between HTTP, MCP, tests, time, and money examples.") }
+                    div(class = "section-heading") { h2(text = "Small code, clear intent")  p(text = "Switch between HTTP, MCP, tests, time, and money examples.") }
                     div(class = "tabs-layout") {
                         div(class = "tab-list", id = "example-tabs") {
                             button(text = "HTTP Server", class = "tab-button active example-tab", hxGet = "/fragments/examples/http", hxTarget = "#example-view", hxSwap = "innerHTML")
@@ -222,7 +225,7 @@ fun homePage() = html {
             section(id = "packages", class = "section", hxGet = "/fragments/home/packages", hxTrigger = "load", hxSwap = "innerHTML") {}
             section(id = "tour", class = "section") {
                 div(class = "wrap") {
-                    div(class = "section-heading") { h2("Eiwa language tour") p("Choose a lesson, inspect its code, and view its expected output.") }
+                    div(class = "section-heading") { h2(text = "Eiwa language tour") p(text = "Choose a lesson, inspect its code, and view its expected output.") }
                     div(class = "lesson-layout") {
                         div(class = "tab-list lesson-list", id = "lesson-tabs") {
                             button(text = "01 Import symbols", class = "tab-button active lesson-tab", hxGet = "/fragments/lessons/imports", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
@@ -254,13 +257,16 @@ fun homePage() = html {
                             button(text = "27 Random & collections", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/random", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                             button(text = "28 Extension functions", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/extensions", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                             button(text = "29 Platform parity", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/platform", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "30 Exit early with break", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/breaklesson", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "31 for returns List", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/formap", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "32 try returns T?", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/tryvalue", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                         }
                         div(class = "lesson-workspace") {
                             div(id = "lesson-preview", class = "editor", hxGet = "/fragments/lessons/imports", hxTrigger = "load", hxSwap = "innerHTML") {}
                             button(text = "Show expected output", id = "run-lesson", class = "btn btn-primary")
                             div(class = "output-grid") {
-                                div(class = "output-panel") { h3("Expected output")  pre("Choose a lesson, then click Show output.", id = "lesson-output", class = "expected") }
-                                div(class = "output-panel") { h3("Hint")  p("The selected lesson will explain its intent here.", id = "lesson-hint") }
+                                div(class = "output-panel") { h3(text = "Expected output")  pre(text = "Choose a lesson, then click Show output.", id = "lesson-output", class = "expected") }
+                                div(class = "output-panel") { h3(text = "Hint")  p(text = "The selected lesson will explain its intent here.", id = "lesson-hint") }
                             }
                         }
                     }
@@ -283,70 +289,70 @@ fun homePage() = html {
                         div(class = "terminal", id = "start-terminal-body") {
                             div(id = "terminal-unix-commands") {
                                 div {
-                                    span("$", class = "prompt")
+                                    span(text = "$", class = "prompt")
                                     write(" curl -fsSL https://eiwa.dev/install.sh | sh")
                                 }
                                 div {
-                                    span("$", class = "prompt")
-                                    span(" eiwa", class = "eiwa")
+                                    span(text = "$", class = "prompt")
+                                    span(text = " eiwa", class = "eiwa")
                                     write(" init my-app && cd my-app")
                                 }
                                 div {
-                                    span("$", class = "prompt")
-                                    span(" eiwa", class = "eiwa")
+                                    span(text = "$", class = "prompt")
+                                    span(text = " eiwa", class = "eiwa")
                                     write(" add eiwa-lang/arest")
                                 }
                                 div {
-                                    span("$", class = "prompt")
-                                    span(" eiwa", class = "eiwa")
+                                    span(text = "$", class = "prompt")
+                                    span(text = " eiwa", class = "eiwa")
                                     write(" run")
                                 }
                                 div {
-                                    span("$", class = "prompt")
-                                    span(" eiwa", class = "eiwa")
+                                    span(text = "$", class = "prompt")
+                                    span(text = " eiwa", class = "eiwa")
                                     write(" test")
                                 }
                                 div {
-                                    span("$", class = "prompt")
-                                    span(" eiwa", class = "eiwa")
+                                    span(text = "$", class = "prompt")
+                                    span(text = " eiwa", class = "eiwa")
                                     write(" build")
                                 }
                             }
                             div(id = "terminal-win-commands", class = "hidden") {
                                 div {
-                                    span("PS >", class = "prompt")
+                                    span(text = "PS >", class = "prompt")
                                     write(" irm https://eiwa.dev/install.ps1 | iex")
                                 }
                                 div {
-                                    span("PS >", class = "prompt")
-                                    span(" eiwa", class = "eiwa")
+                                    span(text = "PS >", class = "prompt")
+                                    span(text = " eiwa", class = "eiwa")
                                     write(" init my-app; cd my-app")
                                 }
                                 div {
-                                    span("PS >", class = "prompt")
-                                    span(" eiwa", class = "eiwa")
+                                    span(text = "PS >", class = "prompt")
+                                    span(text = " eiwa", class = "eiwa")
                                     write(" add eiwa-lang/arest")
                                 }
                                 div {
-                                    span("PS >", class = "prompt")
-                                    span(" eiwa", class = "eiwa")
+                                    span(text = "PS >", class = "prompt")
+                                    span(text = " eiwa", class = "eiwa")
                                     write(" run")
                                 }
                                 div {
-                                    span("PS >", class = "prompt")
-                                    span(" eiwa", class = "eiwa")
+                                    span(text = "PS >", class = "prompt")
+                                    span(text = " eiwa", class = "eiwa")
                                     write(" test")
                                 }
                                 div {
-                                    span("PS >", class = "prompt")
-                                    span(" eiwa", class = "eiwa")
+                                    span(text = "PS >", class = "prompt")
+                                    span(text = " eiwa", class = "eiwa")
                                     write(" build")
                                 }
                             }
                             div {
-                                span("$", class = "prompt", id = "terminal-cursor-prompt")
+                                span(text = "$", class = "prompt", id = "terminal-cursor-prompt")
                                 write(" ")
-                                span("", class = "cursor")
+                                span(text = "", class = "cursor")
                             }
                         }
                     }
@@ -412,5 +418,8 @@ arest(8081) {
         get("/fragments/lessons/extensions") { respond(extensionsLesson(), 200, "text/html") }
         get("/fragments/examples/platform") { respond(platformExample(), 200, "text/html") }
         get("/fragments/lessons/platform") { respond(platformLesson(), 200, "text/html") }
+        get("/fragments/lessons/breaklesson") { respond(breakLesson(), 200, "text/html") }
+        get("/fragments/lessons/formap") { respond(forMap(), 200, "text/html") }
+        get("/fragments/lessons/tryvalue") { respond(tryValue(), 200, "text/html") }
     }
 }

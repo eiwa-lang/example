@@ -4,8 +4,8 @@ fun start(): String {
     return fragment {
         div(class = "side-card") {
             img(src = "/assets/owl-card.avif", alt = "Eiwa owl mascot among purple leaves")
-            h3("Start in seconds")
-            p("Scaffold a project with eiwa init, add packages from Git, test, and ship optimized native binaries.")
+            h3(text = "Start in seconds")
+            p(text = "Scaffold a project with eiwa init, add packages from Git, test, and ship optimized native binaries.")
             a(text = "Installation guide", href = "https://github.com/eiwa-lang/eiwa", target = "_blank", rel = "noreferrer", class = "more")
         }
     }

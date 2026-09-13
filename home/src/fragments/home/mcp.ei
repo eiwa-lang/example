@@ -4,9 +4,9 @@ fun mcpCard(): String {
     return fragment {
         div(class = "wrap") {
             div(class = "section-heading") {
-                span("AI & IDE INTEGRATION", class = "pill")
-                h2("Connect any LLM to Eiwa via MCP")
-                p("Give Claude, Cursor, Antigravity, and other AI agents 100% native knowledge of Eiwa's syntax, composition type system, coroutines, and stdlib.")
+                span(text = "AI & IDE INTEGRATION", class = "pill")
+                h2(text = "Connect any LLM to Eiwa via MCP")
+                p(text = "Give Claude, Cursor, Antigravity, and other AI agents 100% native knowledge of Eiwa's syntax, composition type system, coroutines, and stdlib.")
             }
             div(class = "mcp-grid") {
                 div(class = "mcp-info-card") {
@@ -19,22 +19,22 @@ fun mcpCard(): String {
                         code(class = "mcp-url") { write("https://eiwa.dev/mcp") }
                     }
                     div(class = "mcp-capabilities") {
-                        h3("What your AI agent learns:")
+                        h3(text = "What your AI agent learns:")
                         ul {
                             li {
-                                strong("Composition Type System: ")
+                                strong(text = "Composition Type System: ")
                                 write("Strict use of type, contract, skill, object, implement (no class/override).")
                             }
                             li {
-                                strong("Stackless Coroutines: ")
+                                strong(text = "Stackless Coroutines: ")
                                 write("task {}, .await(), sleep(), yield(), and Scheduler.")
                             }
                             li {
-                                strong("28 Language Lessons: ")
+                                strong(text = "28 Language Lessons: ")
                                 write("Direct access to all Language Tour snippets & explanations.")
                             }
                             li {
-                                strong("Standard Library: ")
+                                strong(text = "Standard Library: ")
                                 write("std.core, std.collections, std.http, std.json, std.postgres, arest, html.")
                             }
                         }

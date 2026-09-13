@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun tryValue(): String {
+    return fragment {
+        div(class = "lesson-fragment space-y-3", dataHint = "Bare try without catch yields T?: value on success, null on exception.", dataOutput = "guest\n\n[ok] Bare try without catch yields T?.") {
+            p(text = "try returns values: getOrNull without a Result wrapper.", class = "text-slate-300")
+            pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
+                code(class = "language-kotlin") {
+                    write("// 1. try as an expression: success yields the value, any exception yields null\nval retorno: String? = try { PersonaGoal.metodo() }\n// ok -> value | throw -> null\n\n// 2. composes with elvis for defaults\nval greeting: String = try { fetchName() } ?: \"guest\"\nprintln(greeting)")
+                }
+            }
+        }
+    }
+}

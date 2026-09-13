@@ -4,17 +4,17 @@ fun paradigms(): String {
     return fragment {
         div(class = "wrap") {
             div(class = "section-heading") {
-                h2("Your Syntax, Your Paradigm")
-                p("Design types with encapsulated methods (Java & C# style) or declare lean data types with decoupled receiver functions (Go & Rust style). Both compile natively with zero overhead.")
+                h2(text = "Your Syntax, Your Paradigm")
+                p(text = "Design types with encapsulated methods (Java & C# style) or declare lean data types with decoupled receiver functions (Go & Rust style). Both compile natively with zero overhead.")
             }
             div(class = "paradigms-grid") {
                 div(class = "paradigm-card") {
                     div(class = "paradigm-header") {
                         div(class = "paradigm-title-group") {
                             span(class = "paradigm-badge badge-oop") { write("Java & C# Style") }
-                            h3("OOP Encapsulated")
+                            h3(text = "OOP Encapsulated")
                         }
-                        p("Methods live inside the type body for classic object-oriented cohesion.", class = "paradigm-desc")
+                        p(text = "Methods live inside the type body for classic object-oriented cohesion.", class = "paradigm-desc")
                     }
                     div(class = "editor") {
                         div(class = "editor-bar") {
@@ -36,9 +36,9 @@ fun paradigms(): String {
                     div(class = "paradigm-header") {
                         div(class = "paradigm-title-group") {
                             span(class = "paradigm-badge badge-decoupled") { write("Go & Rust Style") }
-                            h3("Decoupled Extensions")
+                            h3(text = "Decoupled Extensions")
                         }
-                        p("Clean struct-like types with behavior attached externally via receivers.", class = "paradigm-desc")
+                        p(text = "Clean struct-like types with behavior attached externally via receivers.", class = "paradigm-desc")
                     }
                     div(class = "editor") {
                         div(class = "editor-bar") {

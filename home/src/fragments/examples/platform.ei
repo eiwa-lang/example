@@ -10,8 +10,8 @@ fun platformExample(): String {
                 }
             }
             div(class = "editor-content") {
-                h3("Declarative Platform Parity")
-                p("Cross-compilation with compile-time contract enforcement and clean FFI isolation.")
+                h3(text = "Declarative Platform Parity")
+                p(text = "Cross-compilation with compile-time contract enforcement and clean FFI isolation.")
                 pre {
                     code(class = "language-kotlin") {
                         write("// 1. Portable Contract\ncontract NotifierContract {\n    fun notify(message: String)\n}\n\n// 2. Linux implementation\nobject(\"linux\") Notifier : NotifierContract {\n    implement fun notify(message: String) {\n        println(\"[Linux Notification] \$message\")\n    }\n}\n\n// 3. Windows Win32 implementation\nobject(\"windows\") Notifier : NotifierContract {\n    implement fun notify(message: String) {\n        println(\"[Windows Toast] \$message\")\n    }\n}\n\nfun main() {\n    // Cross-compiles with: eiwa build --target linux | windows | macos\n    Notifier.notify(\"System ready!\")\n}")

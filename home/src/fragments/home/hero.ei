@@ -4,12 +4,12 @@ fun hero(): String {
     return fragment {
         div(class = "wrap hero-grid") {
             div(class = "hero-copy") {
-                span("A modern programming language", class = "pill")
+                span(text = "A modern programming language", class = "pill")
                 h1 {
                     write("Build software with ")
-                    span("clarity.", class = "grad")
+                    span(text = "clarity.", class = "grad")
                 }
-                p("Eiwa combines Kotlin-like ergonomics with native compilation, compile-time null safety, and a practical path for APIs, MCPs, and safe systems.", class = "lead")
+                p(text = "Eiwa combines Kotlin-like ergonomics with native compilation, compile-time null safety, and a practical path for APIs, MCPs, and safe systems.", class = "lead")
                 div(class = "cta-row") {
                     a(href = "#tour", class = "btn btn-primary") {
                         write("Explore the tour")
@@ -26,8 +26,8 @@ fun hero(): String {
                         button(text = "Windows (PowerShell)", id = "tab-os-win", class = "os-tab")
                     }
                     div(class = "install", id = "hero-install-box") {
-                        span("$", class = "dollar", id = "hero-install-prompt")
-                        code("curl -fsSL https://eiwa.dev/install.sh | sh", id = "hero-install-code")
+                        span(text = "$", class = "dollar", id = "hero-install-prompt")
+                        code(text = "curl -fsSL https://eiwa.dev/install.sh | sh", id = "hero-install-code")
                         button(id = "copy-install", class = "copy-button") {
                             svg(viewBox = "0 0 24 24", class = "copy-icon") { path(d = "M9 9h12v12H9zM5 15V5a2 2 0 012-2h10", fill = "none") }
                         }

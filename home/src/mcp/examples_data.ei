@@ -201,8 +201,8 @@ object ExamplesData {
                 "            Argument(\"a\", JsonType.INTEGER, \"Primeiro número\"),\n" +
                 "            Argument(\"b\", JsonType.INTEGER, \"Segundo número\")\n" +
                 "        ]) {\n" +
-                "            val a = arguments.get(\"a\")!!.asNumber()\n" +
-                "            val b = arguments.get(\"b\")!!.asNumber()\n" +
+                "            val a = argument(\"a\")!!.asNumber()\n" +
+                "            val b = argument(\"b\")!!.asNumber()\n" +
                 "            respond(a + b)\n" +
                 "        }\n\n" +
                 "        resource(\"calc://historico\") {\n" +

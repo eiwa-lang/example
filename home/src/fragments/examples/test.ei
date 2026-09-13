@@ -10,8 +10,8 @@ fun testExample(): String {
                 }
             }
             div(class = "editor-content") {
-            h3("Native test runner")
-            p("Files ending with _test.ei can declare test blocks and run with eiwa test.")
+            h3(text = "Native test runner")
+            p(text = "Files ending with _test.ei can declare test blocks and run with eiwa test.")
             pre {
                 code(class = "language-kotlin") {
                     write("// calculator_test.ei\nimport { sum } from \"calculator\"\n\ntest \"sum two integers\" {\n    val result = sum(10, 5)\n    assert(result == 15)\n}")

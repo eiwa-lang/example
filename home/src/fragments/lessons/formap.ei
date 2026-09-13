@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun forMap(): String {
+    return fragment {
+        div(class = "lesson-fragment space-y-3", dataHint = "for used as a value collects a List, null iterations are skipped, and break appends.", dataOutput = "doubled: 2, 4, 6\nodds: 2\nwithEnd: 1, -1\n\n[ok] for collects map-style lists and skips nulls filter-style.") {
+            p(text = "for returns values: map-style collect, filter-style null skip.", class = "text-slate-300")
+            pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
+                code(class = "language-kotlin") {
+                    write("// 1. for as map: collect each iteration into a List\nval doubled = for ([1, 2, 3]) { it * 2 }\nprintln(\"doubled: \${doubled[0]}, \${doubled[1]}, \${doubled[2]}\")\n\n// 2. for as filter: null iterations are skipped\nval odds = for ([1, 2, 3, 4]) { n ->\n    if (n == 1 || n == 3) n\n}\nprintln(\"odds: \${odds.size()}\")\n\n// 3. break appends and ends the collection\nval withEnd = for ([1, 2, 3]) { n ->\n    if (n == 2) {\n        break -1\n    }\n    n\n}\nprintln(\"withEnd: \${withEnd[0]}, \${withEnd[1]}\")")
+                }
+            }
+        }
+    }
+}

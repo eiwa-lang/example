@@ -1,4 +1,4 @@
-import { ArestBuilder } from "arest.arest_builder"
+import { ArestBuilder } from "arest.server.arest_builder"
 import { Argument, JsonType } from "arest.mcp.mcp_builder"
 import { Docs } from ".mcp.docs"
 import { LessonsData } from ".mcp.lessons_data"
@@ -69,7 +69,7 @@ fun setupMcp(server: ArestBuilder) {
             Argument("lesson", JsonType.STRING, "Lesson number, slug, or name (e.g. '1', '12', 'tasks', 'compositionobject')", true),
             Argument("id", JsonType.STRING, "Alias for lesson (kept for compatibility)", false)
         ]) {
-            val query = hasArgument("lesson") ? arguments.get("lesson")!!.asString() : (hasArgument("id") ? arguments.get("id")!!.asString() : "")
+            val query = hasArgument("lesson") ? argument("lesson")!!.asString() : (hasArgument("id") ? argument("id")!!.asString() : "")
             if (query == "") {
                 error("Missing required parameter 'lesson' (e.g. '1', '12', 'tasks', 'compositionobject').")
             } else {
@@ -85,7 +85,7 @@ fun setupMcp(server: ArestBuilder) {
             Argument("topic", JsonType.STRING, "Example topic (http, html, mcp, tasks, postgres, money, tests, time)", true),
             Argument("name", JsonType.STRING, "Alias for topic (kept for compatibility)", false)
         ]) {
-            val topic = hasArgument("topic") ? arguments.get("topic")!!.asString() : (hasArgument("name") ? arguments.get("name")!!.asString() : "http")
+            val topic = hasArgument("topic") ? argument("topic")!!.asString() : (hasArgument("name") ? argument("name")!!.asString() : "http")
             respond(ExamplesData.get(topic))
         }
 
@@ -97,7 +97,7 @@ fun setupMcp(server: ArestBuilder) {
             Argument("topic", JsonType.STRING, "Documentation section (overview, type-system, platform-parity, coroutines, syntax-rules, stdlib, cli)", true),
             Argument("section", JsonType.STRING, "Alias for topic (kept for compatibility)", false)
         ]) {
-            val topic = hasArgument("topic") ? arguments.get("topic")!!.asString() : (hasArgument("section") ? arguments.get("section")!!.asString() : "overview")
+            val topic = hasArgument("topic") ? argument("topic")!!.asString() : (hasArgument("section") ? argument("section")!!.asString() : "overview")
             respond(Docs.getSection(topic))
         }
 
@@ -109,7 +109,7 @@ fun setupMcp(server: ArestBuilder) {
             Argument("section", JsonType.STRING, "Tour section number (1-20)", true),
             Argument("number", JsonType.STRING, "Alias for section (kept for compatibility)", false)
         ]) {
-            val section = hasArgument("section") ? arguments.get("section")!!.asString() : (hasArgument("number") ? arguments.get("number")!!.asString() : "1")
+            val section = hasArgument("section") ? argument("section")!!.asString() : (hasArgument("number") ? argument("number")!!.asString() : "1")
             respond(Docs.getSection(section))
         }
 
@@ -131,7 +131,7 @@ fun setupMcp(server: ArestBuilder) {
         }
 
         prompt("explain_concept") {
-            val topic = hasArgument("topic") ? arguments.get("topic")!!.asString() : "composition"
+            val topic = hasArgument("topic") ? argument("topic")!!.asString() : "composition"
             respond(
                 "Explain the concept of '$topic' in the Eiwa programming language.\n" +
                 "Contrast it with other languages (Kotlin, Rust, Go, TypeScript) and provide a concise, working code example."

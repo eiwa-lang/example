@@ -3,7 +3,7 @@ import { fragment } from "html"
 fun uuid(): String {
     return fragment {
         div(class = "lesson-fragment space-y-3", dataHint = "std.uuid provides RFC 4122 v4 UUIDs and v7 time-ordered UUIDs.", dataOutput = "4\n\n[ok] UUIDs are strongly typed and format to canonical strings.") {
-            p("Generate and inspect UUIDs with std.uuid.", class = "text-slate-300")
+            p(text = "Generate and inspect UUIDs with std.uuid.", class = "text-slate-300")
             pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
                 code(class = "language-kotlin") {
                     write("import { Uuid } from \"std.uuid\"\n\nval id = Uuid.generate()\nprint(id.version())\nprint(id)")

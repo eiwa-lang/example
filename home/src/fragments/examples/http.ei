@@ -10,27 +10,27 @@ fun httpExample(): String {
                 }
             }
             div(class = "editor-content") {
-                h3("HTTP routes with arest")
-                p("Typed JSON, path parameters, and a health check in one compact server. Declare the arest dependency in eiwa.yaml, then run.")
-                p { strong("1. eiwa.yaml — declare the dependency") }
+                h3(text = "HTTP routes with arest")
+                p(text = "Typed JSON, path parameters, and a health check in one compact server. Declare the arest dependency in eiwa.yaml, then run.")
+                p { strong(text = "1. eiwa.yaml — declare the dependency") }
                 pre {
                     code(class = "language-yaml") {
                         write("name: api\nversion: 0.1.0\n\ndependencies:\n  arest:\n    github: eiwa-lang/arest\n    branch: main")
                     }
                 }
-                p { strong("2. http.ei — the server") }
+                p { strong(text = "2. http.ei — the server") }
                 pre {
                     code(class = "language-kotlin") {
                         write("import { arest } from \"arest.arest\"\nimport { Json } from \"std.json\"\n\ntype User(val id: Int, val name: String) : Serializable + Json\n\narest(8080) {\n    health()\n\n    routing {\n        get(\"/hello\") {\n            respondText(\"Hello from Eiwa!\")\n        }\n\n        get(\"/users/me\") {\n            respond(User(1, \"Leo\"))\n        }\n\n        get(\"/users/:id\") {\n            val id = pathParam(\"id\") ?: \"unknown\"\n            respond(User(id.toInt(), \"User \$id\"))\n        }\n\n        post(\"/users\") {\n            val user = receive<User>()\n            respond(user, status = 201)\n        }\n    }\n}")
                     }
                 }
-                p { strong("3. Run and test") }
+                p { strong(text = "3. Run and test") }
                 pre {
                     code(class = "language-bash") {
                         write("$ eiwa run\n[Arest] Server listening on http://localhost:8080 ...\n\n$ curl http://localhost:8080/hello\nHello from Eiwa!\n\n$ curl http://localhost:8080/users/me\n{\"id\":1,\"name\":\"Leo\"}\n\n$ curl http://localhost:8080/users/42\n{\"id\":42,\"name\":\"User 42\"}\n\n$ curl -X POST http://localhost:8080/users \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"id\":99,\"name\":\"Ana\"}'\n{\"id\":99,\"name\":\"Ana\"}")
                     }
                 }
-                p("Routes are receivers on ApplicationCall: respond(Serializable), receive<T>(), pathParam(), header(), query() — plus static files and health checks built in.")
+                p(text = "Routes are receivers on ApplicationCall: respond(Serializable), receive<T>(), pathParam(), header(), query() — plus static files and health checks built in.")
             }
         }
     }

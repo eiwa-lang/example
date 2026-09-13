@@ -4,8 +4,8 @@ fun whyEiwa(): String {
     return fragment {
         div(class = "wrap") {
             div(class = "section-heading") {
-                h2("Why Eiwa?")
-                p("Designed from first principles for clarity, developer ergonomics, and native execution without JVM or heavy runtimes.")
+                h2(text = "Why Eiwa?")
+                p(text = "Designed from first principles for clarity, developer ergonomics, and native execution without JVM or heavy runtimes.")
             }
             div(class = "why-grid") {
                 div(class = "why-card") {
@@ -13,25 +13,25 @@ fun whyEiwa(): String {
                         div(class = "why-badge-row") {
                             span(class = "why-badge badge-composition") { write("Architecture") }
                         }
-                        h3("Composition Over Inheritance")
-                        p("Say goodbye to fragile base classes, deep class hierarchies, and hidden override bugs. Eiwa replaces OOP inheritance with clean composition.")
+                        h3(text = "Composition Over Inheritance")
+                        p(text = "Say goodbye to fragile base classes, deep class hierarchies, and hidden override bugs. Eiwa replaces OOP inheritance with clean composition.")
                     }
                     div(class = "why-body") {
                         ul(class = "why-points") {
                             li {
-                                strong("type: ")
+                                strong(text = "type: ")
                                 write("Holds pure state, identity, and constructor parameters.")
                             }
                             li {
-                                strong("contract: ")
+                                strong(text = "contract: ")
                                 write("Defines pure polymorphic API signatures without implementation.")
                             }
                             li {
-                                strong("skill: ")
+                                strong(text = "skill: ")
                                 write("Reusable method behaviors and mixins without carrying mutable state.")
                             }
                             li {
-                                strong("object: ")
+                                strong(text = "object: ")
                                 write("Dedicated singletons for global configs and static utilities.")
                             }
                         }
@@ -57,25 +57,25 @@ fun whyEiwa(): String {
                         div(class = "why-badge-row") {
                             span(class = "why-badge badge-async") { write("Concurrency") }
                         }
-                        h3("Native Stackless Coroutines")
-                        p("Enjoy the expressive power of Kotlin-style tasks and await, without requiring a JVM or a bulky C event-loop runtime.")
+                        h3(text = "Native Stackless Coroutines")
+                        p(text = "Enjoy the expressive power of Kotlin-style tasks and await, without requiring a JVM or a bulky C event-loop runtime.")
                     }
                     div(class = "why-body") {
                         ul(class = "why-points") {
                             li {
-                                strong("LLVM State Machines: ")
+                                strong(text = "LLVM State Machines: ")
                                 write("Suspending task bodies are transformed directly into lightweight heap continuations.")
                             }
                             li {
-                                strong("Pure-Eiwa Scheduler: ")
+                                strong(text = "Pure-Eiwa Scheduler: ")
                                 write("Cooperative, high-throughput multi-core dispatchers drive tasks with zero OS thread thrashing.")
                             }
                             li {
-                                strong("Instant Await: ")
+                                strong(text = "Instant Await: ")
                                 write("Direct async synchronization with structured error handling and null-safe results.")
                             }
                             li {
-                                strong("Native Footprint: ")
+                                strong(text = "Native Footprint: ")
                                 write("Thousands of concurrent tasks consume mere megabytes of memory.")
                             }
                         }

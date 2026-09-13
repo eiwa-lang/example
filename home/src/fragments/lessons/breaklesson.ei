@@ -1,0 +1,14 @@
+import { fragment } from "html"
+
+fun breakLesson(): String {
+    return fragment {
+        div(class = "lesson-fragment space-y-3", dataHint = "break exits the innermost loop, break value returns early from lambdas, and task blocks reject break.", dataOutput = "total: 6\nf(5): 10\nf(-3): 0\n\n[ok] break exits loops early and break value returns from lambdas.") {
+            p(text = "Exit early: break leaves loops, break value leaves lambdas.", class = "text-slate-300")
+            pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
+                code(class = "language-kotlin") {
+                    write("// 1. break exits the innermost loop\nvar total = 0\nfor ([1, 2, 3, 4, 5]) { n ->\n    if (n == 4) {\n        break\n    }\n    total = total + n\n}\nprintln(\"total: \$total\")\n\n// 2. break value exits a lambda early (return is forbidden there)\nval f: (Int) -> Int = { x ->\n    if (x < 0) {\n        break 0\n    }\n    x * 2\n}\nprintln(\"f(5): \${f(5)}\")\nprintln(\"f(-3): \${f(-3)}\")")
+                }
+            }
+        }
+    }
+}

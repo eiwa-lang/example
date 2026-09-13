@@ -9,7 +9,7 @@ type LessonsData() {
 } object {
 
     fun list(): String {
-        return "# Eiwa Language Tour - 29 Lessons Index\n\n" +
+        return "# Eiwa Language Tour - 31 Lessons Index\n\n" +
             "01. Import symbols (`import { ... } from \".path\"`)\n" +
             "02. Write without main (Top-level statements & scripting)\n" +
             "03. Sum a list (List<T>, `for (items) { it -> }`)\n" +
@@ -38,7 +38,9 @@ type LessonsData() {
             "26. Environment & .env (`std.env` config loader)\n" +
             "27. Random & collections (`std.random` sampling & shuffling)\n" +
             "28. Extension functions (`fun Type.extension(): Ret`)\n" +
-            "29. Platform parity (`contract`, `object(\"posix\")`, `object(\"windows\")`)"
+            "29. Platform parity (`contract`, `object(\"posix\")`, `object(\"windows\")`)\n" +
+            "30. Exit early with break (`break`, `break value`, no `continue`)\n" +
+            "31. for returns List (`for` as map/filter, null-skip, `break value` appends)"
     }
 
     fun get(query: String): String {
@@ -224,6 +226,48 @@ type LessonsData() {
                 "- **Zero runtime cost:** The LLVM emitter prunes inactive platform branches and binds the active target statically without virtual dispatch."
         }
 
-        return "Lesson not found for: $query. Call list_lessons to see all 29 lessons."
+        if (query == "30" || query == "break" || query == "breaklesson") {
+            return "### Lesson 30: Exit Early with Break\n" +
+                "`break` exits the innermost `while`/`for` loop. There is no `continue` — skipping an iteration is written with `if`/`else`. " +
+                "Inside a lambda, `return` is forbidden; `break value` exits the lambda early with that value instead. " +
+                "`break` outside any loop or lambda, and `break` inside `task {}` blocks, are compile-time errors.\n\n" +
+                "```kotlin\n" +
+                "var total = 0\n" +
+                "for ([1, 2, 3, 4, 5]) { n ->\n" +
+                "    if (n == 4) {\n" +
+                "        break\n" +
+                "    }\n" +
+                "    total = total + n\n" +
+                "}\n" +
+                "println(\"total: \$total\")\n\n" +
+                "val f: (Int) -> Int = { x ->\n" +
+                "    if (x < 0) {\n" +
+                "        break 0\n" +
+                "    }\n" +
+                "    x * 2\n" +
+                "}\n" +
+                "println(\"f(5): \${f(5)}\")\n" +
+                "println(\"f(-3): \${f(-3)}\")\n" +
+                "```"
+        }
+        if (query == "31" || query == "formap" || query == "map" || query == "filter") {
+            return "### Lesson 31: for Returns List (Map & Filter)\n" +
+                "A `for` loop in value position collects each iteration into a `List<T>` like Kotlin's `map`. " +
+                "Iterations yielding `null` are skipped (inline `filter`); an `if` without `else` in value position types as `T?`. " +
+                "Bare `break` ends with what was collected; `break value` appends and ends. Used as a statement, `for` allocates nothing.\n\n" +
+                "```kotlin\n" +
+                "val doubled = for ([1, 2, 3]) { it * 2 }\n\n" +
+                "val odds = for ([1, 2, 3, 4]) { n ->\n" +
+                "    if (n == 1 || n == 3) n\n" +
+                "}\n\n" +
+                "val withEnd = for ([1, 2, 3]) { n ->\n" +
+                "    if (n == 2) {\n" +
+                "        break -1\n" +
+                "    }\n" +
+                "    n\n" +
+                "}\n" +
+                "```"
+        }
+        return "Lesson not found for: $query. Call list_lessons to see all 31 lessons."
     }
 }
