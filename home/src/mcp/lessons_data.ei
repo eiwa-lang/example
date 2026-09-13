@@ -9,7 +9,7 @@ type LessonsData() {
 } object {
 
     fun list(): String {
-        return "# Eiwa Language Tour - 31 Lessons Index\n\n" +
+        return "# Eiwa Language Tour - 32 Lessons Index\n\n" +
             "01. Import symbols (`import { ... } from \".path\"`)\n" +
             "02. Write without main (Top-level statements & scripting)\n" +
             "03. Sum a list (List<T>, `for (items) { it -> }`)\n" +
@@ -40,7 +40,8 @@ type LessonsData() {
             "28. Extension functions (`fun Type.extension(): Ret`)\n" +
             "29. Platform parity (`contract`, `object(\"posix\")`, `object(\"windows\")`)\n" +
             "30. Exit early with break (`break`, `break value`, no `continue`)\n" +
-            "31. for returns List (`for` as map/filter, null-skip, `break value` appends)"
+            "31. for returns List (`for` as map/filter, null-skip, `break value` appends)\n" +
+            "32. try returns T? (bare `try` as expression, `runCatching {}.getOrNull()`)"
     }
 
     fun get(query: String): String {
@@ -268,6 +269,18 @@ type LessonsData() {
                 "}\n" +
                 "```"
         }
-        return "Lesson not found for: $query. Call list_lessons to see all 31 lessons."
+        if (query == "32" || query == "tryvalue" || query == "try" || query == "getornull") {
+            return "### Lesson 32: try Returns T? (Native getOrNull)\n" +
+                "A bare `try` without `catch` in value position yields `T?`: success stores the trailing expression, any exception stores `null` — " +
+                "the native substitute for Kotlin's `runCatching { f() }.getOrNull()`, with no `Result` wrapper. " +
+                "The elvis LHS counts as a value slot, so `try { f() } ?: fallback` works directly. " +
+                "A `Void` body in value position is a compile-time error; `try` with `catch` in value position and value-`try` inside `task {}` are rejected.\n\n" +
+                "```kotlin\n" +
+                "val retorno: String? = try { PersonaGoal.metodo() }\n" +
+                "// ok -> value | throw -> null\n\n" +
+                "val greeting: String = try { fetchName() } ?: \"guest\"\n" +
+                "```"
+        }
+        return "Lesson not found for: $query. Call list_lessons to see all 32 lessons."
     }
 }
