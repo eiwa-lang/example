@@ -7,10 +7,10 @@ dependencies:
     github: eiwa-lang/postgres
     branch: main
   html:
-    path: ../../html
-    # github: eiwa-lang/html
-    # branch: main
-
-
+    # path: ../../html
+    github: eiwa-lang/html
+    branch: main
   arest:
-    path: ../../arest
+    # path: ../../arest
+    github: eiwa-lang/arest
+    branch: main
