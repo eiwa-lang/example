@@ -53,9 +53,16 @@ object StdlibData {
         }
         if (module == "collections" || module == "std.collections") {
             return "## std.collections — Lists, Maps, Sets\n\n" +
-                "`MutableList<T>`: `add(element: T): Void`, `get(index: Int): T`, `set(index: Int, element: T): Void`, " +
+                "`MutableList<T>`: `add(element: T): Void`, `add(elements: List<T>): Void` (in-place concat, Kotlin `addAll`), " +
+                "`addAll(elements: List<T>): Void` (alias), `plus(element: T): List<T>` (operator `+`, NEW list), " +
+                "`plus(other: List<T>): List<T>` (operator `+`, NEW list), " +
+                "`get(index: Int): T`, `set(index: Int, element: T): Void`, " +
                 "`remove(index: Int): Void`, `size(): Int`, `isEmpty(): Bool`, `isNotEmpty(): Bool`, `freeze(): List<T>`, `contains(element: T): Bool`.\n\n" +
-                "`List<T>`: `get(index: Int): T`, `size(): Int`, `isEmpty(): Bool`, `isNotEmpty(): Bool`, `contains(element: T): Bool`, `mut(): MutableList<T>`.\n\n" +
+                "`List<T>`: `plus(element: T): List<T>` (operator `+`, NEW list), `plus(other: List<T>): List<T>` (operator `+`, NEW list), " +
+                "`get(index: Int): T`, `size(): Int`, `isEmpty(): Bool`, `isNotEmpty(): Bool`, `contains(element: T): Bool`, `mut(): MutableList<T>`.\n\n" +
+                "Concat rules: `+` NEVER mutates — it always returns a new `List<T>`. `add`/`addAll` take an immutable `List<T>`; " +
+                "append a `MutableList<T>` via `.freeze()` first (`all.add(other.freeze())`). " +
+                "Overload resolution is by type: `m.add(2)` appends one element, `m.add([2])` appends the contents.\n\n" +
                 "`MutableMap<K, V>`: `put(key: K, value: V): Void` (operator `m[k] = v`), `get(key: K): V?` (operator `m[k]`), " +
                 "`contains(key: K): Bool`, `size(): Int`, `isEmpty(): Bool`, `isNotEmpty(): Bool`, `freeze(): Map<K, V>`, `keys()`, `values()`.\n\n" +
                 "`Map<K, V>`: `get(key: K): V?`, `contains(key: K): Bool`, `size(): Int`, `isEmpty(): Bool`, `isNotEmpty(): Bool`, " +
@@ -63,7 +70,7 @@ object StdlibData {
                 "`MutableSet<T>`: `add(element: T): Void`, `contains(element: T): Bool`, `size(): Int`, `isEmpty()`, `isNotEmpty()`, `freeze(): Set<T>`. " +
                 "`Set<T>`: `contains(element: T): Bool`, `size(): Int`, `isEmpty()`, `isNotEmpty()`, `mut(): MutableSet<T>`.\n\n" +
                 "Extension: `String.split(delimiter: String): List<String>` (keeps empty parts; whole string when delimiter absent/empty).\n\n" +
-                "```kotlin\nimport { MutableList, MutableMap } from \"std.collections\"\n\nval m = MutableMap<String, Int>()\nm[\"a\"] = 1\nval frozen = m.freeze()\nprintln(\"a\".split(\"x\").size())\n```"
+                "```kotlin\nimport { MutableList, MutableMap } from \"std.collections\"\n\nval m = MutableMap<String, Int>()\nm[\"a\"] = 1\nval frozen = m.freeze()\nprintln(\"a\".split(\"x\").size())\n\nval all = [1, 2].mut()\nall.add([3, 4])\nall.addAll([5])\nprintln(all.freeze())\nprintln([1, 2] + [3, 4])\n```"
         }
         if (module == "math" || module == "std.math") {
             return "## std.math — Native Math + mod\n\n" +

@@ -12,6 +12,7 @@ object ExamplesData {
             "- `tests`: Native unit testing with `test \"name\" { ... }` blocks\n" +
             "- `platform`: Declarative cross-platform parity and contracts (ADR 60)\n" +
             "- `regex`: Pure-Eiwa regex (find/replace/matches)\n" +
+            "- `collections`: List concatenation (add/addAll/plus)\n" +
             "- `json`: Reflectionless JSON serialization (toJson/fromJson)\n" +
             "- `uuid`: RFC 4122 UUIDs (v4/v7/parse)\n" +
             "- `ulid`: Sortable Crockford ULIDs (generate/parse)"
@@ -343,6 +344,15 @@ object ExamplesData {
                 "```kotlin\nimport { Uuid } from \"std.uuid\"\nimport { Ulid } from \"std.ulid\"\n\nfun main() {\n    println(Uuid.v4().toString())\n    println(Ulid.generate().toString())\n}\n```"
         }
 
-        return "Example not found for: $topic. Available: http, http_client, html, tasks, postgres, mcp, time, money, tests, platform, regex, json, uuid, ulid."
+        if (topic == "collections" || topic == "concat" || topic == "lists") {
+            return "## List Concatenation with std.collections\n\n" +
+                "`MutableList.add` is overloaded: `add(element: T)` appends one item, `add(elements: List<T>)` appends a whole list in place " +
+                "(Kotlin `addAll`; the `addAll(elements: List<T>)` alias also exists). " +
+                "The `+` operator on both `List<T>` and `MutableList<T>` ALWAYS returns a new immutable `List<T>` — operands are never mutated. " +
+                "`add`/`addAll` take an immutable `List<T>`; freeze mutable sources first (`all.add(other.freeze())`).\n\n" +
+                "```kotlin\nimport { List } from \"std.collections\"\n\nfun main() {\n    val queue = [\"hello\"].mut()\n    queue.add([\"world\"])\n    queue.addAll([\"!\"])\n    println(queue.freeze())\n\n    val feed = [\"hello\"] + [\"world\"] + \"!\"\n    println(feed)\n}\n```"
+        }
+
+        return "Example not found for: $topic. Available: http, http_client, html, tasks, postgres, mcp, time, money, tests, platform, regex, collections, json, uuid, ulid."
     }
 }

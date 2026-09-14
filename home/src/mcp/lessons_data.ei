@@ -145,8 +145,11 @@ type LessonsData() {
         }
         if (query == "20" || query == "mutability") {
             return "### Lesson 20: Build, Then Freeze\n" +
-                "Convert mutable collections to immutable views using `.freeze()` or `.mut()`.\n\n" +
-                "```kotlin\nfun main() {\n    val mut = [1, 2].mut()\n    mut.add(3)\n    val frozen = mut.freeze()\n    println(frozen.size())\n}\n```"
+                "Convert mutable collections to immutable views using `.freeze()` or `.mut()`. " +
+                "`MutableList.add` is overloaded: `add(element)` appends one item, `add(list)` / `addAll(list)` appends a whole `List<T>` in place. " +
+                "`listA + listB` and `list + element` return a NEW immutable `List<T>` without mutating the operands. " +
+                "Appending a `MutableList` requires `.freeze()` first.\n\n" +
+                "```kotlin\nfun main() {\n    val mut = [1, 2].mut()\n    mut.add(3)\n    mut.add([4, 5])\n    mut.addAll([6])\n    val frozen = mut.freeze()\n    println(frozen.size())\n    println([1, 2] + [3, 4])\n}\n```"
         }
         if (query == "21" || query == "uuid") {
             return "### Lesson 21: Generate Unique IDs\n" +

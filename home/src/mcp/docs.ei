@@ -72,6 +72,9 @@ type Docs() {
         return "# Section 7: Collections (List, Map, Set)\n\n" +
             "- `List<T>`: Immutable list `[1, 2, 3]`\n" +
             "- `MutableList<T>`: `list.mut()` or `MutableList<T>()` with `.add()`, `.set()`, `.remove()`\n" +
+            "- **Concat (in-place):** `all.add(otherList)` (overload of `add`, Kotlin `addAll`) and `all.addAll(otherList)`; " +
+            "both take an immutable `List<T>` — freeze mutable sources first (`all.add(other.freeze())`)\n" +
+            "- **Concat (new list):** `listA + listB` and `list + element` return a NEW immutable `List<T>` on both `List` and `MutableList` receivers; operands are never mutated\n" +
             "- `Map<K, V>`: Created via infix `of`: `val capitals = [\"Brazil\" of \"Brasília\", \"Japan\" of \"Tokyo\"]`\n" +
             "- `MutableMap<K, V>`: `map.mut()` with `m[\"key\"] = val`\n" +
             "- `Set<T>` / `MutableSet<T>`: Unique elements container\n" +
@@ -266,6 +269,8 @@ type Docs() {
             "5. **Collections:**\n" +
             "   - `List<T>`: `val list = [1, 2, 3]`\n" +
             "   - `MutableList<T>`: `val mutList = list.mut()` or `MutableList<T>()`\n" +
+            "   - Concat in place: `mutList.add(otherList)` / `mutList.addAll(otherList)` (takes `List<T>`; freeze mutable sources)\n" +
+            "   - Concat as new list: `listA + listB`, `list + element` (never mutates)\n" +
             "   - `Map<K, V>`: `[\"key\" of \"value\"]`\n" +
             "6. **Loops:** `for (items) { ... }`, `for (items) { it -> ... }`, `for (items) { idx, it -> ... }`, `while (cond) { ... }`, `repeat(n) { ... }`.\n" +
             "7. **Null Safety:** `Type?` or `Type | Null`, safe call `obj?.prop`, elvis `a ?: b`, force `obj!!`.\n" +
@@ -278,7 +283,7 @@ type Docs() {
             "Per-module full API: `get_std_module(\"<name>\")` or resource `eiwa://spec/std/<name>`.\n\n" +
             "## std packages:\n" +
             "- `std.core`: `String/Int/Double/Bool/Pointer`, contracts (`Stringable/Equatable/Hashable/Runnable/Closeable/Awaitable`), skill `Scope<T>` (`let/also/apply/run/takeIf/takeUnless`), `with/use`, `Memory.alloc`.\n" +
-            "- `std.collections`: `List/MutableList` (`add/get/size/freeze/mut/contains`), `Map/MutableMap` (`put/get/keys/values/freeze/mut`), `Set/MutableSet`, `String.split(delimiter)`.\n" +
+            "- `std.collections`: `List/MutableList` (`add/addAll/plus/get/set/remove/size/freeze/mut/contains`), `Map/MutableMap` (`put/get/keys/values/freeze/mut`), `Set/MutableSet`, `String.split(delimiter)`.\n" +
             "- `std.math`: `Math` (`sin/cos/tan/sqrt/pow/abs/floor/ceil/round`) + top-level `mod(a, b)`.\n" +
             "- `std.system`: `loop/repeat/retry/sleep/sleepMs/yield/exit`.\n" +
             "- `std.exceptions`: `Throwable/Exception/AssertionException`, `error(msg)`, `assert(cond)`.\n" +
