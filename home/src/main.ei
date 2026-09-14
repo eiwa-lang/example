@@ -9,7 +9,6 @@ import { testExample } from ".fragments.examples.test"
 import { timeExample } from ".fragments.examples.time"
 import { moneyExample } from ".fragments.examples.money"
 import { regexExample } from ".fragments.examples.regex"
-import { collectionsExample } from ".fragments.examples.collections"
 import { hero } from ".fragments.home.hero"
 import { whyEiwa } from ".fragments.home.why"
 import { features } from ".fragments.home.features"
@@ -222,7 +221,6 @@ fun homePage() = html {
                             button(text = "Tests", class = "tab-button example-tab", hxGet = "/fragments/examples/tests", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "Platform", class = "tab-button example-tab", hxGet = "/fragments/examples/platform", hxTarget = "#example-view", hxSwap = "innerHTML")
                             button(text = "Regex", class = "tab-button example-tab", hxGet = "/fragments/examples/regex", hxTarget = "#example-view", hxSwap = "innerHTML")
-                            button(text = "Lists", class = "tab-button example-tab", hxGet = "/fragments/examples/collections", hxTarget = "#example-view", hxSwap = "innerHTML")
                         }
                         div(id = "example-view", class = "editor", hxGet = "/fragments/examples/http", hxTrigger = "load", hxSwap = "innerHTML") {}
                     }
@@ -426,7 +424,6 @@ arest(8081) {
         get("/fragments/lessons/extensions") { respond(extensionsLesson(), 200, "text/html") }
         get("/fragments/examples/platform") { respond(platformExample(), 200, "text/html") }
         get("/fragments/examples/regex") { respond(regexExample(), 200, "text/html") }
-        get("/fragments/examples/collections") { respond(collectionsExample(), 200, "text/html") }
         get("/fragments/lessons/platform") { respond(platformLesson(), 200, "text/html") }
         get("/fragments/lessons/breaklesson") { respond(breakLesson(), 200, "text/html") }
         get("/fragments/lessons/formap") { respond(forMap(), 200, "text/html") }

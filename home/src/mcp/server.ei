@@ -195,7 +195,7 @@ fun setupMcp(server: ArestBuilder) {
             respond(ExamplesData.list())
         }
 
-        tool("get_example", description = "Get a functional example by topic (http, http_client, html, tasks, postgres, mcp, time, money, tests, platform, regex, collections, json, uuid, ulid)", arguments = [
+        tool("get_example", description = "Get a functional example by topic (http, http_client, html, tasks, postgres, mcp, time, money, tests, platform, regex, json, uuid, ulid)", arguments = [
             Argument("topic", JsonType.STRING, "Example topic (http, html, mcp, tasks, postgres, money, tests, time)", true),
             Argument("name", JsonType.STRING, "Alias for topic (kept for compatibility)", false)
         ]) {
