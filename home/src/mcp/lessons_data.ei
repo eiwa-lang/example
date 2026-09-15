@@ -39,7 +39,8 @@ object LessonsData {
             "29. Platform parity (`contract`, `object(\"posix\")`, `object(\"windows\")`)\n" +
             "30. Exit early with break (`break`, `break value`, no `continue`)\n" +
             "31. for returns List (`for` as map/filter, null-skip, `break value` appends)\n" +
-            "32. try returns T? (bare `try` as expression, `runCatching {}.getOrNull()`)"
+            "32. try returns T? (bare `try` as expression, `runCatching {}.getOrNull()`)\n" +
+            "33. Slice lists (`Slicable`: `slice/skip/take/skipLast/takeLast`)\n"
     }
 
     fun get(query: String): String {
