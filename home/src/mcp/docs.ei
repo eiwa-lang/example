@@ -78,7 +78,11 @@ type Docs() {
             "- `Map<K, V>`: Created via infix `of`: `val capitals = [\"Brazil\" of \"Brasília\", \"Japan\" of \"Tokyo\"]`\n" +
             "- `MutableMap<K, V>`: `map.mut()` with `m[\"key\"] = val`\n" +
             "- `Set<T>` / `MutableSet<T>`: Unique elements container\n" +
-            "- **Immutability Conversion (O(1)):** `.mut()` (wraps mutably) and `.freeze()` (locks as immutable snapshot)."
+            "- **Immutability Conversion (O(1)):** `.mut()` (wraps mutably) and `.freeze()` (locks as immutable snapshot).\n" +
+            "- **Slicing (`Slicable<T>`, both `List` and `MutableList` receivers, always returns a NEW `List<T>`):** " +
+            "`slice(start: Int, end: Int)` (`start` inclusive, `end` exclusive, clamped to `[0, size]`), " +
+            "`skip(n)` (Eiwa's name for Kotlin's `drop`), `take(n)`, `skipLast(n)`, `takeLast(n)`.\n" +
+            "- **Searching:** `contains(element)`, `indexOf(element): Int` (`-1` when absent), `first()`, `last()`, `isEmpty()`, `isNotEmpty()`."
     }
 
     fun section8Ternary(): String {
@@ -283,7 +287,7 @@ type Docs() {
             "Per-module full API: `get_std_module(\"<name>\")` or resource `eiwa://spec/std/<name>`.\n\n" +
             "## std packages:\n" +
             "- `std.core`: `String/Int/Double/Bool/Pointer`, contracts (`Stringable/Equatable/Hashable/Runnable/Closeable/Awaitable`), skill `Scope<T>` (`let/also/apply/run/takeIf/takeUnless`), `with/use`, `Memory.alloc`.\n" +
-            "- `std.collections`: `List/MutableList` (`add/addAll/plus/get/set/remove/size/freeze/mut/contains`), `Map/MutableMap` (`put/get/keys/values/freeze/mut`), `Set/MutableSet`, `String.split(delimiter)`.\n" +
+            "- `std.collections`: `List/MutableList` (`add/addAll/plus/get/set/remove/size/freeze/mut/contains/indexOf/first/last/isEmpty/isNotEmpty/slice/skip/take/skipLast/takeLast`, contracts `Slicable/Indexed/Searchable`, skills `Slicing/Appending/Searching`), `Map/MutableMap` (`put/get/keys/values/freeze/mut`), `Set/MutableSet`, `String.split(delimiter)`.\n" +
             "- `std.math`: `Math` (`sin/cos/tan/sqrt/pow/abs/floor/ceil/round`) + top-level `mod(a, b)`.\n" +
             "- `std.system`: `loop/repeat/retry/sleep/sleepMs/yield/exit`.\n" +
             "- `std.exceptions`: `Throwable/Exception/AssertionException`, `error(msg)`, `assert(cond)`.\n" +

@@ -5,11 +5,9 @@ type LessonInfo(
     val code: String
 )
 
-type LessonsData() {
-} object {
-
+object LessonsData {
     fun list(): String {
-        return "# Eiwa Language Tour - 32 Lessons Index\n\n" +
+        return "# Eiwa Language Tour - 33 Lessons Index\n\n" +
             "01. Import symbols (`import { ... } from \".path\"`)\n" +
             "02. Write without main (Top-level statements & scripting)\n" +
             "03. Sum a list (List<T>, `for (items) { it -> }`)\n" +
@@ -298,6 +296,21 @@ type LessonsData() {
                 "val greeting: String = try { fetchName() } ?: \"guest\"\n" +
                 "```"
         }
-        return "Lesson not found for: $query. Call list_lessons to see all 32 lessons."
+        if (query == "33" || query == "slice" || query == "slicing" || query == "skip" || query == "take") {
+            return "### Lesson 33: Slice Lists (Slicable)\n" +
+                "Both `List<T>` and `MutableList<T>` implement `Slicable<T>` (backed by the `Slicing` skill). " +
+                "`slice(start: Int, end: Int)` (`start` inclusive, `end` exclusive, clamped to `[0, size]`) is the primitive; " +
+                "`skip(n)` (Eiwa's name for Kotlin's `drop`), `take(n)`, `skipLast(n)`, `takeLast(n)` delegate to it. " +
+                "Every method returns a NEW immutable `List<T>` and never mutates the receiver.\n\n" +
+                "```kotlin\n" +
+                "fun main() {\n" +
+                "    val posts = [\"a\", \"b\", \"c\", \"d\", \"e\"]\n" +
+                "    println(posts.slice(1, 3))\n" +
+                "    println(posts.skip(1).take(2))\n" +
+                "    println(posts.takeLast(2))\n" +
+                "}\n" +
+                "```"
+        }
+        return "Lesson not found for: $query. Call list_lessons to see all 33 lessons."
     }
 }

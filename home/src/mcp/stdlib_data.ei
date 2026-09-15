@@ -57,9 +57,16 @@ object StdlibData {
                 "`addAll(elements: List<T>): Void` (alias), `plus(element: T): List<T>` (operator `+`, NEW list), " +
                 "`plus(other: List<T>): List<T>` (operator `+`, NEW list), " +
                 "`get(index: Int): T`, `set(index: Int, element: T): Void`, " +
-                "`remove(index: Int): Void`, `size(): Int`, `isEmpty(): Bool`, `isNotEmpty(): Bool`, `freeze(): List<T>`, `contains(element: T): Bool`.\n\n" +
+                "`remove(index: Int): Void`, `size(): Int`, `isEmpty(): Bool`, `isNotEmpty(): Bool`, `freeze(): List<T>`, `contains(element: T): Bool`, " +
+                "`indexOf(element: T): Int` (`-1` when absent), `first(): T`, `last(): T`.\n\n" +
                 "`List<T>`: `plus(element: T): List<T>` (operator `+`, NEW list), `plus(other: List<T>): List<T>` (operator `+`, NEW list), " +
-                "`get(index: Int): T`, `size(): Int`, `isEmpty(): Bool`, `isNotEmpty(): Bool`, `contains(element: T): Bool`, `mut(): MutableList<T>`.\n\n" +
+                "`get(index: Int): T`, `size(): Int`, `isEmpty(): Bool`, `isNotEmpty(): Bool`, `contains(element: T): Bool`, " +
+                "`indexOf(element: T): Int`, `first(): T`, `last(): T`, `mut(): MutableList<T>`.\n\n" +
+                "Slicing (`Slicable<T>`, on BOTH `List` and `MutableList`, always returns a NEW `List<T>`, never mutates): " +
+                "`slice(start: Int, end: Int)` (`start` inclusive, `end` exclusive, clamped to `[0, size]`), " +
+                "`skip(n: Int): List<T>` (Eiwa's name for Kotlin's `drop`), `take(n: Int): List<T>`, " +
+                "`skipLast(n: Int): List<T>`, `takeLast(n: Int): List<T>`. " +
+                "Contracts `Indexed<T>` (`size/get`), `Searchable<T>`, skills `Slicing/Appending/Searching`.\n\n" +
                 "Concat rules: `+` NEVER mutates — it always returns a new `List<T>`. `add`/`addAll` take an immutable `List<T>`; " +
                 "append a `MutableList<T>` via `.freeze()` first (`all.add(other.freeze())`). " +
                 "Overload resolution is by type: `m.add(2)` appends one element, `m.add([2])` appends the contents.\n\n" +
@@ -70,7 +77,7 @@ object StdlibData {
                 "`MutableSet<T>`: `add(element: T): Void`, `contains(element: T): Bool`, `size(): Int`, `isEmpty()`, `isNotEmpty()`, `freeze(): Set<T>`. " +
                 "`Set<T>`: `contains(element: T): Bool`, `size(): Int`, `isEmpty()`, `isNotEmpty()`, `mut(): MutableSet<T>`.\n\n" +
                 "Extension: `String.split(delimiter: String): List<String>` (keeps empty parts; whole string when delimiter absent/empty).\n\n" +
-                "```kotlin\nimport { MutableList, MutableMap } from \"std.collections\"\n\nval m = MutableMap<String, Int>()\nm[\"a\"] = 1\nval frozen = m.freeze()\nprintln(\"a\".split(\"x\").size())\n\nval all = [1, 2].mut()\nall.add([3, 4])\nall.addAll([5])\nprintln(all.freeze())\nprintln([1, 2] + [3, 4])\n```"
+                "```kotlin\nimport { MutableList, MutableMap } from \"std.collections\"\n\nval m = MutableMap<String, Int>()\nm[\"a\"] = 1\nval frozen = m.freeze()\nprintln(\"a\".split(\"x\").size())\n\nval all = [1, 2].mut()\nall.add([3, 4])\nall.addAll([5])\nprintln(all.freeze())\nprintln([1, 2] + [3, 4])\nprintln([\"a\", \"b\", \"c\", \"d\"].skip(1).take(2))\nprintln([\"a\", \"b\", \"c\"].slice(0, 2))\n```"
         }
         if (module == "math" || module == "std.math") {
             return "## std.math — Native Math + mod\n\n" +
