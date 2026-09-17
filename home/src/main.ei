@@ -51,7 +51,7 @@ import { randomLesson } from ".fragments.lessons.random"
 import { extensionsLesson } from ".fragments.lessons.extensions"
 import { platformExample } from ".fragments.examples.platform"
 import { platformLesson } from ".fragments.lessons.platform"
-import { breakLesson } from ".fragments.lessons.breaklesson"
+import { leaveLesson } from ".fragments.lessons.leavelesson"
 import { forMap } from ".fragments.lessons.formap"
 import { tryValue } from ".fragments.lessons.tryvalue"
 
@@ -261,7 +261,7 @@ fun homePage() = html {
                             button(text = "27 Random & collections", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/random", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                             button(text = "28 Extension functions", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/extensions", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                             button(text = "29 Platform parity", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/platform", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
-                            button(text = "30 Exit early with break", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/breaklesson", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
+                            button(text = "30 Exit early with leave", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/leavelesson", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                             button(text = "31 for returns List", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/formap", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                             button(text = "32 try returns T?", class = "tab-button lesson-tab", hxGet = "/fragments/lessons/tryvalue", hxTarget = "#lesson-preview", hxSwap = "innerHTML")
                         }
@@ -425,7 +425,7 @@ arest(8081) {
         get("/fragments/examples/platform") { respond(platformExample(), 200, "text/html") }
         get("/fragments/examples/regex") { respond(regexExample(), 200, "text/html") }
         get("/fragments/lessons/platform") { respond(platformLesson(), 200, "text/html") }
-        get("/fragments/lessons/breaklesson") { respond(breakLesson(), 200, "text/html") }
+        get("/fragments/lessons/leavelesson") { respond(leaveLesson(), 200, "text/html") }
         get("/fragments/lessons/formap") { respond(forMap(), 200, "text/html") }
         get("/fragments/lessons/tryvalue") { respond(tryValue(), 200, "text/html") }
     }
