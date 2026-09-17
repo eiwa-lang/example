@@ -2,11 +2,11 @@ import { fragment } from "html"
 
 fun strings(): String {
     return fragment {
-        div(class = "lesson-fragment space-y-3", dataHint = "Strings support Kotlin-style escapes and direct concatenation with primitives and Stringable types.", dataOutput = "C:\\eiwa\\bin\nTotal items: 42 (active: true)\n\n[ok] String concatenation automatically converts Stringable types without manual toString().") {
-            p(text = "Use Kotlin-style escapes and direct concatenation with any Stringable type.", class = "text-slate-300")
+        div(class = "lesson-fragment space-y-3", dataHint = "A literal line break inside quotes is kept as-is — no triple-quote needed. trimIndent() removes the common indent.", dataOutput = "C:\\eiwa\\bin\nTotal items: 42 (active: true)\none\ntwo\n\n[ok] String concatenation automatically converts Stringable types without manual toString().") {
+            p(text = "Use Kotlin-style escapes, concatenation, and literal line breaks with trimIndent().", class = "text-slate-300")
             pre(class = "overflow-x-auto border border-white/15 bg-slate-950/80 p-5 text-sm leading-6") {
                 code(class = "language-kotlin") {
-                    write("val path = \"C:\\\\eiwa\\\\bin\"\nval count = 42\nval active = true\n\nprintln(path)\nprintln(\"Total items: \$count (active: \$active)\")")
+                    write("val path = \"C:\\\\eiwa\\\\bin\"\nval count = 42\nval active = true\n\nprintln(path)\nprintln(\"Total items: \$count (active: \$active)\")\n\nval lines = \"one\ntwo\"\nprintln(lines)")
                 }
             }
         }

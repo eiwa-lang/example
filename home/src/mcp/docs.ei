@@ -44,19 +44,38 @@ type Docs() {
     }
 
     fun section4Strings(): String {
-        return "# Section 4: String Escape Sequences & Concatenation\n\n" +
-            "- Supported escapes: `\\\"`, `\\\\`, `\\n`, `\\r`, `\\t`, `\\b`, `\\'`.\n" +
-            "- String concatenation (`+`) automatically converts operands to String if they implement `Stringable` (`implement fun toString(): String`)."
+        return "# Section 4: String Escape Sequences, Concatenation & Multiline\n\n" +
+            "- Supported escapes: `\\\"`, `\\\\`, `\\n`, `\\r`, `\\t`, `\\b`, `\\'`, `\\$` (literal dollar, no interpolation).\n" +
+            "- String concatenation (`+`) automatically converts operands to String if they implement `Stringable` (`implement fun toString(): String`).\n\n" +
+            "## Multiline (no triple-quote delimiter)\n" +
+            "A literal line break inside `\"...\"` is preserved as-is — indentation is kept literally and `\\r\\n` is preserved without normalization:\n" +
+            "```kotlin\nval s = \"one\ntwo\"\nassert(s == \"one\\ntwo\")\n```\n" +
+            "Escapes and `\${...}` interpolation work across lines, and raw newlines mix freely with `\\n` escapes:\n" +
+            "```kotlin\nval name = \"Eiwa\"\nval s = \"hello \${name}\nsecond line\"\nassert(s == \"hello Eiwa\\nsecond line\")\n```\n\n" +
+            "## Dedent is opt-in (`std.string` extensions, no import needed)\n" +
+            "`trimIndent()` drops blank first/last lines, removes the minimal common indent of the non-blank lines, " +
+            "turns blank middle lines into empty lines, and keeps trailing spaces:\n" +
+            "```kotlin\nval indented = \"\n    hello\n      world\n    \"\nassert(indented.trimIndent() == \"hello\\n  world\")\n```\n" +
+            "`trimMargin(marginPrefix: String = \"|\")` uses the same blank-line handling but strips leading whitespace + prefix per line " +
+            "(lines without the prefix are kept unchanged; custom prefixes allowed):\n" +
+            "```kotlin\nval margined = \"\n    |hello\n    |  world\n    \"\nassert(margined.trimMargin() == \"hello\\n  world\")\nassert(\"  #a\\n  #b\".trimMargin(\"#\") == \"a\\nb\")\n```"
     }
 
     fun section5NullSafety(): String {
         return "# Section 5: Union Types & Compile-Time Null Safety\n\n" +
-            "- **Union Types:** `var val: String | Int = \"Eiwa\"`\n" +
-            "- **Null Safety:** `null` is a union variant (`T | Null` or `T?`). Unsafe access is a compile-time error.\n" +
+            "- **Union Types:** `val v: String | Int = \"Eiwa\"`\n" +
+            "- **Null Safety:** `null` is a union variant (`T | Null` or `T?`). Direct access on a `T?` receiver is a compile-time error.\n" +
             "- **Operators:**\n" +
             "  - Safe navigation: `user?.address?.city`\n" +
             "  - Elvis unwrap: `val name = user?.name ?: \"Guest\"`\n" +
-            "  - Force unwrap: `val name = user!!.name`"
+            "  - Force unwrap: `val name = user!!.name`\n\n" +
+            "## Smart cast (null check narrows `T?` to `T`)\n" +
+            "After an explicit null check, a `val` of nullable type narrows to its non-null variant — no `?.` / `!!` needed. " +
+            "Works in `if`, in the ternary, and in `when` with a `null` branch:\n" +
+            "```kotlin\nfun len(s: String?): Int {\n    if (s != null) {\n        return s.length   // s: String here\n    }\n    return -1\n}\n\nfun early(s: String?): Int {\n    if (s == null) {\n        return -1         // diverging branch...\n    }\n    return s.length       // ...so s: String below\n}\n\nval n: Int = if (s != null) s.length else -1\nval m: Int = (s != null) ? s.length : -1\nval k = when (s) {\n    null -> -1\n    else -> s.length      // narrowed (a `null` branch exists)\n}\n```\n" +
+            "Rules (v1): only immutable `val`s narrow (params, locals, `val` fields — a mutated `var` keeps requiring `?.`/`!!`); " +
+            "reference types only (`Int?`/`Bool?`/`Double?` are heap-boxed scalars and still need `?.`/`!!`); " +
+            "`while` conditions do not narrow. A `?.`/`!!` applied after the narrowing is a no-op and produces a `warning` (the build still passes)."
     }
 
     fun section6Exceptions(): String {
@@ -135,6 +154,16 @@ type Docs() {
 
     fun section14SmartCast(): String {
         return "# Section 14: Smart Casts & Type Inspection\n\n" +
+            "## 14.1 Null smart cast (`T?` -> `T` after a null check)\n" +
+            "Checking `if (s != null)` narrows the `then` branch to `T`; checking `if (s == null)` narrows the `else` branch " +
+            "and any code after a diverging `then` (early `return`/`throw`). The same narrowing applies to the matching ternary branch " +
+            "(`(s != null) ? s.length : -1`, `(s == null) ? -1 : s.length`) and to `when (s)` once a `null` (or `is Null`) branch exists " +
+            "(`else -> s.length`).\n" +
+            "```kotlin\nfun len(s: String?): Int {\n    if (s != null) {\n        return s.length   // s: String here\n    }\n    return -1\n}\n\nfun early(s: String?): Int {\n    if (s == null) {\n        return -1\n    }\n    return s.length       // narrowed by early return\n}\n\nval k = when (s) {\n    null -> -1\n    else -> s.length\n}\n```\n" +
+            "Limits (v1): `val` only (`var` keeps requiring `?.`/`!!` so a reassignment between check and use cannot slip through); " +
+            "reference types only (`Int?`/`Bool?`/`Double?` still need `?.`/`!!`); `while` conditions do not narrow; " +
+            "redundant `?.`/`!!` on an already-narrowed value is a `warning`, not an error.\n\n" +
+            "## 14.2 Contract / type smart cast (`is` check)\n" +
             "Checking `if (x is Type)` or `when (x) is Contract` automatically promotes `x` to the target type without explicit casting.\n\n" +
             "Explicit cast syntax: `val user = value as User`."
     }
@@ -277,7 +306,8 @@ type Docs() {
             "   - Concat as new list: `listA + listB`, `list + element` (never mutates)\n" +
             "   - `Map<K, V>`: `[\"key\" of \"value\"]`\n" +
             "6. **Loops:** `for (items) { ... }`, `for (items) { it -> ... }`, `for (items) { idx, it -> ... }`, `while (cond) { ... }`, `repeat(n) { ... }`.\n" +
-            "7. **Null Safety:** `Type?` or `Type | Null`, safe call `obj?.prop`, elvis `a ?: b`, force `obj!!`.\n" +
+            "7. **Null Safety:** `Type?` or `Type | Null`, safe call `obj?.prop`, elvis `a ?: b`, force `obj!!`. " +
+            "After `if (v != null)` a `val` narrows to `T` (direct access, no `?.`/`!!`); `var` and `Int?`/`Bool?`/`Double?` never narrow.\n" +
             "8. **Import Syntax:** `import { SymbolA, SymbolB } from \".path.to.module\"` (relative to project root with leading `.`).\n" +
             "9. **Platform Parity (ADR 60):** Platform-specialized `type(\"...\")` and `object(\"...\")` MUST implement contracts. All platform variants sharing a name (including default fallback) MUST implement the exact same contract list. Ad-hoc uncontracted methods are forbidden in specialized declarations. `lib` blocks cannot share duplicate names across platforms (use explicit names like `PosixProcess` and `Win32Process`)."
     }

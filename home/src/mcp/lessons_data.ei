@@ -65,14 +65,20 @@ object LessonsData {
                 "```kotlin\nfun main() {\n    repeat(3) { idx ->\n        println(\"Step \$idx\")\n    }\n}\n```"
         }
         if (query == "5" || query == "05" || query == "strings") {
-            return "### Lesson 05: Escape Sequences & Stringable\n" +
-                "Backslash escapes `\\n`, `\\t`, `\\\"`, and string concatenation with `+` automatically calls `toString()`.\n\n" +
-                "```kotlin\nfun main() {\n    val text = \"Line 1\\nLine 2\\tTabbed\"\n    println(text)\n}\n```"
+            return "### Lesson 05: Escape Sequences, Multiline & Stringable\n" +
+                "Backslash escapes `\\n`, `\\t`, `\\\"`, `\\$` (literal dollar), and string concatenation with `+` automatically calls `toString()`. " +
+                "A literal line break inside `\"...\"` is preserved as-is (no `\"\"\"` delimiter; indentation kept literally); " +
+                "escapes and `\${...}` interpolation work across lines. Dedent is opt-in via `trimIndent()` / `trimMargin()` (`std.string` extensions).\n\n" +
+                "```kotlin\nfun main() {\n    val text = \"Line 1\\nLine 2\\tTabbed\"\n    println(text)\n    val s = \"one\ntwo\"\n    assert(s == \"one\\ntwo\")\n    val indented = \"\\n    hello\\n      world\\n    \"\n    assert(indented.trimIndent() == \"hello\\n  world\")\n    val margined = \"\\n    |hello\\n    |  world\\n    \"\n    assert(margined.trimMargin() == \"hello\\n  world\")\n}\n```"
         }
         if (query == "6" || query == "06" || query == "nullsafety") {
             return "### Lesson 06: Avoid Unsafe Null\n" +
-                "Strict compile-time null safety with union type `Type?` (`Type | Null`), safe navigation `?.`, and elvis `?:`.\n\n" +
-                "```kotlin\nfun main() {\n    val name: String? = null\n    val display = name ?: \"Guest\"\n    println(display)\n}\n```"
+                "Strict compile-time null safety with union type `Type?` (`Type | Null`), safe navigation `?.`, elvis `?:`, " +
+                "force unwrap `!!`, and smart cast: after `if (v != null)` a `val` narrows to `T` with direct access.\n\n" +
+                "```kotlin\nfun main() {\n    val name: String? = null\n    val display = name ?: \"Guest\"\n    println(display)\n    val user: String? = \"Leo\"\n    if (user != null) {\n        println(user.length)\n    }\n}\n```\n" +
+                "Rules (v1): only `val` narrows (`var` keeps requiring `?.`/`!!`); reference types only " +
+                "(`Int?`/`Bool?`/`Double?` still need `?.`/`!!`); `while` conditions do not narrow; " +
+                "redundant `?.`/`!!` after narrowing is a `warning` (build still passes)."
         }
         if (query == "7" || query == "07" || query == "exceptions") {
             return "### Lesson 07: Exceptions\n" +
@@ -118,9 +124,14 @@ object LessonsData {
                 "```kotlin\nimport { Serializable } from \"std.serde\"\nimport { Json } from \"std.json\"\nimport { fromJson } from \"std.json\"\n\ntype User(val id: Int, val name: String) : Serializable + Json\n\nfun main() {\n    val user = User(1, \"Alice\")\n    val raw = user.toJson()\n    println(raw)\n    val back: User = fromJson<User>(raw)\n    println(back.name)\n}\n```"
         }
         if (query == "15" || query == "smartcast") {
-            return "### Lesson 15: Smart Casts\n" +
-                "Checking `when (x) is Contract` or `if (x is Type)` automatically casts the variable.\n\n" +
-                "```kotlin\ncontract Shape { fun area(): Double }\ntype Circle(val r: Double) : Shape { implement fun area(): Double = 3.14 * r * r }\n\nfun printShape(s: Shape) {\n    if (s is Circle) {\n        println(\"Radius: \${s.r}\")\n    }\n}\n```"
+            return "### Lesson 15: Smart Casts (Null + Contract Narrowing)\n" +
+                "A null check narrows `T?` to `T`: `if (s != null)` narrows the `then` branch, `if (s == null)` narrows the `else` branch " +
+                "and the code after a diverging `then` (early `return`/`throw`). The same holds for the matching ternary branch " +
+                "(`(s != null) ? s.length : -1`) and for `when (s)` once a `null` (or `is Null`) branch exists (`else -> s.length`). " +
+                "`when (x) is Contract` / `if (x is Type)` narrow to the target type the same way.\n\n" +
+                "```kotlin\nfun len(s: String?): Int {\n    if (s != null) {\n        return s.length\n    }\n    return -1\n}\n\nfun early(s: String?): Int {\n    if (s == null) {\n        return -1\n    }\n    return s.length\n}\n\ncontract Shape { fun area(): Double }\ntype Circle(val r: Double) : Shape { implement fun area(): Double = 3.14 * r * r }\n\nfun printShape(s: Shape) {\n    if (s is Circle) {\n        println(\"Radius: \${s.r}\")\n    }\n}\n```\n" +
+                "Limits (v1): `val` only (`var` never narrows); reference types only (`Int?`/`Bool?`/`Double?` still need `?.`/`!!`); " +
+                "`while` conditions do not narrow; redundant `?.`/`!!` on a narrowed value warns but passes."
         }
         if (query == "16" || query == "enum") {
             return "### Lesson 16: Model Variants with Enum\n" +
