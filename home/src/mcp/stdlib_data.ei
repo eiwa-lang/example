@@ -5,7 +5,7 @@ object StdlibData {
             "- `core` — Primitive types (String, Int, Double, Bool, Pointer), contracts, Scope skill\n" +
             "- `collections` — List, MutableList, Map, MutableMap, Set, MutableSet, String.split\n" +
             "- `math` — Math object (sin/cos/tan/sqrt/pow/abs/floor/ceil/round) + mod\n" +
-            "- `system` — loop, repeat, retry, sleep, sleepMs, yield, exit\n" +
+            "- `system` — loop, repeat, retry, sleep, sleepMs, yield, park, exit\n" +
             "- `exceptions` — Throwable, Exception, AssertionException, error, assert\n" +
             "- `io` — print, println, echo, printWelcome, Echoable\n" +
             "- `fs` — File (read/write/delete/exists)\n" +
@@ -88,11 +88,13 @@ object StdlibData {
                 "```kotlin\nimport { Math } from \"std.math\"\nimport { mod } from \"std.math\"\n\nprintln(Math.sqrt(16.0))\nprintln(mod(7, 3))\n```"
         }
         if (module == "system" || module == "std.system") {
-            return "## std.system — Loops, Sleep, Exit\n\n" +
+            return "## std.system — Loops, Sleep, Park, Exit\n\n" +
                 "`loop(block: () -> Void)` (infinite), `repeat(count: Int, block: (Int) -> Void)`, " +
                 "`retry(times: Int, block: (Int) -> Void)` (rethrows last Throwable), " +
                 "`sleep(seconds: Int): Void`, `sleepMs(ms: Int): Void`, `yield(): Void`, `exit(code: Int): Void`.\n\n" +
-                "```kotlin\nrepeat(3) { i -> println(i) }\nretry(3) { attempt -> println(attempt) }\n```"
+                "`park(): Void` parks the calling thread FOREVER at 0% CPU (un-signaled cond wait) — the idiom to keep `main` alive until the process is killed. Never suspends, never use inside `task {}`.\n\n" +
+                "Outside `task {}`, `sleep/sleepMs/yield` block the calling thread (nanosleep/sched_yield); written directly inside a `task {}` body they become cooperative suspension points.\n\n" +
+                "```kotlin\nrepeat(3) { i -> println(i) }\nretry(3) { attempt -> println(attempt) }\npark()\n```"
         }
         if (module == "exceptions" || module == "std.exceptions") {
             return "## std.exceptions — Throwable & Assertions\n\n" +
@@ -290,11 +292,11 @@ object StdlibData {
             return "## std.coroutines — Stackless Coroutines (FIFO Scheduler)\n\n" +
                 "`@Coroutine task<T>(block: () -> T): StackTask<T>`, `task<T>(dispatcher: Dispatcher, block: () -> T)` (spawn). " +
                 "`StackTask<T> : Awaitable<T>`: `@Suspend await(): T` (cooperatively suspends; call inside `task {}` or from awaitable context), `awaitCoop(cont: Continuation): Bool`, `isDone(): Bool`. " +
-                "There is NO top-level `sleep` here (blocking `sleep/sleepMs` live in `std.system`; cooperative sleep is `Coroutine.sleepMs`).\n\n" +
+                "Top-level blocking `sleep/sleepMs/yield/park` live in `std.system` (implicit import); `Coroutine.*` below is the object form with the same blocking semantics outside `task {}`.\n\n" +
                 "`Scheduler`: `schedule(cont)`, `sleep(cont, ms): Bool`, `yield(cont): Bool`, `waitReadable/waitWritable(cont, fd): Bool`, " +
                 "`run()`, `runStep(): Bool`. `TaskScheduler`: `schedule/sleep/yield/waitIo/waitReadable/waitWritable/pollIoLocked/popBlocking/fireTimers/fireTimersLocked/waitMs/run/runStep/shutdown/create`.\n\n" +
                 "`Dispatcher`: `ensureStarted()`, `shutdown()`. `Dispatchers`: `createDefault(): Dispatcher`, `create(name: String, threads: Int): Dispatcher`.\n\n" +
-                "`Coroutine`: `yield(): Int`, `sleep(nanosecs: Int): Int`, `sleepMs(ms: Int): Int`. " +
+                "`Coroutine`: `yield(): Int`, `sleep(nanosecs: Int): Int`, `sleepMs(ms: Int): Int`, `park(): Void`. " +
                 "`EventLoop`: `waitReadable(fd: Int, timeout: Int = -1): Int`, `waitWritable(fd: Int, timeout: Int = -1): Int`.\n\n" +
                 "Platform parity: `PollLayoutContract(entrySize/eventsOffset/reventsOffset/fdBytes/pollInLow/pollInHigh/pollOutLow/pollOutHigh/poll)` " +
                 "implemented by `object(\"posix\") PollLayout` and `object(\"windows\") PollLayout`.\n\n" +

@@ -10,7 +10,7 @@ type Docs() {
             "- **Composition-Only Type System:** NO implementation inheritance (`class`, `abstract`, `open`, `override` DO NOT EXIST). Uses `type`, `contract`, `skill`, and `object` with `implement`.\n" +
             "- **Strict Platform Parity:** Compile-time guarantee of identical APIs across operating systems. Specialized types/objects must implement contracts with complete variant parity, banning false symmetry and ad-hoc platform divergence.\n" +
             "- **Compile-Time Null Safety & Union Types:** `T | Null` or `T?`, safe calls `?.`, elvis `?:`, and force unwrap `!!`.\n" +
-            "- **Stackless Coroutines:** Cooperative concurrency with `task {}`, `.await()`, `sleep()`, and `yield()` powered by a pure Eiwa FIFO Scheduler.\n" +
+            "- **Stackless Coroutines:** Cooperative concurrency with `task {}`, `.await()`, `sleep()/sleepMs()`, `yield()` and `park()` powered by a pure Eiwa FIFO Scheduler.\n" +
             "- **Explicit Declarations:** Every standard API is formally declared in `src/std/` (`std.core`, `std.collections`, `std.http`, `std.json`, `std.time`); web/DB frameworks are external packages (`arest`, `html`, `postgres`)."
     }
 
@@ -140,8 +140,10 @@ type Docs() {
             "Stackless cooperative coroutines compiled into state machines (heap Continuation objects) managed by a FIFO Scheduler.\n\n" +
             "- `task { ... }`: Spawns a background cooperative coroutine returning a `Task<T>`.\n" +
             "- `.await()`: Cooperatively suspends until task completion and yields result.\n" +
-            "- `sleep(millis: Int)`: Non-blocking cooperative sleep.\n" +
-            "- `yield()`: Yields execution back to the scheduler queue."
+            "- Blocking top-level (`std.system`, implicit import, no import needed): `sleep(seconds: Int): Void`, `sleepMs(ms: Int): Void`, `yield(): Void`. Outside `task {}` they block the calling thread (nanosleep/sched_yield); written directly inside a `task {}` body they become cooperative suspension points (the worker is released until the timer fires). A `sleep` called from a method invoked by the task still blocks.\n" +
+            "- `park(): Void` (`std.system`): parks the calling thread FOREVER at 0% CPU (un-signaled cond wait) — the idiom to keep `main` alive until the process is killed. Never suspends, never use inside `task {}`.\n" +
+            "- `Coroutine` (`std.coroutines`, object form, same blocking semantics outside tasks): `yield(): Int`, `sleep(nanosecs: Int): Int`, `sleepMs(ms: Int): Int`, `park(): Void`.\n" +
+            "- `EventLoop`: `waitReadable(fd: Int, timeout: Int = -1): Int`, `waitWritable(fd: Int, timeout: Int = -1): Int` (poll)."
     }
 
     fun section13Serialization(): String {
@@ -319,7 +321,7 @@ type Docs() {
             "- `std.core`: `String/Int/Double/Bool/Pointer`, contracts (`Stringable/Equatable/Hashable/Runnable/Closeable/Awaitable`), skill `Scope<T>` (`let/also/apply/run/takeIf/takeUnless`), `with/use`, `Memory.alloc`.\n" +
             "- `std.collections`: `List/MutableList` (`add/addAll/plus/get/set/remove/size/freeze/mut/contains/indexOf/first/last/isEmpty/isNotEmpty/slice/skip/take/skipLast/takeLast`, contracts `Slicable/Indexed/Searchable`, skills `Slicing/Appending/Searching`), `Map/MutableMap` (`put/get/keys/values/freeze/mut`), `Set/MutableSet`, `String.split(delimiter)`.\n" +
             "- `std.math`: `Math` (`sin/cos/tan/sqrt/pow/abs/floor/ceil/round`) + top-level `mod(a, b)`.\n" +
-            "- `std.system`: `loop/repeat/retry/sleep/sleepMs/yield/exit`.\n" +
+            "- `std.system`: `loop/repeat/retry/sleep/sleepMs/yield/park/exit`.\n" +
             "- `std.exceptions`: `Throwable/Exception/AssertionException`, `error(msg)`, `assert(cond)`.\n" +
             "- `std.io`: `print/println/echo/printWelcome`, skill `Echoable`.\n" +
             "- `std.fs`: `File(path)` (`read/write/delete/exists`) + `File.read/write/delete/exists(path)` shortcuts.\n" +
@@ -343,7 +345,7 @@ type Docs() {
             "- `std.http`: `Client` (`get/post`), `Server/ServerConnection/Request/Response`, `urlEncode`.\n" +
             "- `std.net`: `Socket` (`@Suspend read/write`, `close`), `SocketClient.connect`, `TCPServer` (`bind/@Suspend accept`). `@Suspend` IO must run inside `task {}`.\n" +
             "- `std.db`: contracts `Row/Result/Statement/Connection`, `DbError`, `BoundStatement` (`bind`), `ConnectionPool` (`acquire/release/transaction`).\n" +
-            "- `std.coroutines`: `@Coroutine task {}` -> `StackTask<T>` (`@Suspend await/isDone`), `Scheduler/Dispatchers/Dispatcher`, `Coroutine` (`yield/sleep/sleepMs`), `EventLoop` (`waitReadable/waitWritable`). No top-level `sleep`.\n" +
+            "- `std.coroutines`: `@Coroutine task {}` -> `StackTask<T>` (`@Suspend await/isDone`), `Scheduler/Dispatchers/Dispatcher`, `Coroutine` (`yield/sleep/sleepMs/park`), `EventLoop` (`waitReadable/waitWritable`). Top-level blocking `sleep/sleepMs/yield/park` live in `std.system` (implicit import).\n" +
             "- `std.thread`: `Threads.spawn/join/numCores`, `Mutex.withLock/sync`, `RawMutex/CondVar`, `ThreadOpsContract` (posix/win32 parity).\n" +
             "- `std.atomic`: `AtomicBool/AtomicInt` (`get/set/compareAndSet`, `addAndGet/incrementAndGet/decrementAndGet`).\n" +
             "- `std.process`: `Process` (`exec/capture/chdir/realpath/args/argsCount/argAt`).\n\n" +
