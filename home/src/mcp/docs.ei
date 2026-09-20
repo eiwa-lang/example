@@ -401,7 +401,62 @@ type Docs() {
             "- `eiwa add <name> --path <dir>`: Adds a local path dependency (no git required).\n" +
             "- `eiwa run [file.ei]`: Compiles and executes code instantly with JIT/AOT.\n" +
             "- `eiwa build [file.ei] -o <binary>`: Generates an optimized native static binary.\n" +
-            "- `eiwa test`: Executes all `test \"name\" { ... }` blocks across the project."
+            "- `eiwa test`: Executes all `test \"name\" { ... }` blocks across the project.\n\n" +
+            "## Docker (`eiwac/eiwa` toolchain image)\n" +
+            "The compiler repo (`eiwa-lang/Dockerfile`) publishes `eiwac/eiwa:latest` plus one tag per " +
+            "release (see `eiwa-lang/.github/workflows/release.yml`). Contents: `eiwac` + `eiwa` in `/opt/eiwa/bin`, " +
+            "stdlib at `/opt/eiwa/src` (`EIWA_HOME`), `EIWA_BASELINE_CPU=1` (portable binaries under emulation), " +
+            "`WORKDIR /work`, `ENTRYPOINT eiwa`. Base `debian:trixie-slim` ships `gcc`, `libllvm21`, `libgc-dev`, " +
+            "`libcurl4-openssl-dev` so `eiwa build` and the JIT work inside the container.\n\n" +
+            "Tag policy: `latest` is for local development only. For production, pin the exact version " +
+            "— see https://github.com/eiwa-lang/eiwa/releases for the newest tag.\n\n" +
+            "### 1. Pull and run (dev loop, no install)\n" +
+            "```bash\n" +
+            "docker pull eiwac/eiwa:latest   # dev loop\n" +
+            "# project in the current dir (needs eiwa.yaml + src/main.ei)\n" +
+            "docker run --rm -v \"\$PWD\":/work -p 8080:8080 eiwac/eiwa:latest run .\n" +
+            "# standalone file (delegates to eiwac, no eiwa.yaml)\n" +
+            "docker run --rm -v \"\$PWD\":/work eiwac/eiwa:latest eiwac run script.ei\n" +
+            "```\n\n" +
+            "### 2. Ship a service (multi-stage, canonical `example/home/Dockerfile`)\n" +
+            "Pin the compile image in prod (never `latest`).\n" +
+            "Compile with the toolchain, copy ONLY the native binary + assets into a slim runtime " +
+            "(`debian:stable-slim` + `libcurl4 libgc1 ca-certificates openssl`; add `zlib1g libssl3 libpcre2-8-0 " +
+            "libevent-2.1-7 libgmp10` if your deps need them). " +
+            "The runtime does NOT contain the compiler.\n" +
+            "```dockerfile\n" +
+            "FROM eiwac/eiwa:latest AS compile   # prod: pin the exact version, never latest\n" +
+            "WORKDIR /app\n" +
+            "COPY ./ ./\n" +
+            "RUN eiwa build --release        # output: /app/app (see `output:` in eiwa.yaml)\n" +
+            "FROM debian:stable-slim AS runtime\n" +
+            "RUN apt-get update && apt-get install -y --no-install-recommends libcurl4 zlib1g libssl3 libpcre2-8-0 libgc1 libevent-2.1-7 libgmp10 ca-certificates openssl && rm -rf /var/lib/apt/lists/*\n" +
+            "ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt\n" +
+            "COPY --from=compile /app/app /app/server\n" +
+            "COPY --from=compile /app/static /app/static\n" +
+            "WORKDIR /app\n" +
+            "CMD [\"./server\"]\n" +
+            "```\n" +
+            "```bash\ndocker build -t my-service .                # add `--build-arg EIWA_CACHE_BUST=<sha>` to force a fresh toolchain layer\ndocker run --rm -p 8080:8080 my-service\n```\n\n" +
+            "### 3. Reproducible CI builds\n" +
+            "- Commit `eiwa.freeze` (`eiwa freeze` pins every git dep to its commit) and build with " +
+            "`RUN eiwa build --release --frozen` so CI fails instead of silently resolving floating refs.\n" +
+            "- Keep a `.dockerignore` (`example/home/.dockerignore`): `.git .gitignore bin/ app *.o *.tar.gz` " +
+            "so caches and local binaries never enter the build context.\n" +
+            "- The repo `.dockerignore` (`eiwa-lang/.dockerignore`) additionally excludes `.zig-cache zig-out dist`.\n\n" +
+            "### 4. Compose + Kubernetes\n" +
+            "Read the listen port from the environment (`PORT`) instead of hardcoding it; arest-style servers " +
+            "take the port as `arest(PORT)`. The deployed site (`example/home/k8s/02-eiwa.yaml`) runs " +
+            "`eiwac/eiwa-home:latest` with `containerPort: 8081`, `env PORT=8081`, HTTP " +
+            "liveness/readiness probes on `/health`, and a Traefik `IngressRoute` for `eiwa.dev`. " +
+            "Publish with `example/home/Makefile` (`docker buildx build --platform linux/amd64 -t eiwac/eiwa-home:latest --push .`).\n\n" +
+            "### 5. Troubleshooting\n" +
+            "- `unsupported arch`: the toolchain image only publishes `linux/amd64,linux/arm64`.\n" +
+            "- Binary runs locally but not in Docker: rebuild inside the image — `EIWA_BASELINE_CPU=1` avoids " +
+            "host-only CPU features (e.g. AVX-512) leaking into the binary under emulation.\n" +
+            "- Missing shared libs at runtime (`libcurl`, `libgc`): compare with the `runtime` apt list above.\n" +
+            "- Stale toolchain layer after a release: the release workflow passes " +
+            "`EIWA_CACHE_BUST=<sha>`; do the same on manual `docker build`."
     }
 
     fun listTopics(): String {

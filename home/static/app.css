@@ -24,6 +24,9 @@ html {
   scroll-padding-top: 88px;
   scrollbar-width: thin;
   scrollbar-color: #2b2a38 #00020c;
+  overflow-x: hidden;
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 body {
@@ -33,7 +36,51 @@ body {
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   overflow-x: hidden;
+  overflow-x: clip;
+  max-width: 100%;
+  width: 100%;
+  position: relative;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Global media / code guards: never let intrinsic widths push the page */
+img, svg, video, canvas, iframe {
+  max-width: 100%;
+}
+
+img {
+  height: auto;
+}
+
+pre {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+code {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Grid / flex items default to min-width:0 so long content scrolls
+   inside instead of forcing page-level horizontal scroll */
+.code-grid > *,
+.code-grid-440 > *,
+.tabs-layout > *,
+.lesson-layout > *,
+.lesson-workspace > *,
+.output-grid > *,
+.paradigms-grid > *,
+.why-grid > *,
+.mcp-grid > *,
+.tooling-grid > *,
+.feature-row > *,
+.packages-flow > *,
+.flow-card > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* Custom scrollbars - thin dark with purple accent */
@@ -708,9 +755,12 @@ header {
 .output-panel,
 .side-card {
   overflow: hidden;
+  overflow: clip;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 10px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .editor-bar {
@@ -763,10 +813,15 @@ header {
   padding: 0 15px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .editor-content pre {
   margin: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .editor-content code {
@@ -819,6 +874,12 @@ header {
   font-family: var(--mono);
   font-size: 13px;
   line-height: 1.7;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.terminal > div {
+  min-width: 0;
 }
 
 .terminal .prompt {
@@ -932,6 +993,9 @@ header {
 .lesson-workspace {
   display: grid;
   gap: 14px;
+  min-width: 0;
+  max-width: 100%;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .output-grid {
@@ -966,6 +1030,38 @@ header {
   color: var(--green);
 }
 
+.lesson-fragment {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Code-sample fragments (examples / lessons / packages):
+   long lines must scroll INSIDE the card, never push the page.
+   Desktop keeps the same look — only the overflow containment changes. */
+.lesson-fragment pre,
+.editor-content pre {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+.lesson-fragment pre code,
+.editor-content pre code {
+  white-space: pre;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+/* Utility used by lesson fragments (no Tailwind on this page) */
+.overflow-x-auto {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
 .lesson-fragment h3 {
   margin-top: 0;
 }
@@ -996,6 +1092,12 @@ header {
 .flow-card:hover {
   border-color: rgba(138, 114, 216, .4);
   background: var(--surface-2);
+}
+
+.flow-card > div:last-child {
+  min-width: 0;
+  max-width: 100%;
+  flex: 1;
 }
 
 .flow-num {
@@ -1034,10 +1136,19 @@ header {
   background: rgba(138, 114, 216, .1);
   border: 1px solid rgba(138, 114, 216, .2);
   border-radius: 6px;
-  display: inline-block;
+  display: block;
   max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  white-space: pre;
+  box-sizing: border-box;
+}
+
+.cli-badge code {
+  white-space: pre;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .icon-file {
@@ -1058,13 +1169,22 @@ footer .tagline {
   font-size: 13px;
 }
 
-.footer-links {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 20px;
+footer .built-with {
+  margin: 14px 0 0;
+  color: #6b6972;
+  font-size: 12px;
+  opacity: .8;
+}
+
+footer .built-with a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(255, 255, 255, .2);
+}
+
+footer .built-with a:hover {
   color: var(--purple-2);
-  font-size: 13px;
+  border-bottom-color: var(--purple-2);
 }
 
 code.language-kotlin,
@@ -1109,6 +1229,8 @@ code.language-bash {
   align-items: center;
   gap: 12px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .paradigm-title-group h3 {
@@ -1305,11 +1427,11 @@ code.language-bash {
   .lesson-layout,
   .paradigms-grid,
   .why-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hero-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 32px;
   }
 
@@ -1422,7 +1544,7 @@ code.language-bash {
 
   /* Feature Grid */
   .feature-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
 
@@ -1446,8 +1568,15 @@ code.language-bash {
     padding: 0;
   }
 
+  /* Mobile only: tighter terminal tabs so the editor-bar never overflows.
+     Desktop rule (padding 0 28px) is left untouched. */
+  .terminal-os-tabs {
+    padding: 0;
+    flex-shrink: 0;
+  }
+
   .editor-split {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .source-code {
@@ -1476,6 +1605,8 @@ code.language-bash {
     gap: 8px;
     flex-wrap: nowrap;
     scrollbar-width: none;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .tab-list#example-tabs::-webkit-scrollbar {
@@ -1502,6 +1633,8 @@ code.language-bash {
     gap: 8px;
     flex-wrap: nowrap;
     scrollbar-width: thin;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .tab-button.lesson-tab {
@@ -1516,7 +1649,7 @@ code.language-bash {
 
   /* Output and Lesson Panels */
   .output-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
 
@@ -1561,6 +1694,8 @@ code.language-bash {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .mcp-info-card {
@@ -1684,6 +1819,18 @@ code.language-bash {
   line-height: 1.6;
   color: #e2dfec;
   flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  white-space: pre;
+  box-sizing: border-box;
+}
+
+.mcp-code-block code {
+  white-space: pre;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .mcp-setup-hint {
@@ -1696,6 +1843,8 @@ code.language-bash {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .mcp-setup-hint p {
@@ -1777,14 +1926,18 @@ code.language-bash {
   margin-bottom: 8px;
   color: #777481;
   font-size: 10.5px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .tooling-install code {
   min-width: 0;
+  flex: 1;
   color: #aaa7b3;
   font-family: var(--mono);
   font-size: 11px;
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .tooling-card a {
@@ -1807,7 +1960,7 @@ code.language-bash {
   }
 
   .tooling-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
 
@@ -1818,7 +1971,7 @@ code.language-bash {
 
 @media (max-width: 900px) {
   .mcp-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
