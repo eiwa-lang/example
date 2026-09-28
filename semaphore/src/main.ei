@@ -1,0 +1,155 @@
+type IllegalStateException(val message: String): Throwable {
+    implement fun message() = message
+}
+
+enum SemaphoreStatus {
+    RED, YELLOW, GREEN
+}
+
+contract Semaphore {
+    fun inUse(): Bool
+
+    fun getSemaphoreDependencies(): List<Semaphore>
+
+    fun getId(): String
+
+    fun nextStatus()
+
+}
+
+skill Autonomous: Semaphore {
+
+    implement fun turnOn() {
+        echo(this)
+        task {
+            loop {
+                nextStatus()
+            }
+        }
+    }
+
+    fun requestPause() {
+        pause = true
+        while (!held) {
+            sleep(1)
+        }
+    }
+
+    fun release() {
+        held = false
+        status = initial
+        pause = false
+    }
+
+    implement fun nextStatus() {
+        if (pause && status == RED) {
+            held = true
+            sleep(1)
+            return
+        }
+        status = when (status) {
+            RED -> {
+                sleep(6)
+                GREEN
+            }
+            GREEN -> {
+                sleep(4)
+                YELLOW
+            }
+            YELLOW -> {
+                sleep(2)
+                RED
+            }
+            else -> {
+                throw IllegalStateException("Invalid status: $status")
+            }
+        }
+        echo(this)
+    }
+}
+
+type CarSemaphore(val id: String, var status: SemaphoreStatus = RED): Semaphore + Autonomous {
+    implement fun getSemaphoreDependencies(): List<Semaphore> = []
+
+    implement fun getId() = id
+    implement fun toString() = "Car semaphore $id: $status"
+
+    implement fun inUse(): Bool = status == GREEN || status == YELLOW
+
+    val initial: SemaphoreStatus = status
+    var pause: Bool = false
+    var held: Bool = false
+}
+
+type PedestrianSemaphore(val id: String, var status: SemaphoreStatus = RED, val semaphores: CarSemaphore...): Semaphore {
+    implement fun getSemaphoreDependencies(): List<Semaphore> = []
+
+    implement fun getId() = id
+    implement fun inUse(): Bool = status == GREEN || status == YELLOW
+    implement fun toString() = "Pedestrian semaphore $id in ${inUse() ? "use" : "standby"}"
+
+    implement fun nextStatus() {
+        status = when (status) {
+            RED -> {
+                sleep(6)
+                GREEN
+            }
+            GREEN -> {
+                sleep(4)
+                YELLOW
+            }
+            YELLOW -> {
+                sleep(2)
+                RED
+            }
+            else -> {
+                throw IllegalStateException("Invalid status: $status")
+            }
+        }
+        echo(this)
+    }
+
+    fun request() {
+        echo("Requesting pedestrian semaphore $id")
+        for (semaphores) { semaphore ->
+            task {
+                semaphore.requestPause()
+            }.await()
+        }
+        turnOn()
+    }
+
+    fun turnOn() {
+        task {
+            echo("Pedestrian semaphore $id is now in use")
+            nextStatus()
+            while (inUse()) {
+                nextStatus()
+            }
+            release()
+        }
+    }
+
+    fun release() {
+        echo("Pedestrian semaphore $id is now released")
+        for (semaphores) { semaphore ->
+            semaphore.release()
+        }
+    }
+}
+
+fun main() {
+    echo("Simulation started")
+    val carSemaphore = CarSemaphore("semaforo 1").apply { it.turnOn() }
+    val carSemaphore2 = CarSemaphore("semaforo 2", GREEN).apply { it.turnOn() }
+    val pedestrianSemaphore = PedestrianSemaphore("semaforo pedestres", RED, carSemaphore, carSemaphore2)
+
+    pedestrianSemaphore.simulateTurnRequest()
+
+    park()
+}
+
+fun PedestrianSemaphore.simulateTurnRequest() {
+    sleep(25)
+    request()
+}
