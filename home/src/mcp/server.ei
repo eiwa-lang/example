@@ -259,7 +259,8 @@ fun setupMcp(server: ArestBuilder) {
                 "5. Money builders take Int minor units (`brl(14990)`), format with `format()` (no `formatted()`, no Double args).\n" +
                 "6. JSON: types use `: Serializable + Json`, `toJson()` / `fromJson<T>()` (no `Json.encode/decode`).\n" +
                 "7. Time: `now()/nowMillis()/date()`, `.sec` epoch seconds (no `Clock.System`, no `Time.now()/elapsed()/toMillis()`).\n" +
-                "8. Only use std APIs from `get_std_module` / `eiwa://spec/std/<module>`; `postgres`/`arest`/`html` are external packages, not `std.*`."
+                "8. Only use std APIs from `get_std_module` / `eiwa://spec/std/<module>`; `postgres`/`arest`/`html` are external packages, not `std.*`.\n" +
+                "9. Naming: `camelCase` for functions/variables (`pickPort`, `liveConn`), `PascalCase` for types/contracts/skills (`Button`, `Drawable`), `snake_case` only for file names and C FFI (`@Alias`)."
             )
         }
 

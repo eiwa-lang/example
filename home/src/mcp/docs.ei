@@ -311,7 +311,8 @@ type Docs() {
             "7. **Null Safety:** `Type?` or `Type | Null`, safe call `obj?.prop`, elvis `a ?: b`, force `obj!!`. " +
             "After `if (v != null)` a `val` narrows to `T` (direct access, no `?.`/`!!`); `var` and `Int?`/`Bool?`/`Double?` never narrow.\n" +
             "8. **Import Syntax:** `import { SymbolA, SymbolB } from \".path.to.module\"` (relative to project root with leading `.`).\n" +
-            "9. **Platform Parity (ADR 60):** Platform-specialized `type(\"...\")` and `object(\"...\")` MUST implement contracts. All platform variants sharing a name (including default fallback) MUST implement the exact same contract list. Ad-hoc uncontracted methods are forbidden in specialized declarations. `lib` blocks cannot share duplicate names across platforms (use explicit names like `PosixProcess` and `Win32Process`)."
+            "9. **Platform Parity (ADR 60):** Platform-specialized `type(\"...\")` and `object(\"...\")` MUST implement contracts. All platform variants sharing a name (including default fallback) MUST implement the exact same contract list. Ad-hoc uncontracted methods are forbidden in specialized declarations. `lib` blocks cannot share duplicate names across platforms (use explicit names like `PosixProcess` and `Win32Process`).\n" +
+            "10. **Naming:** `camelCase` for functions/variables/parameters (`pickPort`, `liveConn`), `PascalCase` for `type`/`contract`/`skill`/`object`/`enum` names (`Button`, `Drawable`), `UPPER_SNAKE` for enum variants (`Direction.NORTH`), `snake_case` only for file names and C FFI targets (mapped with `@Alias`)."
     }
 
     fun stdlib(): String {
