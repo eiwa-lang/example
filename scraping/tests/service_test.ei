@@ -1,0 +1,269 @@
+import { assert } from "std.core"
+import { parseJson } from "std.json"
+import { sleepMs } from "std.time"
+import { Env } from "std.env"
+import { TCPServer, Socket } from "std.net"
+import { buildFrame, wsRecv, writeAll, wsConnect } from "browser.net.ws"
+import { readHttpRequest, answerHandshake } from "browser.net.ws_server"
+import { Chromium } from "browser.chromium.chromium"
+import { cdpConn } from "browser.chromium.connection"
+import { Engine } from "browser.engine.engine"
+import { Browser } from "browser.browser"
+import { serveOneEngine } from "browser.worker.server"
+import { Client } from "std.http"
+import { DbError } from "std.db"
+import { Postgres } from "postgres"
+import { Config } from ".scraper.config"
+import { Job } from ".scraper.job"
+import { Store } from ".scraper.store"
+import { Scraper, retryableNote } from ".scraper.scraper"
+import { Metrics } from ".scraper.metrics"
+
+fun svcReply(id: Int, result: String): String {
+    return "{\"id\": $id, \"result\": $result}"
+}
+
+// Scripted Chromium: two quotes (one tagged), no next page.
+// Stateful per-kind counters keep payloads distinct.
+fun svcSession(sock: Socket): String {
+    var open = true
+    var texts = 0
+    var authors = 0
+    var tags = 0
+    while (open) {
+        val f = wsRecv(sock)
+        if (f == null) {
+            return "closed"
+        }
+        if (f.opcode == 8) {
+            return "ok"
+        }
+        if (f.opcode == 1) {
+            val msg = parseJson(f.payload)
+            val id = msg.get("id")
+            if (id != null && id!!.isNumber()) {
+                val num = id!!.asNumber().toInt()
+                val method = msg.get("method")
+                if (method != null && method!!.isString()) {
+                    val name = method!!.asString()
+                    if (name == "Target.createBrowserContext") {
+                        writeAll(sock, buildFrame(1, svcReply(num, "{\"browserContextId\": \"CB1\"}"), null))
+                    } else if (name == "Target.createTarget") {
+                        writeAll(sock, buildFrame(1, svcReply(num, "{\"targetId\": \"T1\"}"), null))
+                    } else if (name == "Target.attachToTarget") {
+                        writeAll(sock, buildFrame(1, svcReply(num, "{\"sessionId\": \"S1\"}"), null))
+                    } else if (name == "Target.closeTarget") {
+                        writeAll(sock, buildFrame(1, svcReply(num, "{}"), null))
+                    } else if (name == "Page.navigate") {
+                        writeAll(sock, buildFrame(1, svcReply(num, "{\"frameId\": \"F1\"}"), null))
+                        writeAll(sock, buildFrame(1, "{\"method\": \"Page.loadEventFired\", \"params\": {}, \"sessionId\": \"S1\"}", null))
+                    } else if (name == "Runtime.evaluate") {
+                        if (f.payload.indexOf("span[@class='text']") >= 0) {
+                            texts = texts + 1
+                            if (texts == 1) {
+                                writeAll(sock, buildFrame(1, svcReply(num, "{\"result\": {\"type\": \"string\", \"value\": \"Quote one\"}}"), null))
+                            } else if (texts == 2) {
+                                writeAll(sock, buildFrame(1, svcReply(num, "{\"result\": {\"type\": \"string\", \"value\": \"Quote two\"}}"), null))
+                            } else {
+                                writeAll(sock, buildFrame(1, svcReply(num, "{\"result\": {\"type\": \"object\", \"subtype\": \"null\", \"value\": null}}"), null))
+                            }
+                        } else if (f.payload.indexOf("small[@class='author']") >= 0) {
+                            authors = authors + 1
+                            if (authors == 1) {
+                                writeAll(sock, buildFrame(1, svcReply(num, "{\"result\": {\"type\": \"string\", \"value\": \"Author one\"}}"), null))
+                            } else if (authors == 2) {
+                                writeAll(sock, buildFrame(1, svcReply(num, "{\"result\": {\"type\": \"string\", \"value\": \"Author two\"}}"), null))
+                            } else {
+                                writeAll(sock, buildFrame(1, svcReply(num, "{\"result\": {\"type\": \"object\", \"subtype\": \"null\", \"value\": null}}"), null))
+                            }
+                        } else if (f.payload.indexOf("a[@class='tag']") >= 0) {
+                            tags = tags + 1
+                            if (tags == 1) {
+                                writeAll(sock, buildFrame(1, svcReply(num, "{\"result\": {\"type\": \"string\", \"value\": \"poetry\"}}"), null))
+                            } else {
+                                writeAll(sock, buildFrame(1, svcReply(num, "{\"result\": {\"type\": \"object\", \"subtype\": \"null\", \"value\": null}}"), null))
+                            }
+                        } else {
+                            writeAll(sock, buildFrame(1, svcReply(num, "{\"result\": {\"type\": \"object\", \"subtype\": \"null\", \"value\": null}}"), null))
+                        }
+                    } else {
+                        writeAll(sock, buildFrame(1, svcReply(num, "{}"), null))
+                    }
+                }
+            }
+        }
+    }
+    return "closed"
+}
+
+fun svcFakeCdp(port: Int): String {
+    val server = TCPServer()
+    if (server.bind(port) == false) {
+        return "bind-fail"
+    }
+    val conn = server.accept()
+    if (conn == null) {
+        server.close()
+        return "accept-fail"
+    }
+    val head = readHttpRequest(conn)
+    if (head == null || answerHandshake(conn, head) == false) {
+        conn.close()
+        server.close()
+        return "handshake-fail"
+    }
+    val out = svcSession(conn)
+    conn.close()
+    server.close()
+    return out
+}
+
+fun svcEngine(port: Int): Engine? {
+    var tries = 0
+    while (tries < 50) {
+        val ws = wsConnect("127.0.0.1", port, "/fake")
+        if (ws != null) {
+            return Engine(Chromium("fake", 0, -1), cdpConn(ws))
+        }
+        sleepMs(100)
+        tries = tries + 1
+    }
+    return null
+}
+
+fun svcWorker(cdpPort: Int, server: TCPServer): String {
+    val engine = svcEngine(cdpPort)
+    if (engine == null) {
+        return "no-engine"
+    }
+    val conn = server.accept()
+    if (conn == null) {
+        server.close()
+        return "accept-fail"
+    }
+    val out = serveOneEngine(conn, engine)
+    engine.conn.close()
+    server.close()
+    return out
+}
+
+fun svcConfig(): Config {
+    return Config(["ws://127.0.0.1:28913"], "postgres://localhost/scraping", 1, 100, "/tmp")
+}
+
+fun svcStore(): Store? {
+    val url = Env.get("SCRAPER_TEST_DATABASE_URL")
+    if (url == null || url == "") {
+        return null
+    }
+    try {
+        val store = Store(Postgres.connect(url))
+        store.migrate()
+        return store
+    } catch (e: DbError) {
+        return null
+    }
+}
+
+test "service: retryable notes are transient only" {
+    assert(retryableNote("browser-timeout"))
+    assert(retryableNote("browser-exhausted"))
+    assert(retryableNote("browser-goto-failed") == false)
+    assert(retryableNote("browser-challenge") == false)
+    assert(retryableNote("no-browser") == false)
+    assert(retryableNote("") == false)
+}
+
+test "service: metrics render prometheus text" {
+    val m = Metrics()
+    m.bumpJobs("done")
+    m.bumpJobs("done")
+    m.bumpJobs("dead")
+    m.bumpFetchError("browser-goto-failed")
+    val body = m.render()
+    assert(body.indexOf("scrape_jobs_total{outcome=\"done\"} 2") >= 0, "done")
+    assert(body.indexOf("scrape_jobs_total{outcome=\"dead\"} 1") >= 0, "dead")
+    assert(body.indexOf("scrape_fetch_errors_total{reason=\"browser-goto-failed\"} 1") >= 0, "err")
+    assert(m.jobCount("done") == 2, "count")
+    assert(m.jobCount("retry") == 0, "zero")
+}
+
+test "service: runOnce completes a quotes job end to end" {
+    val store = svcStore()
+    if (store == null) {
+        echo("service live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        val cdp = task {
+            svcFakeCdp(28911)
+        }
+        sleepMs(150)
+        val server = TCPServer()
+        assert(server.bind(28913), "bind")
+        val worker = task {
+            svcWorker(28911, server)
+        }
+        sleepMs(150)
+        val browser = Browser(["ws://127.0.0.1:28913"], 1)
+        val scraper = Scraper(svcConfig(), store, browser)
+        store.deleteJob("quotes-svc-1")
+        assert(store.enqueue("quotes", "https://quotes.toscrape.com/", "page", 3, "svc-1"), "enqueue")
+        assert(scraper.runOnce() == "done-2", "outcome")
+        val rows = store.conn.query("SELECT payload FROM records WHERE job_id = 'quotes-svc-1' ORDER BY id").rows()
+        assert(rows.size() == 2, "records")
+        assert(rows.get(0).string("payload").indexOf("Quote one") >= 0, "first")
+        assert(rows.get(1).string("payload").indexOf("Author two") >= 0, "second")
+        assert(scraper.runOnce() == "empty", "drained")
+        assert(scraper.health().indexOf("\"status\": \"ok\"") >= 0, "health")
+        assert(scraper.metricsResponse().indexOf("scrape_jobs_total{outcome=\"done\"} 1") >= 0, "metrics")
+        store.deleteJob("quotes-svc-1")
+        browser.close()
+        store.close()
+        worker.await()
+        cdp.await()
+    }
+}
+
+test "service: unknown connector dead-letters" {
+    val store = svcStore()
+    if (store == null) {
+        echo("service live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        val browser = Browser(["ws://127.0.0.1:28913"], 1)
+        val scraper = Scraper(svcConfig(), store, browser)
+        store.deleteJob("nope-svc-2")
+        assert(store.enqueue("nope", "https://example.com/", "page", 3, "svc-2"), "enqueue")
+        assert(scraper.runOnce() == "unknown-nope", "outcome")
+        assert(scraper.runOnce() == "empty", "drained")
+        assert(scraper.metrics.jobCount("unknown") == 1, "metric")
+        store.deleteJob("nope-svc-2")
+        browser.close()
+        store.close()
+    }
+}
+
+test "service: serve answers metrics and health" {
+    val store = svcStore()
+    if (store == null) {
+        echo("service live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        val browser = Browser(["ws://127.0.0.1:28913"], 1)
+        val scraper = Scraper(svcConfig(), store, browser)
+        scraper.metrics.bumpJobs("done")
+        val srv = task {
+            scraper.serve(28914, 3)
+        }
+        sleepMs(150)
+        val http = Client()
+        val m = http.get("http://127.0.0.1:28914/metrics")
+        assert(m.status == 200, "metrics-status")
+        assert(m.body.indexOf("scrape_jobs_total{outcome=\"done\"} 1") >= 0, "metrics-body")
+        val h = http.get("http://127.0.0.1:28914/health")
+        assert(h.status == 200, "health-status")
+        assert(h.body.indexOf("\"status\": \"ok\"") >= 0, "health-body")
+        val miss = http.get("http://127.0.0.1:28914/nope")
+        assert(miss.status == 404, "not-found")
+        browser.close()
+        store.close()
+        srv.await()
+    }
+}

@@ -1,0 +1,95 @@
+// Store handle: Postgres connection, migrations, job queue, records.
+// Owns SQL; Job stays a pure value type.
+import { Closeable } from "std.core"
+import { repeat } from "std.system"
+import { Connection } from "std.db"
+import { Job } from ".scraper.job"
+
+fun migrationCount(): Int {
+    return 1
+}
+
+fun migrationSql(version: Int): String {
+    if (version == 1) {
+        return "CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY, connector TEXT NOT NULL, url TEXT NOT NULL, kind TEXT NOT NULL, status TEXT NOT NULL, attempt INT NOT NULL, max_attempts INT NOT NULL, idempotency_key TEXT UNIQUE NOT NULL, not_before TIMESTAMPTZ NOT NULL DEFAULT now(), created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()); CREATE TABLE IF NOT EXISTS records (id TEXT PRIMARY KEY, job_id TEXT NOT NULL REFERENCES jobs(id), connector TEXT NOT NULL, payload JSONB NOT NULL, source_url TEXT NOT NULL, fetched_at TIMESTAMPTZ NOT NULL DEFAULT now()); CREATE TABLE IF NOT EXISTS artifacts (id TEXT PRIMARY KEY, job_id TEXT NOT NULL REFERENCES jobs(id), file_name TEXT NOT NULL, mime TEXT NOT NULL, size BIGINT NOT NULL, storage_path TEXT NOT NULL, sha256 TEXT NOT NULL, fetched_at TIMESTAMPTZ NOT NULL DEFAULT now()); CREATE INDEX IF NOT EXISTS artifacts_sha256_idx ON artifacts (sha256, job_id); CREATE TABLE IF NOT EXISTS schema_version (version INT PRIMARY KEY)"
+    }
+    return ""
+}
+
+type Store(val conn: Connection) : Closeable {
+
+    fun migrate(): Int {
+        var applied = 0
+        repeat(migrationCount()) { n ->
+            val v = n + 1
+            this.conn.execute(migrationSql(v))
+            this.conn.execute("INSERT INTO schema_version (version) VALUES ($1) ON CONFLICT (version) DO NOTHING", [v.toString()])
+            applied = applied + 1
+        }
+        return applied
+    }
+
+    fun enqueue(connector: String, url: String, kind: String, maxAttempts: Int, idempotencyKey: String): Bool {
+        val id = connector + "-" + idempotencyKey
+        val res = this.conn.execute(
+            "INSERT INTO jobs (id, connector, url, kind, status, attempt, max_attempts, idempotency_key) VALUES ($1, $2, $3, $4, 'queued', 0, $5, $6) ON CONFLICT (idempotency_key) DO NOTHING",
+            [id, connector, url, kind, maxAttempts.toString(), idempotencyKey]
+        )
+        return res.rowsAffected() == 1
+    }
+
+    fun claim(): Job? {
+        val res = this.conn.query(
+            "UPDATE jobs SET status = 'running', attempt = attempt + 1, updated_at = now() WHERE id = (SELECT id FROM jobs WHERE status = 'queued' AND not_before <= now() ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED) RETURNING id, connector, url, kind, attempt, max_attempts, idempotency_key"
+        )
+        val rows = res.rows()
+        if (rows.size() == 0) {
+            return null
+        }
+        val row = rows.get(0)
+        return Job(row.string("id"), row.string("connector"), row.string("url"), row.string("kind"), row.int("attempt"), row.int("max_attempts"), row.string("idempotency_key"))
+    }
+
+    fun complete(id: String): Bool {
+        val res = this.conn.execute("UPDATE jobs SET status = 'done', updated_at = now() WHERE id = $1", [id])
+        return res.rowsAffected() == 1
+    }
+
+    fun fail(id: String, retryable: Bool, delayMs: Int): Bool {
+        val status = if (retryable) { "queued" } else { "dead" }
+        val res = this.conn.execute(
+            "UPDATE jobs SET status = $1, not_before = now() + ($2 || ' milliseconds')::interval, updated_at = now() WHERE id = $3",
+            [status, delayMs.toString(), id]
+        )
+        return res.rowsAffected() == 1
+    }
+
+    fun insertRecord(jobId: String, connector: String, payload: String, sourceUrl: String, recordId: String): Bool {
+        val res = this.conn.execute(
+            "INSERT INTO records (id, job_id, connector, payload, source_url) VALUES ($1, $2, $3, $4::jsonb, $5)",
+            [recordId, jobId, connector, payload, sourceUrl]
+        )
+        return res.rowsAffected() == 1
+    }
+
+    fun pendingCount(): Int {
+        val res = this.conn.query("SELECT COUNT(*) AS n FROM jobs WHERE status = 'queued'")
+        val rows = res.rows()
+        if (rows.size() == 0) {
+            return 0
+        }
+        return rows.get(0).int("n")
+    }
+
+    // Retention/admin helper; tests use it to reset fixed keys.
+    fun deleteJob(id: String): Bool {
+        this.conn.execute("DELETE FROM records WHERE job_id = $1", [id])
+        this.conn.execute("DELETE FROM artifacts WHERE job_id = $1", [id])
+        val res = this.conn.execute("DELETE FROM jobs WHERE id = $1", [id])
+        return res.rowsAffected() == 1
+    }
+
+    implement fun close(): Void {
+        this.conn.close()
+    }
+}

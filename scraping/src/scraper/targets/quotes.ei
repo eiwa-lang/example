@@ -1,0 +1,206 @@
+// QuotesConnector: quotes.toscrape.com (quotes, tags, pagination).
+// Extraction runs entirely through page.locator on live pages —
+// no HTML strings in this service, ever. Login is out of MVP scope.
+import { List, MutableList, MutableMap } from "std.collections"
+import { repeat } from "std.system"
+import { JsonValue, jsonObject, jsonString, jsonArray, parseJson } from "std.json"
+import { Browser, NoWorkerAvailable, UnknownContext } from "browser.browser"
+import { Timeout, Cancelled, ChallengeDetected, WorkerClosed, ResourceExhausted, UnknownBrowserError } from "browser.protocol.errors"
+import { Locator } from "browser.locator.locator"
+import { Page } from "page.page"
+import { Job } from ".scraper.job"
+
+type FetchResult(val kind: String, val body: String, val note: String)
+
+type QuoteRecord(val text: String, val author: String, val tags: List<String>)
+
+type QuotesConnector(val browser: Browser?) {
+
+    fun ok(body: String, note: String): FetchResult {
+        return FetchResult("records", body, note)
+    }
+
+    fun failed(note: String): FetchResult {
+        return FetchResult("failed", "", note)
+    }
+
+    // One fetch walks every page (following Next, bounded) and returns
+    // all records as JSON. All browser typed errors map to failed
+    // notes; only transport-level nulls flow as booleans.
+    fun fetch(job: Job): FetchResult {
+        val b = browser
+        if (b == null)
+            return failed("no-browser")
+        return try {
+            fetchPages(b, job)
+        } catch (e: NoWorkerAvailable) {
+            failed("browser-unavailable")
+        } catch (e: UnknownContext) {
+            failed("browser-unavailable")
+        } catch (e: Timeout) {
+            failed("browser-timeout")
+        } catch (e: Cancelled) {
+            failed("browser-cancelled")
+        } catch (e: ChallengeDetected) {
+            failed("browser-challenge")
+        } catch (e: WorkerClosed) {
+            failed("browser-closed")
+        } catch (e: ResourceExhausted) {
+            failed("browser-exhausted")
+        } catch (e: UnknownBrowserError) {
+            failed("browser-error")
+        } catch (e: Throwable) {
+            failed("browser-unknown")
+        }
+    }
+
+    fun fetchPages(b: Browser, job: Job): FetchResult {
+        val page = b.newPage()
+        if (page.goto(job.url, "load", 15000) == false) {
+            page.close()
+            return failed("browser-goto-failed")
+        }
+        val out = MutableList<QuoteRecord>()
+        var pages = 0
+        var total = 0
+        while (pages < 100) {
+            val batch = readQuotes(page)
+            total = total + batch.size()
+            repeat(batch.size()) { k ->
+                out.add(batch.get(k))
+            }
+            val following = nextUrl(page)
+            pages = pages + 1
+            if (following == null) {
+                page.close()
+                if (total == 0) {
+                    return failed("browser-no-quotes")
+                }
+                return ok(recordsToJson(out.freeze()), "pages-$pages")
+            }
+            if (page.goto(resolveUrl(job.url, following), "load", 15000) == false) {
+                page.close()
+                return failed("browser-goto-failed")
+            }
+        }
+        page.close()
+        return ok(recordsToJson(out.freeze()), "truncated-100")
+    }
+
+    // Absolute resolution for pagination hrefs: absolute stays,
+    // root-relative joins scheme+host of the seed URL.
+    fun resolveUrl(base: String, href: String): String {
+        if (href.indexOf("http://") == 0 || href.indexOf("https://") == 0) return href
+        if (href.indexOf("/") == 0) {
+            val schemeEnd = base.indexOf("://")
+            if (schemeEnd < 0) return href
+
+            val hostEnd = base.indexOf("/", schemeEnd + 3)
+            if (hostEnd < 0) return base + href
+
+            return base.substring(0, hostEnd) + href
+        }
+        return href
+    }
+
+    fun readQuotes(page: Page): List<QuoteRecord> {
+        val out: MutableList<QuoteRecord> = MutableList<QuoteRecord>()
+        repeat(1000) { k ->
+            val quote = page.locator("div.quote").nth(k + 1)
+            val text = quote.within("span.text").text()
+            if (text == null || text == "") {
+                leave
+            }
+            val author = quote.within("small.author").text()
+            if (author == null || author == "") {
+                leave
+            }
+            out.add(QuoteRecord(text, author, readTags(quote)))
+        }
+        return out.freeze()
+    }
+
+    fun readTags(quote: Locator): List<String> {
+        val out: MutableList<String> = MutableList<String>()
+        repeat(100) { k ->
+            val tag = quote.within("a.tag").nth(k + 1).text()
+            if (tag == null || tag == "") {
+                leave
+            }
+            out.add(tag)
+        }
+        return out.freeze()
+    }
+
+    fun nextUrl(page: Page): String? {
+        return page.locator("li.next a").attribute("href")
+    }
+
+    fun recordsToJson(records: List<QuoteRecord>): String {
+        val items: MutableList<JsonValue> = MutableList<JsonValue>()
+        repeat(records.size()) { i ->
+            items.add(recordJson(records.get(i)))
+        }
+        return jsonArray(items.freeze()).write()
+    }
+
+    fun recordJson(rec: QuoteRecord): JsonValue {
+        val tags: MutableList<JsonValue> = MutableList<JsonValue>()
+        repeat(rec.tags.size()) { j ->
+            tags.add(jsonString(rec.tags.get(j)))
+        }
+        val m = MutableMap<String, JsonValue>()
+        m.put("text", jsonString(rec.text))
+        m.put("author", jsonString(rec.author))
+        m.put("tags", jsonArray(tags.freeze()))
+        return jsonObject(m.freeze())
+    }
+
+    fun encodeRecord(rec: QuoteRecord): String {
+        return recordJson(rec).write()
+    }
+
+    // Parses the fetch payload back into records. Entries missing
+    // text/author are skipped (reject, don't coerce); tags default
+    // to empty when absent or malformed.
+    fun normalize(payload: String): List<QuoteRecord> {
+        val out: MutableList<QuoteRecord> = MutableList<QuoteRecord>()
+        val root = parseJson(payload)
+        if (root.isArray() == false) {
+            return out.freeze()
+        }
+        val items = root.asArray()
+        repeat(items.size()) { i ->
+            val rec = parseRecord(items.get(i))
+            if (rec != null) {
+                out.add(rec)
+            }
+        }
+        return out.freeze()
+    }
+
+    fun parseRecord(raw: JsonValue): QuoteRecord? {
+        val textVal = raw.get("text")
+        val authorVal = raw.get("author")
+        if (textVal == null || authorVal == null) {
+            return null
+        }
+        if (textVal!!.isString() == false || authorVal!!.isString() == false) {
+            return null
+        }
+        if (textVal!!.asString() == "" || authorVal!!.asString() == "") {
+            return null
+        }
+        val tags: MutableList<String> = MutableList<String>()
+        val tagsVal = raw.get("tags")
+        if (tagsVal != null && tagsVal!!.isArray()) {
+            val arr = tagsVal!!.asArray()
+            repeat(arr.size()) { j ->
+                if (arr.get(j).isString()) {
+                    tags.add(arr.get(j).asString())
+                }
+            }
+        }
+        return QuoteRecord(textVal!!.asString(), authorVal!!.asString(), tags.freeze())
+    }
+}

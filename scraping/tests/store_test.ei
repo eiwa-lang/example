@@ -1,0 +1,70 @@
+import { assert } from "std.core"
+import { parseJson } from "std.json"
+import { Env } from "std.env"
+import { DbError } from "std.db"
+import { Postgres } from "postgres"
+import { Store } from ".scraper.store"
+
+fun testStore(): Store? {
+    val url = Env.get("SCRAPER_TEST_DATABASE_URL")
+    if (url == null || url == "") {
+        return null
+    }
+    try {
+        val store = Store(Postgres.connect(url))
+        store.migrate()
+        return store
+    } catch (e: DbError) {
+        return null
+    }
+}
+
+test "store: migrate is idempotent" {
+    val store = testStore()
+    if (store == null) {
+        echo("store live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        assert(store.migrate() == 1, "migrate")
+        assert(store.migrate() == 1, "remigrate")
+        store.close()
+    }
+}
+
+test "store: enqueue claim complete round-trip" {
+    val store = testStore()
+    if (store == null) {
+        echo("store live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        store.deleteJob("quotes-test-key-1")
+        assert(store.enqueue("quotes", "https://quotes.toscrape.com/", "page", 3, "test-key-1"), "enqueue")
+        assert(store.enqueue("quotes", "https://quotes.toscrape.com/", "page", 3, "test-key-1") == false, "dedupe")
+        val job = store.claim()
+        assert(job != null, "claimed")
+        assert(job!!.connector == "quotes", "connector")
+        assert(job!!.attempt == 1, "attempt")
+        assert(store.insertRecord(job!!.id, "quotes", "{\"text\": \"hi\"}", job!!.url, "rec-1"), "record")
+        assert(store.complete(job!!.id), "complete")
+        assert(store.claim() == null, "empty")
+        store.deleteJob(job!!.id)
+        store.close()
+    }
+}
+
+test "store: failure requeues or dead-letters" {
+    val store = testStore()
+    if (store == null) {
+        echo("store live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        store.deleteJob("quotes-test-key-2")
+        assert(store.enqueue("quotes", "https://quotes.toscrape.com/page/2/", "page", 3, "test-key-2"), "enqueue")
+        val job = store.claim()
+        assert(job != null, "claimed")
+        assert(store.fail(job!!.id, true, 60000), "requeue")
+        val again = store.claim()
+        assert(again == null, "not-before-honored")
+        assert(store.fail(job!!.id, false, 0), "dead-letter")
+        assert(store.claim() == null, "dead-not-claimed")
+        store.deleteJob(job!!.id)
+        store.close()
+    }
+}

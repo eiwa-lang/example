@@ -1,0 +1,12 @@
+name: scraping
+version: 0.1.0
+output: scraper
+
+dependencies:
+  postgres:
+    path: ../../postgres
+  browser:
+    path: ../../browser
+  crypto:
+    github: eiwa-lang/crypto
+    branch: main

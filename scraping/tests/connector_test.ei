@@ -1,0 +1,61 @@
+import { assert } from "std.core"
+import { Browser } from "browser.browser"
+import { QuotesConnector } from ".scraper.targets.quotes"
+import { Job } from ".scraper.job"
+
+fun quoteJob(url: String): Job {
+    return Job("test-1", "quotes", url, "page", 0, 3, "key-1")
+}
+
+fun recordsJson(): String {
+    return "[{\"text\": \"Life & times\", \"author\": \"Jane Doe\", \"tags\": [\"life\", \"times\"]}, {\"text\": \"Plain\", \"author\": \"John Smith\", \"tags\": []}, {\"text\": \"\", \"author\": \"Ghost\", \"tags\": []}, {\"author\": \"NoText\"}]"
+}
+
+test "connector: normalize validates and skips malformed entries" {
+    val c = QuotesConnector(null)
+    val recs = c.normalize(recordsJson())
+    assert(recs.size() == 2, "count")
+    assert(recs.get(0).text == "Life & times", "text")
+    assert(recs.get(0).author == "Jane Doe", "author")
+    assert(recs.get(0).tags.size() == 2, "tags")
+    assert(recs.get(0).tags.get(1) == "times", "tag2")
+    assert(recs.get(1).tags.size() == 0, "notags")
+    assert(c.normalize("[]").size() == 0, "empty")
+    assert(c.normalize("{\"nope\": true}").size() == 0, "nonarray")
+}
+
+test "connector: records round-trip through json" {
+    val c = QuotesConnector(null)
+    val recs = c.normalize(recordsJson())
+    val back = c.normalize(c.recordsToJson(recs))
+    assert(back.size() == 2, "count")
+    assert(back.get(1).author == "John Smith", "author")
+}
+
+test "connector: no browser means failed fetch" {
+    val c = QuotesConnector(null)
+    val res = c.fetch(quoteJob("https://quotes.toscrape.com/"))
+    assert(res.kind == "failed", "kind")
+    assert(res.note == "no-browser", "reason")
+}
+
+test "connector: unreachable worker fails on goto" {
+    val c = QuotesConnector(Browser(["ws://127.0.0.1:28999"], 1))
+    val res = c.fetch(quoteJob("https://quotes.toscrape.com/"))
+    assert(res.kind == "failed", "kind")
+    assert(res.note == "browser-goto-failed", "reason-$res.note")
+}
+
+test "connector: empty pool is unavailable" {
+    val c = QuotesConnector(Browser([], 1))
+    val res = c.fetch(quoteJob("https://quotes.toscrape.com/"))
+    assert(res.kind == "failed", "kind")
+    assert(res.note == "browser-unavailable", "reason-$res.note")
+}
+
+test "connector: resolveUrl joins root-relative hrefs" {
+    val c = QuotesConnector(null)
+    assert(c.resolveUrl("https://quotes.toscrape.com/", "/page/2/") == "https://quotes.toscrape.com/page/2/")
+    assert(c.resolveUrl("https://quotes.toscrape.com/tag/life/", "/tag/life/page/2/") == "https://quotes.toscrape.com/tag/life/page/2/")
+    assert(c.resolveUrl("https://quotes.toscrape.com/", "https://other.example/x") == "https://other.example/x")
+}

@@ -1,0 +1,20 @@
+import { assert } from "std.core"
+import { backoffMs, shouldRetry } from ".scraper.job"
+
+test "queue: backoff doubles with a 60s cap" {
+    assert(backoffMs(0) == 1000)
+    assert(backoffMs(1) == 1000)
+    assert(backoffMs(2) == 2000)
+    assert(backoffMs(3) == 4000)
+    assert(backoffMs(6) == 32000)
+    assert(backoffMs(7) == 60000)
+    assert(backoffMs(20) == 60000)
+}
+
+test "queue: retry policy needs budget and retryable outcome" {
+    assert(shouldRetry(0, 3, true))
+    assert(shouldRetry(2, 3, true))
+    assert(shouldRetry(3, 3, true) == false)
+    assert(shouldRetry(0, 3, false) == false)
+    assert(shouldRetry(0, 0, true) == false)
+}

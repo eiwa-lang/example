@@ -1,0 +1,51 @@
+# Scraping service stack (Phase 0).
+#
+# Versions are pinned; bump by explicit decision only. The worker
+# image has no release tag yet, so Phase 0 builds it from the local
+# browser checkout (build section below) instead of referencing a
+# dev tag. Switch `image:` to a released tag once one exists.
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: scraper
+      POSTGRES_PASSWORD: scraper
+      POSTGRES_DB: scraping
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scraper"]
+      interval: 5s
+      retries: 12
+    ports:
+      - "5435:5432"
+
+  browser-worker:
+    build:
+      context: ../../browser
+      dockerfile: Dockerfile
+      args:
+        EIWA_VERSION: v0.0.76
+
+  scraper:
+    build:
+      context: .
+      additional_contexts:
+        postgres: ../../postgres
+        browser: ../../browser
+    environment:
+      BROWSER_WORKERS: ws://browser-worker:8080
+      DATABASE_URL: postgres://scraper:scraper@postgres:5432/scraping
+      CONCURRENCY: 4
+      POLL_INTERVAL_MS: 1000
+      ARTIFACT_DIR: /var/lib/scraper/artifacts
+    volumes:
+      - artifacts:/var/lib/scraper/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  artifacts:

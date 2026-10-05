@@ -1,0 +1,160 @@
+// Scraper handle: queue loop, connector dispatch, outcomes, metrics,
+// health. Owns orchestration; connectors own fetching, Store owns SQL.
+import { Closeable } from "std.core"
+import { repeat } from "std.system"
+import { TCPServer, Socket } from "std.net"
+import { sleepMs } from "std.time"
+import { DbError } from "std.db"
+import { Browser } from "browser.browser"
+import { writeAll } from "browser.net.ws"
+import { readHttpRequest } from "browser.net.ws_server"
+import { Config } from ".scraper.config"
+import { Job, backoffMs, shouldRetry } from ".scraper.job"
+import { Store } from ".scraper.store"
+import { Metrics } from ".scraper.metrics"
+import { QuotesConnector } from ".scraper.targets.quotes"
+
+// Notes that may retry with backoff (transient); everything else
+// dead-letters. Pure policy, unit-tested.
+fun retryableNote(note: String): Bool {
+    if (note == "browser-timeout" || note == "browser-exhausted") {
+        return true
+    }
+    return false
+}
+
+type Scraper(val config: Config, val store: Store, val browser: Browser, val metrics: Metrics = Metrics()) : Closeable {
+
+    fun runOnce(): String {
+        val job = this.store.claim()
+        if (job == null) {
+            this.metrics.bumpJobs("empty")
+            return "empty"
+        }
+        Log.info { "job claimed: ${job.id} ${job.connector} attempt ${job.attempt}" }
+        if (job.connector == "quotes") {
+            return this.runQuotes(job)
+        }
+        this.store.fail(job.id, false, 0)
+        this.metrics.bumpJobs("unknown")
+        Log.info { "job dead: ${job.id} unknown connector ${job.connector}" }
+        return "unknown-" + job.connector
+    }
+
+    fun runQuotes(job: Job): String {
+        val connector = QuotesConnector(this.browser)
+        val res = connector.fetch(job)
+        if (res.kind == "failed") {
+            this.metrics.bumpFetchError(res.note)
+            if (shouldRetry(job.attempt, job.maxAttempts, retryableNote(res.note))) {
+                this.store.fail(job.id, true, backoffMs(job.attempt))
+                this.metrics.bumpJobs("retry")
+                Log.info { "job retry: ${job.id} ${res.note} attempt ${job.attempt}" }
+                return "retry-" + res.note
+            }
+            this.store.fail(job.id, false, 0)
+            this.metrics.bumpJobs("dead")
+            Log.info { "job dead: ${job.id} ${res.note} attempt ${job.attempt}" }
+            return "dead-" + res.note
+        }
+        val recs = connector.normalize(res.body)
+        repeat(recs.size()) { i ->
+            this.store.insertRecord(job.id, job.connector, connector.encodeRecord(recs.get(i)), job.url, job.id + "-" + i.toString())
+        }
+        this.store.complete(job.id)
+        this.metrics.bumpJobs("done")
+        Log.info { "job done: ${job.id} ${recs.size()} records" }
+        return "done-" + recs.size().toString()
+    }
+
+    // Bounded loop for tests and runs: limit < 0 runs forever
+    // (sleeping between empty claims), otherwise stops after limit
+    // jobs or first empty claim. Returns jobs completed.
+    fun run(limit: Int): Int {
+        var done = 0
+        var n = 0
+        while (limit < 0 || n < limit) {
+            val outcome = this.runOnce()
+            if (outcome == "empty") {
+                if (limit < 0) {
+                    sleepMs(this.config.pollIntervalMs)
+                } else {
+                    return done
+                }
+            } else {
+                done = done + 1
+                n = n + 1
+            }
+        }
+        return done
+    }
+
+    fun health(): String {
+        try {
+            val pending = this.store.pendingCount()
+            return "{\"status\": \"ok\", \"pending\": $pending}"
+        } catch (e: DbError) {
+            return "{\"status\": \"degraded\", \"reason\": \"store-unreachable\"}"
+        }
+    }
+
+    fun metricsResponse(): String {
+        val body = this.metrics.render()
+        return "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${body.length}\r\nConnection: close\r\n\r\n$body"
+    }
+
+    fun healthResponse(): String {
+        val body = this.health()
+        return "HTTP/1.0 200 OK\r\nContent-Type: application/json\r\nContent-Length: ${body.length}\r\nConnection: close\r\n\r\n$body"
+    }
+
+    fun notFoundResponse(): String {
+        return "HTTP/1.0 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    }
+
+    fun route(head: String): String {
+        if (head.indexOf("GET /metrics") == 0) {
+            return this.metricsResponse()
+        }
+        if (head.indexOf("GET /health") == 0) {
+            return this.healthResponse()
+        }
+        return this.notFoundResponse()
+    }
+
+    fun serve(port: Int, maxConn: Int): Int {
+        val server = TCPServer()
+        if (server.bind(port) == false) {
+            return -1
+        }
+        var served = 0
+        var idle = 0
+        while ((maxConn < 0 || served < maxConn) && idle <= 1200) {
+            val conn = server.accept()
+            if (conn == null) {
+                idle = idle + 1
+            } else {
+                idle = 0
+                served = served + 1
+                this.serveOne(conn)
+            }
+        }
+        server.close()
+        return served
+    }
+
+    fun serveOne(conn: Socket): Void {
+        val head = readHttpRequest(conn)
+        if (head == null) {
+            conn.close()
+            return
+        }
+        writeAll(conn, this.route(head))
+        conn.close()
+    }
+
+    implement fun close(): Void {
+        this.browser.close()
+        this.store.close()
+    }
+}

@@ -1,0 +1,123 @@
+// Service config: env-driven, validated at boot, fail fast.
+// Missing or malformed values fail here, never half-boot.
+import { Env } from "std.env"
+import { List, MutableList } from "std.collections"
+import { repeat } from "std.system"
+
+type Config(
+    val browserWorkers: List<String>,
+    val databaseUrl: String,
+    val concurrency: Int,
+    val pollIntervalMs: Int,
+    val artifactDir: String
+)
+
+type InvalidConfig(val detail: String) : Throwable {
+    implement fun message(): String {
+        return this.detail
+    }
+}
+
+fun splitCsv(raw: String): List<String> {
+    val out: MutableList<String> = MutableList<String>()
+    var cur = ""
+    repeat(raw.length) { i ->
+        val ch = raw.substring(i, i + 1)
+        if (ch == ",") {
+            if (cur != "") {
+                out.add(cur)
+            }
+            cur = ""
+        } else {
+            cur = cur + ch
+        }
+    }
+    if (cur != "") {
+        out.add(cur)
+    }
+    return out.freeze()
+}
+
+fun digitValue(ch: String): Int {
+    if (ch == "0") {
+        return 0
+    }
+    if (ch == "1") {
+        return 1
+    }
+    if (ch == "2") {
+        return 2
+    }
+    if (ch == "3") {
+        return 3
+    }
+    if (ch == "4") {
+        return 4
+    }
+    if (ch == "5") {
+        return 5
+    }
+    if (ch == "6") {
+        return 6
+    }
+    if (ch == "7") {
+        return 7
+    }
+    if (ch == "8") {
+        return 8
+    }
+    if (ch == "9") {
+        return 9
+    }
+    return -1
+}
+
+fun parsePositive(raw: String?, fallback: Int): Int {
+    if (raw == null) {
+        return fallback
+    }
+    var n = 0
+    var digits = 0
+    var i = 0
+    while (i < raw.length) {
+        val d = digitValue(raw.substring(i, i + 1))
+        if (d < 0) {
+            return -1
+        }
+        n = n * 10 + d
+        digits = digits + 1
+        i = i + 1
+    }
+    if (digits == 0) {
+        return -1
+    }
+    return n
+}
+
+fun loadConfig(): Config {
+    val workersRaw = Env.get("BROWSER_WORKERS")
+    if (workersRaw == null || workersRaw == "") {
+        return throw InvalidConfig("set BROWSER_WORKERS (comma-separated worker ws URLs)")
+    }
+    val workers = splitCsv(workersRaw)
+    if (workers.size() == 0) {
+        return throw InvalidConfig("BROWSER_WORKERS is empty")
+    }
+    val db = Env.get("DATABASE_URL")
+    if (db == null || db == "") {
+        return throw InvalidConfig("set DATABASE_URL")
+    }
+    val concurrency = parsePositive(Env.get("CONCURRENCY"), 4)
+    if (concurrency <= 0) {
+        return throw InvalidConfig("CONCURRENCY must be a positive integer")
+    }
+    val pollMs = parsePositive(Env.get("POLL_INTERVAL_MS"), 1000)
+    if (pollMs <= 0) {
+        return throw InvalidConfig("POLL_INTERVAL_MS must be a positive integer")
+    }
+    val artifacts = Env.get("ARTIFACT_DIR")
+    if (artifacts == null || artifacts == "") {
+        return throw InvalidConfig("set ARTIFACT_DIR")
+    }
+    return Config(workers, db, concurrency, pollMs, artifacts)
+}

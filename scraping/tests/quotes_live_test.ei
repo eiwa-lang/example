@@ -1,0 +1,21 @@
+import { assert } from "std.core"
+import { Env } from "std.env"
+import { Browser } from "browser.browser"
+import { QuotesConnector } from ".scraper.targets.quotes"
+import { Job } from ".scraper.job"
+
+test "connector: live quotes through a real worker" {
+    val url = Env.get("SCRAPER_TEST_WORKER_URL")
+    if (url == null || url == "") {
+        echo("quotes live: skip (set SCRAPER_TEST_WORKER_URL)")
+    } else {
+        val c = QuotesConnector(Browser([url], 2))
+        val job = Job("live-1", "quotes", "https://quotes.toscrape.com/", "page", 0, 3, "live-1")
+        val res = c.fetch(job)
+        assert(res.kind == "records", "kind-$res.note")
+        val recs = c.normalize(res.body)
+        assert(recs.size() >= 50, "count-${recs.size()}")
+        assert(recs.get(0).author != "", "author")
+        assert(recs.get(0).tags.size() > 0, "tags")
+    }
+}

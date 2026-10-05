@@ -1,0 +1,40 @@
+// Job value type + pure queue policy (no I/O here; SQL lives in Store).
+
+type Job(
+    val id: String,
+    val connector: String,
+    val url: String,
+    val kind: String,
+    val attempt: Int,
+    val maxAttempts: Int,
+    val idempotencyKey: String
+)
+
+// Exponential backoff with cap, in ms. Pure: unit-tested without a DB.
+fun backoffMs(attempt: Int): Int {
+    if (attempt <= 0) {
+        return 1000
+    }
+    var wait = 1000
+    var i = 1
+    while (i < attempt) {
+        wait = wait * 2
+        if (wait >= 60000) {
+            return 60000
+        }
+        i = i + 1
+    }
+    if (wait >= 60000) {
+        return 60000
+    }
+    return wait
+}
+
+// Retryable while attempts remain; Timeout/ResourceExhausted style
+// outcomes retry, everything else dead-letters. Pure policy.
+fun shouldRetry(attempt: Int, maxAttempts: Int, retryable: Bool): Bool {
+    if (retryable == false) {
+        return false
+    }
+    return attempt < maxAttempts
+}

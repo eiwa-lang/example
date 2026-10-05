@@ -1,0 +1,63 @@
+import { assert } from "std.core"
+import { Env } from "std.env"
+import { InvalidConfig, loadConfig, splitCsv, parsePositive } from ".scraper.config"
+
+fun validEnv(): Void {
+    Env.set("BROWSER_WORKERS", "ws://browser-worker:8080")
+    Env.set("DATABASE_URL", "postgres://scraper:scraper@localhost:5432/scraping")
+    Env.set("CONCURRENCY", "4")
+    Env.set("POLL_INTERVAL_MS", "1000")
+    Env.set("ARTIFACT_DIR", "/tmp/scraper-artifacts")
+}
+
+fun cleanEnv(): Void {
+    Env.unset("BROWSER_WORKERS")
+    Env.unset("DATABASE_URL")
+    Env.unset("CONCURRENCY")
+    Env.unset("POLL_INTERVAL_MS")
+    Env.unset("ARTIFACT_DIR")
+}
+
+fun loadFails(): Bool {
+    try {
+        loadConfig()
+        return false
+    } catch (e: InvalidConfig) {
+        return true
+    }
+}
+
+test "config: valid env parses" {
+    validEnv()
+    val cfg = loadConfig()
+    assert(cfg.browserWorkers.size() == 1, "workers")
+    assert(cfg.concurrency == 4, "concurrency")
+    assert(cfg.pollIntervalMs == 1000, "poll")
+    cleanEnv()
+}
+
+test "config: missing values throw" {
+    cleanEnv()
+    assert(loadFails(), "empty")
+    validEnv()
+    Env.unset("DATABASE_URL")
+    assert(loadFails(), "no-db")
+    cleanEnv()
+}
+
+test "config: malformed numbers throw" {
+    validEnv()
+    Env.set("CONCURRENCY", "many")
+    assert(loadFails(), "nan")
+    Env.set("CONCURRENCY", "0")
+    assert(loadFails(), "zero")
+    cleanEnv()
+}
+
+test "config: csv splits and trims empties" {
+    assert(splitCsv("").size() == 0)
+    assert(splitCsv("ws://a:8080,ws://b:8080").size() == 2)
+    assert(parsePositive(null, 4) == 4)
+    assert(parsePositive("12", 4) == 12)
+    assert(parsePositive("1x", 4) == -1)
+}
