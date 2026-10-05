@@ -62,7 +62,8 @@ object LessonsData {
         if (query == "4" || query == "04" || query == "loops") {
             return "### Lesson 04: Repeat and Loops\n" +
                 "`repeat(n) { ... }`, `while (cond) { ... }`, and `loop { ... }`.\n\n" +
-                "```kotlin\nfun main() {\n    repeat(3) { idx ->\n        println(\"Step \$idx\")\n    }\n}\n```"
+                "```kotlin\nfun main() {\n    repeat(3) { idx ->\n        println(\"Step \$idx\")\n    }\n}\n```\n" +
+                "There is no `continue` in Eiwa. In `repeat`/`loop`/`retry` (whose block is `@Leaveable`), bare `leave` ends the whole loop."
         }
         if (query == "5" || query == "05" || query == "strings") {
             return "### Lesson 05: Escape Sequences, Multiline & Stringable\n" +
@@ -82,7 +83,8 @@ object LessonsData {
         }
         if (query == "7" || query == "07" || query == "exceptions") {
             return "### Lesson 07: Exceptions\n" +
-                "Any type implementing `Throwable` can be thrown and caught with `try-catch`.\n\n" +
+                "Any type implementing `Throwable` can be thrown and caught with `try-catch`. " +
+                "Control-flow signals implement `ControlFlow` instead (e.g. `Leave`): generic handlers (`catch {}`, `catch (e: Throwable)`, bare `try {}`) never observe them — only explicit `catch (e: Leave)` / `catch (e: ControlFlow)` does.\n\n" +
                 "```kotlin\ntype AppError(val msg: String) : Throwable {\n    implement fun message(): String = msg\n}\n\nfun main() {\n    try {\n        throw AppError(\"Failed operation\")\n    } catch (e: AppError) {\n        println(\"Caught: \${e.message()}\")\n    }\n}\n```"
         }
         if (query == "8" || query == "08" || query == "maps") {
@@ -258,7 +260,9 @@ object LessonsData {
             return "### Lesson 30: Exit Early with Leave\n" +
                 "`leave` exits the innermost `while`/`for` loop. There is no `continue` — skipping an iteration is written with `if`/`else`. " +
                 "Inside a lambda, `return` is forbidden; `leave value` exits the lambda early with that value instead. " +
-                "`leave` outside any loop or lambda, and `leave` inside `task {}` blocks, are compile-time errors.\n\n" +
+                "`leave` outside any loop or lambda, and `leave` inside `task {}` blocks, are compile-time errors. " +
+                "In `repeat`/`loop`/`retry` blocks (whose parameter is `@Leaveable`), bare `leave` ends the whole loop: it desugars to `throw Leave()`, caught internally by the helper. " +
+                "Custom loop drivers opt in with `@Leaveable` on the block parameter and must catch `Leave` around the invocation.\n\n" +
                 "```kotlin\n" +
                 "var total = 0\n" +
                 "for ([1, 2, 3, 4, 5]) { n ->\n" +

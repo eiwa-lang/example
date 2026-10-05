@@ -40,7 +40,8 @@ type Docs() {
             "  - `for (numbers) { n -> product = product * n }` (named param)\n" +
             "  - `for (numbers) { idx, n -> println(\"\$idx: \$n\") }` (index & item)\n" +
             "- `while (cond) { ... }`\n" +
-            "- Higher-order loops: `repeat(count) { it -> ... }`, `loop { ... }` (infinite), `retry(times) { attempt -> ... }`."
+            "- Higher-order loops: `repeat(count) { it -> ... }`, `loop { ... }` (infinite), `retry(times) { attempt -> ... }`.\n" +
+            "- No `continue` in Eiwa: `leave` always exits the loop entirely; skipping an iteration is written with `if`/`else`. In `@Leaveable` blocks (`repeat`/`loop`/`retry`), bare `leave` ends the whole loop."
     }
 
     fun section4Strings(): String {
@@ -81,6 +82,7 @@ type Docs() {
     fun section6Exceptions(): String {
         return "# Section 6: Exception Handling (try-catch)\n\n" +
             "- Any type implementing `Throwable` (`implement fun message(): String`) can be thrown via `throw`.\n" +
+            "- Control-flow signals implement `ControlFlow` instead (e.g. `Leave`): generic handlers never observe them.\n" +
             "- **Standard catch:** `try { ... } catch (e: MyError) { ... }`\n" +
             "- **Multi-catch:** `try { ... } catch (e: ErrorA | ErrorB) { ... }`\n" +
             "- **Bare try:** `try { optionalCall() }` (swallows exceptions silently)\n" +
@@ -322,8 +324,8 @@ type Docs() {
             "- `std.core`: `String/Int/Double/Bool/Pointer`, contracts (`Stringable/Equatable/Hashable/Runnable/Closeable/Awaitable`), skill `Scope<T>` (`let/also/apply/run/takeIf/takeUnless`), `with/use`, `Memory.alloc`.\n" +
             "- `std.collections`: `List/MutableList` (`add/addAll/plus/get/set/remove/size/freeze/mut/contains/indexOf/first/last/isEmpty/isNotEmpty/slice/skip/take/skipLast/takeLast`, contracts `Slicable/Indexed/Searchable`, skills `Slicing/Appending/Searching`), `Map/MutableMap` (`put/get/keys/values/freeze/mut`), `Set/MutableSet`, `String.split(delimiter)`.\n" +
             "- `std.math`: `Math` (`sin/cos/tan/sqrt/pow/abs/floor/ceil/round`) + top-level `mod(a, b)`.\n" +
-            "- `std.system`: `loop/repeat/retry/sleep/sleepMs/yield/park/exit`.\n" +
-            "- `std.exceptions`: `Throwable/Exception/AssertionException`, `error(msg)`, `assert(cond)`.\n" +
+            "- `std.system`: `loop/repeat/retry/sleep/sleepMs/yield/park/exit` (`@Leaveable` blocks: bare `leave` ends the whole loop).\n" +
+            "- `std.exceptions`: `Throwable/Exception/AssertionException`, `ControlFlow/Leave` (bypass generic handlers), `error(msg)`, `assert(cond)`.\n" +
             "- `std.io`: `print/println/echo/printWelcome`, skill `Echoable`.\n" +
             "- `std.fs`: `File(path)` (`read/write/delete/exists`) + `File.read/write/delete/exists(path)` shortcuts.\n" +
             "- `std.env`: `Env` (`load/get/set/unset/exists`, typed `get` defaults) + `env()` helpers, `.env` loader.\n" +

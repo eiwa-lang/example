@@ -5,8 +5,8 @@ object StdlibData {
             "- `core` — Primitive types (String, Int, Double, Bool, Pointer), contracts, Scope skill\n" +
             "- `collections` — List, MutableList, Map, MutableMap, Set, MutableSet, String.split\n" +
             "- `math` — Math object (sin/cos/tan/sqrt/pow/abs/floor/ceil/round) + mod\n" +
-            "- `system` — loop, repeat, retry, sleep, sleepMs, yield, park, exit\n" +
-            "- `exceptions` — Throwable, Exception, AssertionException, error, assert\n" +
+            "- `system` — loop, repeat, retry (@Leaveable blocks), sleep, sleepMs, yield, park, exit\n" +
+            "- `exceptions` — Throwable, Exception, AssertionException, ControlFlow, Leave, error, assert\n" +
             "- `io` — print, println, echo, printWelcome, Echoable\n" +
             "- `fs` — File (read/write/delete/exists)\n" +
             "- `env` — Env (load/get/set/unset/exists) + env() helpers, .env loader\n" +
@@ -89,9 +89,10 @@ object StdlibData {
         }
         if (module == "system" || module == "std.system") {
             return "## std.system — Loops, Sleep, Park, Exit\n\n" +
-                "`loop(block: () -> Void)` (infinite), `repeat(count: Int, block: (Int) -> Void)`, " +
-                "`retry(times: Int, block: (Int) -> Void)` (rethrows last Throwable), " +
+                "`loop(@Leaveable block: () -> Void)` (infinite), `repeat(count: Int, @Leaveable block: (Int) -> Void)`, " +
+                "`retry(times: Int, @Leaveable block: (Int) -> Void)` (rethrows last Throwable; `leave` aborts quietly), " +
                 "`sleep(seconds: Int): Void`, `sleepMs(ms: Int): Void`, `yield(): Void`, `exit(code: Int): Void`.\n\n" +
+                "No `continue` in Eiwa. In `@Leaveable` blocks bare `leave` ends the whole loop (desugars to `throw Leave()`, caught internally).\n\n" +
                 "`park(): Void` parks the calling thread FOREVER at 0% CPU (un-signaled cond wait) — the idiom to keep `main` alive until the process is killed. Never suspends, never use inside `task {}`.\n\n" +
                 "Outside `task {}`, `sleep/sleepMs/yield` block the calling thread (nanosleep/sched_yield); written directly inside a `task {}` body they become cooperative suspension points.\n\n" +
                 "```kotlin\nrepeat(3) { i -> println(i) }\nretry(3) { attempt -> println(attempt) }\npark()\n```"
@@ -99,7 +100,8 @@ object StdlibData {
         if (module == "exceptions" || module == "std.exceptions") {
             return "## std.exceptions — Throwable & Assertions\n\n" +
                 "`Throwable { fun message(): String }` (any type implementing it is throwable). " +
-                "`Exception(val text: String) : Throwable`, `AssertionException(val text: String) : Throwable`.\n\n" +
+                "`Exception(val text: String) : Throwable`, `AssertionException(val text: String) : Throwable`. " +
+                "`ControlFlow { fun message(): String }` with `Leave(val code: Int = 0) : ControlFlow` (loop-break signal; bypasses generic handlers).\n\n" +
                 "`error(msg: String): Void` (throws), `assert(condition: Bool, message: String = \"Assertion failed\")`.\n\n" +
                 "```kotlin\ntype AppError(val msg: String) : Throwable {\n    implement fun message(): String = msg\n}\n\ntry {\n    throw AppError(\"boom\")\n} catch (e: AppError) {\n    println(e.message())\n}\n```"
         }
