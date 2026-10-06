@@ -5,8 +5,8 @@ object StdlibData {
             "- `core` — Primitive types (String, Int, Double, Bool, Pointer), contracts, Scope skill\n" +
             "- `collections` — List, MutableList, Map, MutableMap, Set, MutableSet, String.split\n" +
             "- `math` — Math object (sin/cos/tan/sqrt/pow/abs/floor/ceil/round) + mod\n" +
-            "- `system` — loop, repeat, retry (@Leaveable blocks), sleep, sleepMs, yield, park, exit\n" +
-            "- `exceptions` — Throwable, Exception, AssertionException, ControlFlow, Leave, error, assert\n" +
+            "- `system` — loop, repeat, retry (@Embed loop drivers), sleep, sleepMs, yield, park, exit\n" +
+            "- `exceptions` — Throwable, Exception, AssertionException, ControlFlow, LeaveValue, EmbedReturn, error, assert\n" +
             "- `io` — print, println, echo, printWelcome, Echoable\n" +
             "- `fs` — File (read/write/delete/exists)\n" +
             "- `env` — Env (load/get/set/unset/exists) + env() helpers, .env loader\n" +
