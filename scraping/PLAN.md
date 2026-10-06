@@ -300,6 +300,13 @@ type QuotesConnector(val browser: Browser, val store: Store) {
   A client connecting after the server closed segfaults (null
   socket deref in std `Client`/curl path) instead of failing
   cleanly. Always size `maxConn` for every request the test makes.
+- **Upstream (lang): implicit `this` across nested receiver lambdas
+  miscompiles.** Calling a method bare inside doubly-nested receiver
+  lambdas (e.g. `arest > routing > get`) binds wrong and NPEs at
+  runtime with no compile error. Capturing `val self = this` first
+  works (bisected both ways in `serveArest`). Renaming to dodge real
+  collisions (`storeHealth` vs `RoutingBuilder.health`) is still
+  worthwhile on its own.
 - **Upstream (arest/lang): DTO defaults don't apply on deserialize.**
   Missing keys yield `""`/`0`, ignoring declared defaults — the
   `JobRequest` DTO therefore declares all fields required and the

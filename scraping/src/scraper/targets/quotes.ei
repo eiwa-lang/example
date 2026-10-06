@@ -51,7 +51,7 @@ type QuotesConnector(val browser: Browser?) {
             failed("browser-exhausted")
         } catch (e: UnknownBrowserError) {
             failed("browser-error")
-        } catch (e: Throwable) {
+        } catch (e) {
             failed("browser-unknown")
         }
     }
@@ -63,22 +63,20 @@ type QuotesConnector(val browser: Browser?) {
             return failed("browser-goto-failed")
         }
         val out = MutableList<QuoteRecord>()
-        var pages = 0
         var total = 0
-        while (pages < 100) {
+        repeat(100) { p ->
             val batch = readQuotes(page)
             total = total + batch.size()
             repeat(batch.size()) { k ->
                 out.add(batch.get(k))
             }
             val following = nextUrl(page)
-            pages = pages + 1
             if (following == null) {
                 page.close()
                 if (total == 0) {
                     return failed("browser-no-quotes")
                 }
-                return ok(out.freeze().toJson(), "pages-$pages")
+                return ok(out.freeze().toJson(), "pages-${p + 1}")
             }
             if (page.goto(resolveUrl(job.url, following), "load", 15000) == false) {
                 page.close()
@@ -149,8 +147,6 @@ type QuotesConnector(val browser: Browser?) {
         val out = MutableList<QuoteRecord>()
         val parsed = try {
             fromJson<List<QuoteRecord>>(payload)
-        } catch (e: Throwable) {
-            null
         }
         if (parsed == null) {
             return out.freeze()

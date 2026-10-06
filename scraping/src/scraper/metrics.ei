@@ -22,10 +22,10 @@ type Metrics(
     fun render(): String {
         var out = ""
         for (this.jobs) { entry ->
-            out = out + "scrape_jobs_total{outcome=\"" + entry.key + "\"} " + entry.value.toString() + "\n"
+            out = out + "scrape_jobs_total{outcome=\"${entry.key}\"} ${entry.value}\n"
         }
         for (this.fetchErrors) { entry ->
-            out = out + "scrape_fetch_errors_total{reason=\"" + entry.key + "\"} " + entry.value.toString() + "\n"
+            out = out + "scrape_fetch_errors_total{reason=\"${entry.key}\"} ${entry.value}\n"
         }
         return out
     }

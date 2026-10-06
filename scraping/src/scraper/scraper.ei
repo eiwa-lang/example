@@ -1,14 +1,13 @@
 // Scraper handle: queue loop, connector dispatch, outcomes, metrics,
 // health. Owns orchestration; connectors own fetching, Store owns SQL.
 import { Closeable } from "std.core"
-import { repeat } from "std.system"
+import { repeat, loop } from "std.system"
 import { sleepMs } from "std.time"
 import { DbError } from "std.db"
 import { Serializable } from "std.serde"
-import { Json } from "std.json"
+import { Json, fromJson } from "std.json"
 import { Browser } from "browser.browser"
 import { arest } from "arest.arest"
-import { ApplicationCall } from "arest.server.application_call"
 import { HttpStatus } from "std.http"
 import { Config } from ".scraper.config"
 import { Job, backoffMs, shouldRetry } from ".scraper.job"
@@ -33,25 +32,23 @@ type JobRequest(
     val idempotencyKey: String = ""
 ) : Serializable + Json
 
+type CreatedJob(val id: String, val status: String) : Serializable + Json
+
+type InvalidJob(val detail: String) : Throwable {
+    implement fun message(): String {
+        return this.detail
+    }
+}
+
+type DuplicateJob(val id: String) : Throwable {
+    implement fun message(): String {
+        return "duplicate job: " + this.id
+    }
+}
+
 type HealthBody(val status: String, val pending: Int) : Serializable + Json
 
 type Scraper(val config: Config, val store: Store, val browser: Browser, val metrics: Metrics = Metrics()) : Closeable {
-
-    fun runOnce(): String {
-        val job = this.store.claim()
-        if (job == null) {
-            this.metrics.bumpJobs("empty")
-            return "empty"
-        }
-        Log.info { "job claimed: ${job.id} ${job.connector} attempt ${job.attempt}" }
-        if (job.connector == "quotes") {
-            return this.runQuotes(job)
-        }
-        this.store.fail(job.id, false, 0)
-        this.metrics.bumpJobs("unknown")
-        Log.info { "job dead: ${job.id} unknown connector ${job.connector}" }
-        return "unknown-" + job.connector
-    }
 
     fun runQuotes(job: Job): String {
         val connector = QuotesConnector(this.browser)
@@ -79,29 +76,32 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val met
         return "done-" + recs.size().toString()
     }
 
-    // Bounded loop for tests and runs: limit < 0 runs forever
-    // (sleeping between empty claims), otherwise stops after limit
-    // jobs or first empty claim. Returns jobs completed.
-    fun run(limit: Int): Int {
-        var done = 0
-        var n = 0
-        while (limit < 0 || n < limit) {
-            val outcome = this.runOnce()
-            if (outcome == "empty") {
-                if (limit < 0) {
-                    sleepMs(this.config.pollIntervalMs)
-                } else {
-                    return done
-                }
-            } else {
-                done = done + 1
-                n = n + 1
-            }
+    fun runOnce(): String {
+        val job = this.store.claim()
+        if (job == null) {
+            this.metrics.bumpJobs("empty")
+            return "empty"
         }
-        return done
+        Log.info { "job claimed: ${job.id} ${job.connector} attempt ${job.attempt}" }
+        if (job.connector == "quotes") {
+            return this.runQuotes(job)
+        }
+        this.store.fail(job.id, false, 0)
+        this.metrics.bumpJobs("unknown")
+        Log.info { "job dead: ${job.id} unknown connector ${job.connector}" }
+        return "unknown-" + job.connector
     }
 
-    fun health(): HealthBody {
+    fun run() {
+        loop {
+            val outcome = this.runOnce()
+            if (outcome == "empty") {
+                sleepMs(this.config.pollIntervalMs)
+            }
+        }
+    }
+
+    fun storeHealth(): HealthBody {
         try {
             return HealthBody("ok", this.store.pendingCount())
         } catch (e: DbError) {
@@ -112,48 +112,38 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val met
     // POST /jobs body is a JobRequest DTO (arest deserializes shape;
     // domain rules stay here). Strict at the boundary: unknown
     // connector, bad url, or malformed fields fail fast instead of
-    // dead-lettering later.
-    fun createJob(call: ApplicationCall): Void {
+    // dead-lettering later. Pure domain: raw body in, created job out.
+    // Validation failures throw InvalidJob, duplicates throw
+    // DuplicateJob, store failures propagate as DbError. No HTTP here
+    // — the handler maps outcomes.
+    fun createJob(rawBody: String): CreatedJob {
         val req = try {
-            call.receive<JobRequest>()
-        } catch (e: Throwable) {
-            null
+            fromJson<JobRequest>(rawBody)
         }
         if (req == null) {
-            call.respondText("bad job request", HttpStatus.BAD_REQUEST)
-            return
+            throw InvalidJob("bad job request")
         }
         if (req.connector != "quotes") {
-            call.respondText("unknown connector", HttpStatus.BAD_REQUEST)
-            return
+            throw InvalidJob("unknown connector")
         }
         if (req.url.indexOf("http://") != 0 && req.url.indexOf("https://") != 0) {
-            call.respondText("bad url", HttpStatus.BAD_REQUEST)
-            return
+            throw InvalidJob("bad url")
         }
         if (req.kind == "") {
-            call.respondText("bad kind", HttpStatus.BAD_REQUEST)
-            return
+            throw InvalidJob("bad kind")
         }
         if (req.maxAttempts <= 0) {
-            call.respondText("bad maxAttempts", HttpStatus.BAD_REQUEST)
-            return
+            throw InvalidJob("bad maxAttempts")
         }
         var key = req.url
         if (req.idempotencyKey != "") {
             key = req.idempotencyKey
         }
-        // Defaults now apply at deserialize: a missing kind arrives as
-        // "page", missing maxAttempts as 3, missing key as "" (→ url).
-        try {
-            if (this.store.enqueue(req.connector, req.url, req.kind, req.maxAttempts, key)) {
-                call.respondJson(["id" of (req.connector + "-" + key), "status" of "queued"].toJson(), HttpStatus.CREATED)
-            } else {
-                call.respondText("duplicate job", HttpStatus.CONFLICT)
-            }
-        } catch (e: DbError) {
-            call.respondText("store unreachable", HttpStatus.SERVICE_UNAVAILABLE)
+        val id = req.connector + "-" + key
+        if (this.store.enqueue(req.connector, req.url, req.kind, req.maxAttempts, key)) {
+            return CreatedJob(id, "queued")
         }
+        throw DuplicateJob(id)
     }
 
     fun serveArest(port: Int): Void {
@@ -161,13 +151,25 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val met
         arest(port) {
             routing {
                 get("/health") {
-                    respondJson(self.health().toJson())
+                    respondJson(self.storeHealth().toJson())
                 }
                 get("/metrics") {
                     respondText(self.metrics.render())
                 }
                 post("/jobs") {
-                    self.createJob(this)
+                    try {
+                        val created = self.createJob(this.request.body)
+                        respondJson(created.toJson(), HttpStatus.CREATED)
+                    } catch (e: InvalidJob) {
+                        respondJson(["error" of e.detail].toJson(), HttpStatus.BAD_REQUEST)
+                    } catch (e: DuplicateJob) {
+                        respondJson(["error" of "duplicate job"].toJson(), HttpStatus.CONFLICT)
+                    } catch (e: DbError) {
+                        respondJson(["error" of "store unreachable"].toJson(), HttpStatus.SERVICE_UNAVAILABLE)
+                    } catch (e) {
+                        Log.error { "unhandled job submit" }
+                        respondJson(["error" of "internal error"].toJson(), HttpStatus.INTERNAL_SERVER_ERROR)
+                    }
                 }
             }
         }

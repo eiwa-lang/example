@@ -10,7 +10,7 @@
 # never :latest). EIWA_BASELINE_CPU is already set there for portable
 # binaries under emulation.
 
-ARG EIWA_VERSION=v0.0.76
+ARG EIWA_VERSION=v0.0.79
 
 FROM eiwac/eiwa:${EIWA_VERSION} AS builder
 # libpq headers: the postgres package compiles its C wrapper via @Source.
