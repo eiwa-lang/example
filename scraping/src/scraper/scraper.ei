@@ -77,25 +77,31 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val met
     }
 
     fun runOnce(): String {
-        val job = this.store.claim()
-        if (job == null) {
-            this.metrics.bumpJobs("empty")
-            return "empty"
+        try {
+            val job = this.store.claim()
+            if (job == null) {
+                this.metrics.bumpJobs("empty")
+                return "empty"
+            }
+            Log.info { "job claimed: ${job.id} ${job.connector} attempt ${job.attempt}" }
+            if (job.connector == "quotes") {
+                return this.runQuotes(job)
+            }
+            this.store.fail(job.id, false, 0)
+            this.metrics.bumpJobs("unknown")
+            Log.info { "job dead: ${job.id} unknown connector ${job.connector}" }
+            return "unknown-" + job.connector
+        } catch (e: DbError) {
+            this.metrics.bumpJobs("store-down")
+            Log.error { "store unreachable in run loop" }
+            return "store-down"
         }
-        Log.info { "job claimed: ${job.id} ${job.connector} attempt ${job.attempt}" }
-        if (job.connector == "quotes") {
-            return this.runQuotes(job)
-        }
-        this.store.fail(job.id, false, 0)
-        this.metrics.bumpJobs("unknown")
-        Log.info { "job dead: ${job.id} unknown connector ${job.connector}" }
-        return "unknown-" + job.connector
     }
 
     fun run() {
         loop {
             val outcome = this.runOnce()
-            if (outcome == "empty") {
+            if (outcome == "empty" || outcome == "store-down") {
                 sleepMs(this.config.pollIntervalMs)
             }
         }

@@ -262,6 +262,22 @@ test "service: createJob validates without sockets" {
     }
 }
 
+test "service: runOnce survives store outage" {
+    val store = svcStore()
+    if (store == null) {
+        echo("service live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        val browser = Browser(["ws://127.0.0.1:28913"], 1)
+        val scraper = Scraper(svcConfig(), store, browser)
+        store.close()
+        assert(scraper.runOnce() == "store-down", "first")
+        assert(scraper.runOnce() == "store-down", "survives")
+        assert(scraper.metrics.jobCount("store-down") == 2, "metric")
+        browser.close()
+        store.close()
+    }
+}
+
 test "service: unknown connector dead-letters" {
     val store = svcStore()
     if (store == null) {
