@@ -211,6 +211,14 @@ type QuotesConnector(val browser: Browser, val store: Store) {
   `DATABASE_URL`, `CONCURRENCY`, `POLL_INTERVAL_MS`,
   `ARTIFACT_DIR`. `config.ei` validates at boot and fails fast
   with a usage error (never half-boot).
+- Local native builds need no extra env: the postgres wrapper
+  forward-declares libpq (no `<libpq-fe.h>`) and links `-lpq`.
+  `eiwa test` (JIT) still needs the keg-only lib path for files
+  touching postgres:
+  `LIBRARY_PATH=/opt/homebrew/opt/libpq/lib`
+  (`brew install libpq` once). Docker builds install
+  `libpq-dev` instead (see Dockerfile). There is no declarative
+  include support in `eiwa.yaml` yet.
 
 ## 9. Testing strategy
 
@@ -282,9 +290,9 @@ type QuotesConnector(val browser: Browser, val store: Store) {
 - **Known upstream issue (filed, not worked around here):**
   `fun main(): Int` breaks NATIVE builds (entry shim declares an
   i32 return while Eiwa `Int` is i64 → LLVM verification ICE;
-  JIT handles both). Services therefore use `fun main()` + loud
-  `assert` fail-fast until the language accepts `Int` mains or
-  ships a `process.exit`. Revisit when fixed upstream.
+  JIT handles both). Services therefore use `fun main()` + `exit(1)`
+  fail-fast (`std.system.exit`, single ERROR line, no runtime dump)
+  until the language accepts `Int` mains. Revisit when fixed upstream.
 - **Eiwa `Int?` never narrows** (only reference types do —
   `if (x == null) return` on an `Int?` still refuses `x + 1`).
   Counters and numeric optionals use Elvis (`map.get(k) ?: 0`).
@@ -292,6 +300,14 @@ type QuotesConnector(val browser: Browser, val store: Store) {
   A client connecting after the server closed segfaults (null
   socket deref in std `Client`/curl path) instead of failing
   cleanly. Always size `maxConn` for every request the test makes.
+- **Upstream (arest/lang): DTO defaults don't apply on deserialize.**
+  Missing keys yield `""`/`0`, ignoring declared defaults — the
+  `JobRequest` DTO therefore declares all fields required and the
+  API validates explicitly. Also: bare `receive<T>()` inside a
+  receiver lambda fails (`this.` explícito obrigatório), and an
+  assert failure while an arest server thread runs bus-errors
+  instead of reporting cleanly (test-only shape; prod asserts run
+  before serve starts, except the DbError path).
 - **Flaky timing in Docker** (proven browser-side: delayed-ACK
   stalls): same patience patterns (`drainWant`/`collectWant`
   equivalents) apply to any timing-sensitive service test.

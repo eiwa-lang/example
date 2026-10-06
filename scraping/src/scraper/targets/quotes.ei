@@ -29,8 +29,9 @@ type QuotesConnector(val browser: Browser?) {
     // notes; only transport-level nulls flow as booleans.
     fun fetch(job: Job): FetchResult {
         val b = browser
-        if (b == null)
+        if (b == null) {
             return failed("no-browser")
+        }
         return try {
             fetchPages(b, job)
         } catch (e: NoWorkerAvailable) {
@@ -90,14 +91,18 @@ type QuotesConnector(val browser: Browser?) {
     // Absolute resolution for pagination hrefs: absolute stays,
     // root-relative joins scheme+host of the seed URL.
     fun resolveUrl(base: String, href: String): String {
-        if (href.indexOf("http://") == 0 || href.indexOf("https://") == 0) return href
+        if (href.indexOf("http://") == 0 || href.indexOf("https://") == 0) {
+            return href
+        }
         if (href.indexOf("/") == 0) {
             val schemeEnd = base.indexOf("://")
-            if (schemeEnd < 0) return href
-
+            if (schemeEnd < 0) {
+                return href
+            }
             val hostEnd = base.indexOf("/", schemeEnd + 3)
-            if (hostEnd < 0) return base + href
-
+            if (hostEnd < 0) {
+                return base + href
+            }
             return base.substring(0, hostEnd) + href
         }
         return href

@@ -4,9 +4,14 @@ output: scraper
 
 dependencies:
   postgres:
-    path: ../../postgres
+    github: eiwa-lang/postgres
+    branch: main
   browser:
-    path: ../../browser
+    github: eiwa-lang/browser
+    branch: main
+  arest:
+    github: eiwa-lang/arest
+    branch: main
   crypto:
     github: eiwa-lang/crypto
     branch: main

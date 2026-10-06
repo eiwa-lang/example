@@ -1,6 +1,6 @@
 // Scraper service entry: config → store → browser → run loop.
 // Health/metrics serve in a background task; the main task claims jobs.
-import { assert } from "std.core"
+import { exit } from "std.system"
 import { Log } from "std.log"
 import { DbError } from "std.db"
 import { Postgres } from "postgres"
@@ -16,16 +16,16 @@ fun main() {
         store.migrate()
         val scraper = Scraper(config, store, Browser(config.browserWorkers, config.concurrency))
         val health = task {
-            scraper.serve(9090, -1)
+            scraper.serveArest(9090)
         }
         Log.info { "scraper boot: ${config.concurrency} workers, ${config.browserWorkers.size()} browser endpoint(s)" }
         scraper.run(-1)
         scraper.close()
     } catch (e: InvalidConfig) {
         Log.error { "invalid config: ${e.message()}" }
-        assert(false, "invalid-config")
+        exit(1)
     } catch (e: DbError) {
         Log.error { "store unreachable: ${e.message}" }
-        assert(false, "store-unreachable")
+        exit(1)
     }
 }

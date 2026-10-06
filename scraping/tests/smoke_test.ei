@@ -3,6 +3,9 @@ import { Env } from "std.env"
 import { InvalidConfig, loadConfig, splitCsv, parsePositive } from ".scraper.config"
 
 fun validEnv(): Void {
+    // Load first so explicit sets below win over repo .env values
+    // (Env.get auto-loads once per process, overwriting unconditionally).
+    Env.load()
     Env.set("BROWSER_WORKERS", "ws://browser-worker:8080")
     Env.set("DATABASE_URL", "postgres://scraper:scraper@localhost:5432/scraping")
     Env.set("CONCURRENCY", "4")
@@ -11,6 +14,7 @@ fun validEnv(): Void {
 }
 
 fun cleanEnv(): Void {
+    Env.load()
     Env.unset("BROWSER_WORKERS")
     Env.unset("DATABASE_URL")
     Env.unset("CONCURRENCY")

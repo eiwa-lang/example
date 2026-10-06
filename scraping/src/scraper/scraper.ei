@@ -2,12 +2,15 @@
 // health. Owns orchestration; connectors own fetching, Store owns SQL.
 import { Closeable } from "std.core"
 import { repeat } from "std.system"
-import { TCPServer, Socket } from "std.net"
 import { sleepMs } from "std.time"
 import { DbError } from "std.db"
+import { JsonValue, parseJson } from "std.json"
+import { Serializable } from "std.serde"
+import { Json } from "std.json"
 import { Browser } from "browser.browser"
-import { writeAll } from "browser.net.ws"
-import { readHttpRequest } from "browser.net.ws_server"
+import { arest } from "arest.arest"
+import { ApplicationCall } from "arest.server.application_call"
+import { HttpStatus } from "std.http"
 import { Config } from ".scraper.config"
 import { Job, backoffMs, shouldRetry } from ".scraper.job"
 import { Store } from ".scraper.store"
@@ -22,6 +25,14 @@ fun retryableNote(note: String): Bool {
     }
     return false
 }
+
+type JobRequest(
+    val connector: String,
+    val url: String,
+    val kind: String = "page",
+    val maxAttempts: Int = 3,
+    val idempotencyKey: String = ""
+) : Serializable + Json
 
 type Scraper(val config: Config, val store: Store, val browser: Browser, val metrics: Metrics = Metrics()) : Closeable {
 
@@ -98,59 +109,68 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val met
         }
     }
 
-    fun metricsResponse(): String {
-        val body = this.metrics.render()
-        return "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${body.length}\r\nConnection: close\r\n\r\n$body"
-    }
-
-    fun healthResponse(): String {
-        val body = this.health()
-        return "HTTP/1.0 200 OK\r\nContent-Type: application/json\r\nContent-Length: ${body.length}\r\nConnection: close\r\n\r\n$body"
-    }
-
-    fun notFoundResponse(): String {
-        return "HTTP/1.0 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
-    }
-
-    fun route(head: String): String {
-        if (head.indexOf("GET /metrics") == 0) {
-            return this.metricsResponse()
+    // POST /jobs body is a JobRequest DTO (arest deserializes shape;
+    // domain rules stay here). Strict at the boundary: unknown
+    // connector, bad url, or malformed fields fail fast instead of
+    // dead-lettering later.
+    fun createJob(call: ApplicationCall): Void {
+        val req = try {
+            call.receive<JobRequest>()
+        } catch (e: Throwable) {
+            null
         }
-        if (head.indexOf("GET /health") == 0) {
-            return this.healthResponse()
-        }
-        return this.notFoundResponse()
-    }
-
-    fun serve(port: Int, maxConn: Int): Int {
-        val server = TCPServer()
-        if (server.bind(port) == false) {
-            return -1
-        }
-        var served = 0
-        var idle = 0
-        while ((maxConn < 0 || served < maxConn) && idle <= 1200) {
-            val conn = server.accept()
-            if (conn == null) {
-                idle = idle + 1
-            } else {
-                idle = 0
-                served = served + 1
-                this.serveOne(conn)
-            }
-        }
-        server.close()
-        return served
-    }
-
-    fun serveOne(conn: Socket): Void {
-        val head = readHttpRequest(conn)
-        if (head == null) {
-            conn.close()
+        if (req == null) {
+            call.respondText("bad job request", HttpStatus.BAD_REQUEST)
             return
         }
-        writeAll(conn, this.route(head))
-        conn.close()
+        if (req.connector != "quotes") {
+            call.respondText("unknown connector", HttpStatus.BAD_REQUEST)
+            return
+        }
+        if (req.url.indexOf("http://") != 0 && req.url.indexOf("https://") != 0) {
+            call.respondText("bad url", HttpStatus.BAD_REQUEST)
+            return
+        }
+        if (req.kind == "") {
+            call.respondText("bad kind", HttpStatus.BAD_REQUEST)
+            return
+        }
+        if (req.maxAttempts <= 0) {
+            call.respondText("bad maxAttempts", HttpStatus.BAD_REQUEST)
+            return
+        }
+        var key = req.url
+        if (req.idempotencyKey != "") {
+            key = req.idempotencyKey
+        }
+        // Defaults now apply at deserialize: a missing kind arrives as
+        // "page", missing maxAttempts as 3, missing key as "" (→ url).
+        try {
+            if (this.store.enqueue(req.connector, req.url, req.kind, req.maxAttempts, key)) {
+                call.respondJson("{\"id\": \"" + req.connector + "-" + key + "\", \"status\": \"queued\"}", HttpStatus.CREATED)
+            } else {
+                call.respondText("duplicate job", HttpStatus.CONFLICT)
+            }
+        } catch (e: DbError) {
+            call.respondText("store unreachable", HttpStatus.SERVICE_UNAVAILABLE)
+        }
+    }
+
+    fun serveArest(port: Int): Void {
+        val self = this
+        arest(port) {
+            routing {
+                get("/health") {
+                    respondJson(self.health())
+                }
+                get("/metrics") {
+                    respondText(self.metrics.render())
+                }
+                post("/jobs") {
+                    self.createJob(this)
+                }
+            }
+        }
     }
 
     implement fun close(): Void {

@@ -18,12 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 # The JIT C compiler only searches default include dirs.
 ENV C_INCLUDE_PATH=/usr/include/postgresql
-# Local path dependencies (../postgres) do not exist in the build
-# context; mount them as named contexts (compose additional_contexts)
-# and resolve via --module-path. Keep the last COPY in sync.
-COPY --from=postgres src /postgres/src
-COPY --from=postgres eiwa.yaml /postgres/eiwa.yaml
-COPY --from=browser src /browser/src
+# Dependencies resolve from git (eiwa.yaml) into the module
+# repository — no local checkouts or extra build contexts needed.
 WORKDIR /src
 COPY eiwa.yaml eiwa.yaml
 COPY src src
@@ -32,10 +28,10 @@ COPY tests tests
 # fails the image here. PG-backed tests skip without a database (their
 # skip is the honest signal); live store proof runs against compose
 # postgres (see PLAN Phase 1).
-RUN eiwa test --no-cache --module-path /postgres/src --module-path /browser/src
+RUN eiwa test --no-cache
 # NOTE: `eiwa build -o` rejects absolute paths (mkdir -p with empty
 # operand), so build relative then move.
-RUN eiwa build --module-path /postgres/src --module-path /browser/src -o scraper && mkdir -p /out && mv scraper /out/scraper
+RUN eiwa build -o scraper && mkdir -p /out && mv scraper /out/scraper
 
 FROM debian:trixie-slim
 # Native binary links Boehm GC + libpq + libcurl at runtime.

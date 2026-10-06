@@ -2,6 +2,7 @@ import { assert } from "std.core"
 import { parseJson } from "std.json"
 import { sleepMs } from "std.time"
 import { Env } from "std.env"
+import { Threads } from "std.thread"
 import { TCPServer, Socket } from "std.net"
 import { buildFrame, wsRecv, writeAll, wsConnect } from "browser.net.ws"
 import { readHttpRequest, answerHandshake } from "browser.net.ws_server"
@@ -214,7 +215,7 @@ test "service: runOnce completes a quotes job end to end" {
         assert(rows.get(1).string("payload").indexOf("Author two") >= 0, "second")
         assert(scraper.runOnce() == "empty", "drained")
         assert(scraper.health().indexOf("\"status\": \"ok\"") >= 0, "health")
-        assert(scraper.metricsResponse().indexOf("scrape_jobs_total{outcome=\"done\"} 1") >= 0, "metrics")
+        assert(scraper.metrics.render().indexOf("scrape_jobs_total{outcome=\"done\"} 1") >= 0, "metrics")
         store.deleteJob("quotes-svc-1")
         browser.close()
         store.close()
@@ -241,7 +242,7 @@ test "service: unknown connector dead-letters" {
     }
 }
 
-test "service: serve answers metrics and health" {
+test "service: api serves health, metrics and job submit" {
     val store = svcStore()
     if (store == null) {
         echo("service live: skip (set SCRAPER_TEST_DATABASE_URL)")
@@ -249,10 +250,12 @@ test "service: serve answers metrics and health" {
         val browser = Browser(["ws://127.0.0.1:28913"], 1)
         val scraper = Scraper(svcConfig(), store, browser)
         scraper.metrics.bumpJobs("done")
-        val srv = task {
-            scraper.serve(28914, 3)
+        // Daemon thread by design: arest() blocks serving; the port is
+        // unique to this file and dies with the test process.
+        val srv = Threads.spawn {
+            scraper.serveArest(28914)
         }
-        sleepMs(150)
+        sleepMs(300)
         val http = Client()
         val m = http.get("http://127.0.0.1:28914/metrics")
         assert(m.status == 200, "metrics-status")
@@ -260,10 +263,29 @@ test "service: serve answers metrics and health" {
         val h = http.get("http://127.0.0.1:28914/health")
         assert(h.status == 200, "health-status")
         assert(h.body.indexOf("\"status\": \"ok\"") >= 0, "health-body")
+        store.deleteJob("quotes-api-3")
+        val created = http.post("http://127.0.0.1:28914/jobs", "{\"connector\": \"quotes\", \"url\": \"https://example.com/\", \"kind\": \"page\", \"maxAttempts\": 3, \"idempotencyKey\": \"api-3\"}")
+        assert(created.status == 201, "created-status")
+        assert(created.body.indexOf("quotes-api-3") >= 0, "created-id")
+        store.deleteJob("quotes-api-4")
+        val defaulted = http.post("http://127.0.0.1:28914/jobs", "{\"connector\": \"quotes\", \"url\": \"https://example.com/\"}")
+        assert(defaulted.status == 201, "defaulted-status")
+        assert(defaulted.body.indexOf("quotes-https://example.com/") >= 0, "defaulted-id")
+        val dupe = http.post("http://127.0.0.1:28914/jobs", "{\"connector\": \"quotes\", \"url\": \"https://example.com/\", \"kind\": \"page\", \"maxAttempts\": 3, \"idempotencyKey\": \"api-3\"}")
+        assert(dupe.status == 409, "duplicate")
+        val badConnector = http.post("http://127.0.0.1:28914/jobs", "{\"connector\": \"nope\", \"url\": \"https://example.com/\"}")
+        assert(badConnector.status == 400, "bad-connector")
+        val badUrl = http.post("http://127.0.0.1:28914/jobs", "{\"connector\": \"quotes\", \"url\": \"not-a-url\"}")
+        assert(badUrl.status == 400, "bad-url")
+        val garbage = http.post("http://127.0.0.1:28914/jobs", "not json")
+        assert(garbage.status == 400, "garbage")
         val miss = http.get("http://127.0.0.1:28914/nope")
         assert(miss.status == 404, "not-found")
+        // No worker on 28913: goto fails closed, job dead-letters.
+        assert(scraper.runOnce() == "dead-browser-goto-failed", "outcome")
+        store.deleteJob("quotes-api-3")
+        store.deleteJob("quotes-https://example.com/")
         browser.close()
         store.close()
-        srv.await()
     }
 }

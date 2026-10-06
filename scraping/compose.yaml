@@ -27,13 +27,14 @@ services:
       dockerfile: Dockerfile
       args:
         EIWA_VERSION: v0.0.76
+    ports:
+      - "127.0.0.1:18080:8080"
 
   scraper:
     build:
       context: .
-      additional_contexts:
-        postgres: ../../postgres
-        browser: ../../browser
+    ports:
+      - "127.0.0.1:9090:9090"
     environment:
       BROWSER_WORKERS: ws://browser-worker:8080
       DATABASE_URL: postgres://scraper:scraper@postgres:5432/scraping
