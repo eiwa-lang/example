@@ -27,7 +27,7 @@ test "connector: normalize validates and skips malformed entries" {
 test "connector: records round-trip through json" {
     val c = QuotesConnector(null)
     val recs = c.normalize(recordsJson())
-    val back = c.normalize(c.recordsToJson(recs))
+    val back = c.normalize(recs.toJson())
     assert(back.size() == 2, "count")
     assert(back.get(1).author == "John Smith", "author")
 }

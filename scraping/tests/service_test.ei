@@ -214,7 +214,7 @@ test "service: runOnce completes a quotes job end to end" {
         assert(rows.get(0).string("payload").indexOf("Quote one") >= 0, "first")
         assert(rows.get(1).string("payload").indexOf("Author two") >= 0, "second")
         assert(scraper.runOnce() == "empty", "drained")
-        assert(scraper.health().indexOf("\"status\": \"ok\"") >= 0, "health")
+        assert(scraper.health().toJson().indexOf("\"status\": \"ok\"") >= 0, "health")
         assert(scraper.metrics.render().indexOf("scrape_jobs_total{outcome=\"done\"} 1") >= 0, "metrics")
         store.deleteJob("quotes-svc-1")
         browser.close()

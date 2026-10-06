@@ -4,7 +4,6 @@ import { Closeable } from "std.core"
 import { repeat } from "std.system"
 import { sleepMs } from "std.time"
 import { DbError } from "std.db"
-import { JsonValue, parseJson } from "std.json"
 import { Serializable } from "std.serde"
 import { Json } from "std.json"
 import { Browser } from "browser.browser"
@@ -33,6 +32,8 @@ type JobRequest(
     val maxAttempts: Int = 3,
     val idempotencyKey: String = ""
 ) : Serializable + Json
+
+type HealthBody(val status: String, val pending: Int) : Serializable + Json
 
 type Scraper(val config: Config, val store: Store, val browser: Browser, val metrics: Metrics = Metrics()) : Closeable {
 
@@ -70,7 +71,7 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val met
         }
         val recs = connector.normalize(res.body)
         repeat(recs.size()) { i ->
-            this.store.insertRecord(job.id, job.connector, connector.encodeRecord(recs.get(i)), job.url, job.id + "-" + i.toString())
+            this.store.insertRecord(job.id, job.connector, recs.get(i).toJson(), job.url, job.id + "-" + i.toString())
         }
         this.store.complete(job.id)
         this.metrics.bumpJobs("done")
@@ -100,12 +101,11 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val met
         return done
     }
 
-    fun health(): String {
+    fun health(): HealthBody {
         try {
-            val pending = this.store.pendingCount()
-            return "{\"status\": \"ok\", \"pending\": $pending}"
+            return HealthBody("ok", this.store.pendingCount())
         } catch (e: DbError) {
-            return "{\"status\": \"degraded\", \"reason\": \"store-unreachable\"}"
+            return HealthBody("degraded", -1)
         }
     }
 
@@ -147,7 +147,7 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val met
         // "page", missing maxAttempts as 3, missing key as "" (→ url).
         try {
             if (this.store.enqueue(req.connector, req.url, req.kind, req.maxAttempts, key)) {
-                call.respondJson("{\"id\": \"" + req.connector + "-" + key + "\", \"status\": \"queued\"}", HttpStatus.CREATED)
+                call.respondJson(["id" of (req.connector + "-" + key), "status" of "queued"].toJson(), HttpStatus.CREATED)
             } else {
                 call.respondText("duplicate job", HttpStatus.CONFLICT)
             }
@@ -161,7 +161,7 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val met
         arest(port) {
             routing {
                 get("/health") {
-                    respondJson(self.health())
+                    respondJson(self.health().toJson())
                 }
                 get("/metrics") {
                     respondText(self.metrics.render())

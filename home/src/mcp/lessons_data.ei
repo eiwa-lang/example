@@ -123,7 +123,11 @@ object LessonsData {
             return "### Lesson 14: Serialize Without Reflection\n" +
                 "Types opt in with `: Serializable + Json`, then `toJson(): String`; decode with `fromJson<T>(raw)`. " +
                 "There is NO `Json.encode/Json.decode`.\n\n" +
-                "```kotlin\nimport { Serializable } from \"std.serde\"\nimport { Json } from \"std.json\"\nimport { fromJson } from \"std.json\"\n\ntype User(val id: Int, val name: String) : Serializable + Json\n\nfun main() {\n    val user = User(1, \"Alice\")\n    val raw = user.toJson()\n    println(raw)\n    val back: User = fromJson<User>(raw)\n    println(back.name)\n}\n```"
+                "```kotlin\nimport { Serializable } from \"std.serde\"\nimport { Json } from \"std.json\"\nimport { fromJson } from \"std.json\"\n\ntype User(val id: Int, val name: String) : Serializable + Json\n\nfun main() {\n    val user = User(1, \"Alice\")\n    val raw = user.toJson()\n    println(raw)\n    val back: User = fromJson<User>(raw)\n    println(back.name)\n}\n```\n\n" +
+                "Do NOT hand-roll JSON: `List<T>` already carries `+ Json`, so collections serialize with plain `records.toJson()` " +
+                "(no extension needed) and decode with `fromJson<List<T>>(raw)`. Never drill `JsonValue`/`get`/`asString`/`jsonObject` " +
+                "for DTO shapes — declare the type and let derive handle both directions; keep only domain validation explicit " +
+                "(derived decode yields `\"\"`/`0` for absent keys, so reject empties yourself)."
         }
         if (query == "15" || query == "smartcast") {
             return "### Lesson 15: Smart Casts (Null + Contract Narrowing)\n" +
