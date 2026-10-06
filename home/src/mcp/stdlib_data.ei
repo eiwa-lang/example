@@ -89,10 +89,11 @@ object StdlibData {
         }
         if (module == "system" || module == "std.system") {
             return "## std.system — Loops, Sleep, Park, Exit\n\n" +
-                "`loop(@Leaveable block: () -> Void)` (infinite), `repeat(count: Int, @Leaveable block: (Int) -> Void)`, " +
-                "`retry(times: Int, @Leaveable block: (Int) -> Void)` (rethrows last Throwable; `leave` aborts quietly), " +
+                "`loop(block: () -> Void)` (infinite), `repeat(count: Int, block: (Int) -> Void)`, " +
+                "`retry(times: Int, block: (Int) -> Void)` (rethrows last Throwable; `leave` aborts quietly), " +
                 "`sleep(seconds: Int): Void`, `sleepMs(ms: Int): Void`, `yield(): Void`, `exit(code: Int): Void`.\n\n" +
-                "No `continue` in Eiwa. In `@Leaveable` blocks bare `leave` ends the whole loop (desugars to `throw Leave()`, caught internally).\n\n" +
+                "No `continue` in Eiwa. `repeat`/`loop` are `@Embed`: bare `leave` ends the whole loop, and `leave v` delivers `v` as the call value (`T?`, `null` when the loop completes). " +
+                "Custom loop drivers get the same by marking the function `@Embed` and invoking the block directly.\n\n" +
                 "`park(): Void` parks the calling thread FOREVER at 0% CPU (un-signaled cond wait) — the idiom to keep `main` alive until the process is killed. Never suspends, never use inside `task {}`.\n\n" +
                 "Outside `task {}`, `sleep/sleepMs/yield` block the calling thread (nanosleep/sched_yield); written directly inside a `task {}` body they become cooperative suspension points.\n\n" +
                 "```kotlin\nrepeat(3) { i -> println(i) }\nretry(3) { attempt -> println(attempt) }\npark()\n```"

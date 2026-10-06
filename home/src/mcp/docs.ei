@@ -41,7 +41,7 @@ type Docs() {
             "  - `for (numbers) { idx, n -> println(\"\$idx: \$n\") }` (index & item)\n" +
             "- `while (cond) { ... }`\n" +
             "- Higher-order loops: `repeat(count) { it -> ... }`, `loop { ... }` (infinite), `retry(times) { attempt -> ... }`.\n" +
-            "- No `continue` in Eiwa: `leave` always exits the loop entirely; skipping an iteration is written with `if`/`else`. In `@Leaveable` blocks (`repeat`/`loop`/`retry`), bare `leave` ends the whole loop."
+            "- No `continue` in Eiwa: `leave` always exits the loop entirely; skipping an iteration is written with `if`/`else`. In `repeat`/`loop` (both `@Embed`), bare `leave` ends the whole loop and `leave v` delivers `v` as the call value (`T?`, `null` on completion)."
     }
 
     fun section4Strings(): String {
@@ -324,7 +324,7 @@ type Docs() {
             "- `std.core`: `String/Int/Double/Bool/Pointer`, contracts (`Stringable/Equatable/Hashable/Runnable/Closeable/Awaitable`), skill `Scope<T>` (`let/also/apply/run/takeIf/takeUnless`), `with/use`, `Memory.alloc`.\n" +
             "- `std.collections`: `List/MutableList` (`add/addAll/plus/get/set/remove/size/freeze/mut/contains/indexOf/first/last/isEmpty/isNotEmpty/slice/skip/take/skipLast/takeLast`, contracts `Slicable/Indexed/Searchable`, skills `Slicing/Appending/Searching`), `Map/MutableMap` (`put/get/keys/values/freeze/mut`), `Set/MutableSet`, `String.split(delimiter)`.\n" +
             "- `std.math`: `Math` (`sin/cos/tan/sqrt/pow/abs/floor/ceil/round`) + top-level `mod(a, b)`.\n" +
-            "- `std.system`: `loop/repeat/retry/sleep/sleepMs/yield/park/exit` (`@Leaveable` blocks: bare `leave` ends the whole loop).\n" +
+            "- `std.system`: `loop/repeat/retry/sleep/sleepMs/yield/park/exit` (`repeat`/`loop` are `@Embed`: bare `leave` ends the loop, `leave v` delivers the call value).\n" +
             "- `std.exceptions`: `Throwable/Exception/AssertionException`, `ControlFlow/Leave` (bypass generic handlers), `error(msg)`, `assert(cond)`.\n" +
             "- `std.io`: `print/println/echo/printWelcome`, skill `Echoable`.\n" +
             "- `std.fs`: `File(path)` (`read/write/delete/exists`) + `File.read/write/delete/exists(path)` shortcuts.\n" +

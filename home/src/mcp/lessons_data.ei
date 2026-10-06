@@ -63,7 +63,7 @@ object LessonsData {
             return "### Lesson 04: Repeat and Loops\n" +
                 "`repeat(n) { ... }`, `while (cond) { ... }`, and `loop { ... }`.\n\n" +
                 "```kotlin\nfun main() {\n    repeat(3) { idx ->\n        println(\"Step \$idx\")\n    }\n}\n```\n" +
-                "There is no `continue` in Eiwa. In `repeat`/`loop`/`retry` (whose block is `@Leaveable`), bare `leave` ends the whole loop."
+                "There is no `continue` in Eiwa. In `repeat`/`loop` (both `@Embed`), bare `leave` ends the whole loop, and `leave v` delivers `v` as the call value (`T?`, `null` when the loop completes)."
         }
         if (query == "5" || query == "05" || query == "strings") {
             return "### Lesson 05: Escape Sequences, Multiline & Stringable\n" +
@@ -261,8 +261,9 @@ object LessonsData {
                 "`leave` exits the innermost `while`/`for` loop. There is no `continue` — skipping an iteration is written with `if`/`else`. " +
                 "Inside a lambda, `return` is forbidden; `leave value` exits the lambda early with that value instead. " +
                 "`leave` outside any loop or lambda, and `leave` inside `task {}` blocks, are compile-time errors. " +
-                "In `repeat`/`loop`/`retry` blocks (whose parameter is `@Leaveable`), bare `leave` ends the whole loop: it desugars to `throw Leave()`, caught internally by the helper. " +
-                "Custom loop drivers opt in with `@Leaveable` on the block parameter and must catch `Leave` around the invocation.\n\n" +
+                "In `repeat`/`loop` blocks (both `@Embed`), bare `leave` ends the whole loop. " +
+                "`leave v` delivers `v` as the call value (`T?`, `null` when the loop completes). " +
+                "Custom loop drivers opt in by marking the function `@Embed` and invoking the block directly.\n\n" +
                 "```kotlin\n" +
                 "var total = 0\n" +
                 "for ([1, 2, 3, 4, 5]) { n ->\n" +
