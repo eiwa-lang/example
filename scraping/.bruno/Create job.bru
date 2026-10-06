@@ -1,0 +1,25 @@
+meta {
+  name: Create job
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/jobs
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "connector": "quotes",
+    "url": "https://quotes.toscrape.com/",
+    "kind": "page",
+    "maxAttempts": 3,
+    "idempotencyKey": "bruno-1"
+  }
+}

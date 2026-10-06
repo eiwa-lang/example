@@ -1,0 +1,22 @@
+meta {
+  name: Create job minimal
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/jobs
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "connector": "quotes",
+    "url": "https://quotes.toscrape.com/"
+  }
+}
