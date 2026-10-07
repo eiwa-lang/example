@@ -83,8 +83,11 @@ deterministic via a local fake file server (browser's
 
 - **Scraper**: owns config, the job queue loop, connector dispatch,
   metrics endpoint. One process, N worker tasks.
-- **Connector**: per-target handle (`QuotesConnector` for the MVP
+- **Connector (SUPERSEDED por `docs/PIPELINE.md` — mantido para histórico):**
+  per-target handle (`QuotesConnector` for the MVP
   target `quotes.toscrape.com`, `JudicialConnector` in Phase 5, ...).
+  Decisão atual: nenhum connector por alvo; `PipelineRunner` genérico +
+  `pipelines/*.json` (só o pipeline conhece produto/página/regras).
   Each implements:
   `fetch(job): FetchResult` (HTTP-first, browser fallback),
   `normalize(raw): Record`. Connectors never touch sockets directly
@@ -165,7 +168,7 @@ validated against per-connector schema before insert (reject, don't
 coerce); artifacts hashed (sha256) and deduplicated by
 `(sha256, connector)`.
 
-## 6. Connector contract (draft API)
+## 6. Connector contract (SUPERSEDED por `docs/PIPELINE.md` — histórico abaixo)
 
 ```eiwa
 type FetchResult(val kind: String, val body: String)
