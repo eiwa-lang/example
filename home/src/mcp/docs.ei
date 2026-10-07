@@ -123,7 +123,8 @@ type Docs() {
         return "# Section 10: Pattern Matching (when Expressions)\n\n" +
             "`when` acts as an expression or statement:\n" +
             "```kotlin\nval label = when (status) {\n    200 -> \"OK\"\n    404 -> \"Not Found\"\n    else -> \"Unknown\"\n}\n```\n" +
-            "Supports multiple matches (`200, 201 -> ...`), ranges, contract checks (`is Contract -> ...`), and type casts."
+            "Supports multiple matches (`200, 201 -> ...`), ranges, contract checks (`is Contract -> ...`), and type casts. " +
+            "A `when` over a closed `union` needs no `else` but must cover every member (missing member = compile error)."
     }
 
     fun typeSystem(): String {
@@ -133,8 +134,10 @@ type Docs() {
             "2. **`contract`:** Pure API signature without state or method bodies.\n" +
             "3. **`skill`:** Reusable behavior with method bodies. Borrows contracts via `:` which are fulfilled by the host `type`.\n" +
             "4. **`object`:** Singleton for static state and companion namespaces (`} object {`).\n" +
-            "5. **`implement`:** Mandatory keyword inside `type` to implement contract methods or resolve ambiguities.\n\n" +
-            "```kotlin\ncontract Named { fun getName(): String }\nskill FormalGreeter : Named { fun greet(): String = \"Hello, \${getName()}\" }\ntype User(val name: String) : Named + FormalGreeter {\n    implement fun getName(): String = name\n}\n```"
+            "5. **`implement`:** Mandatory keyword inside `type` to implement contract methods or resolve ambiguities.\n" +
+            "6. **`union`:** Closed sum over member `type`s (`union Step { Goto, Collect }`). Members must be concrete `Serializable` types; a `when` without `else` must cover every member (missing member = compile error); serialization dispatches on a single wrapper key (`{\"goto\": {...}}`, lowercased member name or `@Alias`).\n\n" +
+            "```kotlin\ncontract Named { fun getName(): String }\nskill FormalGreeter : Named { fun greet(): String = \"Hello, \${getName()}\" }\ntype User(val name: String) : Named + FormalGreeter {\n    implement fun getName(): String = name\n}\n```\n\n" +
+            "```kotlin\ntype Goto(val url: String) : Serializable\ntype Collect(val selector: String) : Serializable\nunion Step { Goto, Collect }\nval s: Step = fromJson<Step>(\"{\\\"goto\\\": {\\\"url\\\": \\\"https://x/\\\"}}\")\nval label = when (s) {\n    is Goto -> s.url\n    is Collect -> s.selector\n}\n```"
     }
 
     fun coroutines(): String {
@@ -153,7 +156,9 @@ type Docs() {
             "Direct LLVM compile-time schema generation with zero runtime reflection overhead. " +
             "Types opt in with `: Serializable + Json`, serialize with `toJson(): String`, decode with `fromJson<T>(raw: String): T`. " +
             "There is NO `Json.encode/Json.decode`.\n\n" +
-            "```kotlin\nimport { Serializable } from \"std.serde\"\nimport { Json } from \"std.json\"\nimport { fromJson } from \"std.json\"\n\ntype User(val id: Int, val name: String) : Serializable + Json\n\nval u = User(1, \"Alice\")\nval raw = u.toJson()\nval decoded: User = fromJson<User>(raw)\n```"
+            "```kotlin\nimport { Serializable } from \"std.serde\"\nimport { Json } from \"std.json\"\nimport { fromJson } from \"std.json\"\n\ntype User(val id: Int, val name: String) : Serializable + Json\n\nval u = User(1, \"Alice\")\nval raw = u.toJson()\nval decoded: User = fromJson<User>(raw)\n```\n\n" +
+            "Closed `union`s dispatch on a single wrapper key (`{\"goto\": {...}}`): unknown tags and 0/2+ keys throw `Exception` with detail; " +
+            "`List<Step>` and direct `Step` fields decode element-wise; encode via `s.serialize()` (a union value is not itself `Serializable`, so the tag is never dropped silently)."
     }
 
     fun section14SmartCast(): String {

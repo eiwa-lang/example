@@ -139,10 +139,12 @@ object LessonsData {
                 "Limits (v1): `val` only (`var` never narrows); reference types only (`Int?`/`Bool?`/`Double?` still need `?.`/`!!`); " +
                 "`while` conditions do not narrow; redundant `?.`/`!!` on a narrowed value warns but passes."
         }
-        if (query == "16" || query == "enum") {
+        if (query == "16" || query == "enum" || query == "union") {
             return "### Lesson 16: Model Variants with Enum\n" +
                 "Enums model discrete variants and state sets.\n\n" +
-                "```kotlin\nenum Status { PENDING, RUNNING, DONE }\n\nfun main() {\n    val s = Status.RUNNING\n    println(s.name())\n}\n```"
+                "```kotlin\nenum Status { PENDING, RUNNING, DONE }\n\nfun main() {\n    val s = Status.RUNNING\n    println(s.name())\n}\n```\n\n" +
+                "When variants carry different payloads, use a closed `union` (members are `Serializable` types, dispatch is a single wrapper key, `when` needs no `else`):\n\n" +
+                "```kotlin\ntype Goto(val url: String) : Serializable\ntype Collect(val selector: String) : Serializable\nunion Step { Goto, Collect }\n\nfun main() {\n    val s: Step = fromJson<Step>(\"{\\\"goto\\\": {\\\"url\\\": \\\"https://x/\\\"}}\")\n    val label = when (s) {\n        is Goto -> s.url\n        is Collect -> s.selector\n    }\n    println(label)\n}\n```"
         }
         if (query == "17" || query == "generics") {
             return "### Lesson 17: Write Once with Generics\n" +
