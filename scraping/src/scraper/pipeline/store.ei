@@ -1,0 +1,24 @@
+// PipelineStore: loads versioned pipeline JSON from disk. Read-through
+// on every load (no cache in v1; cache arrives with the reload endpoint).
+// File content always enters via parsePipeline (fromJson + validate).
+import { File } from "std.fs"
+import { Pipeline, PipelineNotFound, parsePipeline } from ".scraper.pipeline.pipeline"
+
+type PipelineStore(val dir: String) {
+
+    fun path(name: String): String {
+        return this.dir + "/" + name + ".json"
+    }
+
+    fun load(name: String): Pipeline {
+        val raw = try {
+            File.read(this.path(name))
+        } catch (e) {
+            throw PipelineNotFound(name)
+        }
+        if (raw == "") {
+            throw PipelineNotFound(name)
+        }
+        return parsePipeline(raw)
+    }
+}

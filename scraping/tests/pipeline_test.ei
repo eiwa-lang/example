@@ -1,0 +1,109 @@
+import { assert } from "std.core"
+import { InvalidPipeline, PipelineNotFound, parsePipeline, Goto, Collect, Paginate } from ".scraper.pipeline.pipeline"
+import { PipelineStore } from ".scraper.pipeline.store"
+
+fun quotesFixture(): String {
+    return "{\"name\": \"quotes\", \"steps\": [{\"goto\": {\"url\": \"https://quotes.toscrape.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 15000}}, {\"collect\": {\"selector\": \"div.quote\", \"fields\": [{\"name\": \"text\", \"selector\": \"span.text\", \"many\": false, \"attr\": \"\"}, {\"name\": \"author\", \"selector\": \"small.author\", \"many\": false, \"attr\": \"\"}, {\"name\": \"tags\", \"selector\": \"a.tag\", \"many\": true, \"attr\": \"\"}]}}, {\"paginate\": {\"selector\": \"li.next a\", \"maxPages\": 100}}], \"required\": [\"text\", \"author\"]}"
+}
+
+fun invalidFixture(raw: String): Bool {
+    try {
+        parsePipeline(raw)
+        return false
+    } catch (e: InvalidPipeline) {
+        return true
+    }
+}
+
+test "pipeline: quotes fixture parses and validates" {
+    val p = parsePipeline(quotesFixture())
+    assert(p.name == "quotes", "name")
+    assert(p.steps.size() == 3, "steps")
+    assert(p.steps.get(0) is Goto, "goto")
+    assert(p.steps.get(1) is Collect, "collect")
+    assert(p.steps.get(2) is Paginate, "paginate")
+    assert((p.steps.get(1) as Collect).fields.size() == 3, "fields")
+    assert((p.steps.get(1) as Collect).fields.get(2).many == true, "tags-many")
+    assert(p.fieldNames().size() == 3, "names")
+}
+
+test "pipeline: unknown step tag is rejected" {
+    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"fly\": {}}], \"required\": []}"
+    assert(invalidFixture(raw), "tag")
+}
+
+test "pipeline: first step must be goto" {
+    val raw = "{\"name\": \"q\", \"steps\": [{\"collect\": {\"selector\": \"\", \"fields\": [{\"name\": \"n\", \"selector\": \".n\", \"many\": false, \"attr\": \"\"}]}}], \"required\": []}"
+    assert(invalidFixture(raw), "order")
+}
+
+test "pipeline: collect without fields is rejected" {
+    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"collect\": {\"selector\": \"div.x\", \"fields\": []}}], \"required\": []}"
+    assert(invalidFixture(raw), "fields")
+}
+
+test "pipeline: unknown required field is rejected" {
+    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"collect\": {\"selector\": \"\", \"fields\": [{\"name\": \"n\", \"selector\": \".n\", \"many\": false, \"attr\": \"\"}]}}], \"required\": [\"autor\"]}"
+    assert(invalidFixture(raw), "required")
+}
+
+test "pipeline: duplicate field names are rejected" {
+    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"collect\": {\"selector\": \"\", \"fields\": [{\"name\": \"n\", \"selector\": \".a\", \"many\": false, \"attr\": \"\"}, {\"name\": \"n\", \"selector\": \".b\", \"many\": false, \"attr\": \"\"}]}}], \"required\": []}"
+    assert(invalidFixture(raw), "dupe")
+}
+
+test "pipeline: decode error maps to InvalidPipeline" {
+    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}]}"
+    assert(invalidFixture(raw), "missing-required-key")
+}
+
+test "pipeline: single-record collect has empty selector" {
+    val raw = "{\"name\": \"product\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/p/42\", \"waitUntil\": \"load\", \"timeoutMs\": 15000}}, {\"collect\": {\"selector\": \"\", \"fields\": [{\"name\": \"pname\", \"selector\": \".name\", \"many\": false, \"attr\": \"\"}]}}], \"required\": [\"pname\"]}"
+    val p = parsePipeline(raw)
+    assert((p.steps.get(1) as Collect).selector == "", "no-selector")
+}
+
+test "pipeline: round-trips through json" {
+    val p = parsePipeline(quotesFixture())
+    val back = parsePipeline(p.toJson())
+    assert(back.name == "quotes", "name")
+    assert(back.steps.get(1) is Collect, "collect")
+    assert((back.steps.get(1) as Collect).fields.get(0).selector == "span.text", "field")
+    assert(back.required.size() == 2, "required")
+}
+
+test "pipeline: catch-bound message assigns to String" {
+    var m = "unset"
+    try {
+        throw Exception("boom")
+    } catch (e: Exception) {
+        m = e.message()
+    }
+    assert(m == "boom")
+    val n: String = m
+    assert(n == "boom")
+}
+
+fun missingPipeline(store: PipelineStore, name: String): Bool {
+    try {
+        store.load(name)
+        return false
+    } catch (e: PipelineNotFound) {
+        return true
+    }
+}
+
+test "pipeline: store loads quotes.json from disk" {
+    val store = PipelineStore("pipelines")
+    val p = store.load("quotes")
+    assert(p.name == "quotes", "name")
+    assert(p.steps.size() == 3, "steps")
+    assert((p.steps.get(1) as Collect).selector == "div.quote", "selector")
+    assert(p.required.size() == 2, "required")
+}
+
+test "pipeline: store maps missing file to PipelineNotFound" {
+    val store = PipelineStore("pipelines")
+    assert(missingPipeline(store, "nope"), "missing")
+    assert(missingPipeline(PipelineStore("no-such-dir"), "quotes"), "dir")
+}

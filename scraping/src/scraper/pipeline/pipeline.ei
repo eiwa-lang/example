@@ -1,0 +1,138 @@
+// Pipeline types: agnostic extraction DSL. Only the JSON knows the
+// product/page/rules; this file knows only the verbs. Steps are a closed
+// union (Goto|Collect|Paginate): unknown tags throw at decode, the
+// compiler enforces handling. Wire keys are aliased (goto/collect/paginate).
+import { List, MutableList } from "std.collections"
+import { repeat } from "std.system"
+import { Serializable } from "std.serde"
+import { Json, fromJson } from "std.json"
+
+type InvalidPipeline(val detail: String) : Throwable {
+    implement fun message(): String {
+        return this.detail
+    }
+}
+
+type PipelineNotFound(val name: String) : Throwable {
+    implement fun message(): String {
+        return "pipeline not found: " + this.name
+    }
+}
+
+type FieldDef(val name: String, val selector: String, val many: Bool, val attr: String) : Serializable + Json
+
+type Goto(val url: String, val waitUntil: String, val timeoutMs: Int) : Serializable + Json
+
+type Collect(val selector: String, val fields: List<FieldDef>) : Serializable + Json
+
+type Paginate(val selector: String, val maxPages: Int) : Serializable + Json
+
+union Step {
+    @Alias("goto") Goto,
+    @Alias("collect") Collect,
+    @Alias("paginate") Paginate
+}
+
+type Pipeline(val name: String, val steps: List<Step>, val required: List<String>) : Serializable + Json {
+
+    fun validate(): Void {
+        if (this.name == "") {
+            throw InvalidPipeline("pipeline needs a name")
+        }
+        if (this.steps.size() == 0) {
+            throw InvalidPipeline("pipeline needs steps")
+        }
+        if ((this.steps.get(0) is Goto) == false) {
+            throw InvalidPipeline("first step must be goto")
+        }
+        repeat(this.steps.size()) { i ->
+            this.validateStep(this.steps.get(i))
+        }
+        this.validateRequired()
+    }
+
+    fun validateStep(s: Step): Void {
+        if (s is Goto) {
+            if ((s as Goto).url == "") {
+                throw InvalidPipeline("goto needs url")
+            }
+        } else if (s is Collect) {
+            this.validateFields(s as Collect)
+        } else if (s is Paginate) {
+            val p = s as Paginate
+            if (p.selector == "") {
+                throw InvalidPipeline("paginate needs selector")
+            }
+            if (p.maxPages <= 0) {
+                throw InvalidPipeline("paginate needs maxPages > 0")
+            }
+        } else {
+            throw InvalidPipeline("unsupported step")
+        }
+    }
+
+    fun validateFields(c: Collect): Void {
+        if (c.fields.size() == 0) {
+            throw InvalidPipeline("collect needs fields")
+        }
+        repeat(c.fields.size()) { i ->
+            val f = c.fields.get(i)
+            if (f.name == "") {
+                throw InvalidPipeline("field needs a name")
+            }
+            if (f.selector == "") {
+                throw InvalidPipeline("field needs selector: " + f.name)
+            }
+            repeat(i) { j ->
+                if (c.fields.get(j).name == f.name) {
+                    throw InvalidPipeline("duplicate field: " + f.name)
+                }
+            }
+        }
+    }
+
+    fun fieldNames(): List<String> {
+        val out: MutableList<String> = MutableList<String>()
+        repeat(this.steps.size()) { i ->
+            val s = this.steps.get(i)
+            if (s is Collect) {
+                val c = s as Collect
+                repeat(c.fields.size()) { k ->
+                    out.add(c.fields.get(k).name)
+                }
+            }
+        }
+        return out.freeze()
+    }
+
+    fun hasField(names: List<String>, want: String): Bool {
+        repeat(names.size()) { i ->
+            if (names.get(i) == want) {
+                return true
+            }
+        }
+        return false
+    }
+
+    fun validateRequired(): Void {
+        val names = this.fieldNames()
+        repeat(this.required.size()) { i ->
+            if (this.hasField(names, this.required.get(i)) == false) {
+                throw InvalidPipeline("unknown required field: " + this.required.get(i))
+            }
+        }
+    }
+}
+
+fun parsePipeline(raw: String): Pipeline {
+    val p = try {
+        fromJson<Pipeline>(raw)
+    } catch (e: Exception) {
+        throw InvalidPipeline("bad pipeline json: " + e.message())
+    }
+    if (p == null) {
+        throw InvalidPipeline("bad pipeline json")
+    }
+    p.validate()
+    return p
+}

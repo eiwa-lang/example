@@ -1,0 +1,249 @@
+// PipelineRunner: executes validated pipelines through browser goto +
+// locator reads. Only generic verbs here; product/page/rules live in the
+// JSON. Single-record mode when collect.selector == ""; N records when set.
+import { List, MutableList } from "std.collections"
+import { repeat } from "std.system"
+import { Serializable } from "std.serde"
+import { Json } from "std.json"
+import { Browser, NoWorkerAvailable, UnknownContext } from "browser.browser"
+import { Timeout, Cancelled, ChallengeDetected, WorkerClosed, ResourceExhausted, UnknownBrowserError } from "browser.protocol.errors"
+import { Locator, UnsupportedSelector } from "browser.locator.locator"
+import { Page } from "page.page"
+import { Job } from ".scraper.job"
+import { Pipeline, FieldDef, Goto, Collect, Paginate } from ".scraper.pipeline.pipeline"
+
+type RecordValue(val name: String, val text: String, val texts: List<String>) : Serializable + Json
+
+type PipelineRecord(val fields: List<RecordValue>) : Serializable + Json {
+
+    fun text(name: String): String {
+        repeat(this.fields.size()) { i ->
+            if (this.fields.get(i).name == name) {
+                return this.fields.get(i).text
+            }
+        }
+        return ""
+    }
+
+    fun texts(name: String): List<String> {
+        repeat(this.fields.size()) { i ->
+            if (this.fields.get(i).name == name) {
+                return this.fields.get(i).texts
+            }
+        }
+        return MutableList<String>().freeze()
+    }
+
+    fun firstEmpty(): Bool {
+        if (this.fields.size() == 0) {
+            return true
+        }
+        val first = this.fields.get(0)
+        return first.text == "" && first.texts.size() == 0
+    }
+}
+
+type RunResult(val kind: String, val records: List<PipelineRecord>, val note: String)
+
+type PipelineRunner(val browser: Browser?) {
+
+    fun ok(records: List<PipelineRecord>, note: String): RunResult {
+        return RunResult("records", records, note)
+    }
+
+    fun failed(note: String): RunResult {
+        return RunResult("failed", MutableList<PipelineRecord>().freeze(), note)
+    }
+
+    // Steps run in file order: goto, collect, paginate. The union is
+    // closed: unlisted verbs cannot decode, so no unknown-kind check.
+    fun run(job: Job, pipeline: Pipeline): RunResult {
+        val b = browser
+        if (b == null) {
+            return failed("no-browser")
+        }
+        return try {
+            runSteps(b, pipeline)
+        } catch (e: NoWorkerAvailable) {
+            failed("browser-unavailable")
+        } catch (e: UnknownContext) {
+            failed("browser-unavailable")
+        } catch (e: Timeout) {
+            failed("browser-timeout")
+        } catch (e: Cancelled) {
+            failed("browser-cancelled")
+        } catch (e: ChallengeDetected) {
+            failed("browser-challenge")
+        } catch (e: WorkerClosed) {
+            failed("browser-closed")
+        } catch (e: ResourceExhausted) {
+            failed("browser-exhausted")
+        } catch (e: UnknownBrowserError) {
+            failed("browser-error")
+        } catch (e: UnsupportedSelector) {
+            failed("browser-bad-selector")
+        } catch (e) {
+            failed("browser-unknown")
+        }
+    }
+
+    fun runSteps(b: Browser, pipeline: Pipeline): RunResult {
+        val collect = this.findCollect(pipeline)
+        if (collect == null) {
+            return failed("no-collect")
+        }
+        val goto = pipeline.steps.get(0) as Goto
+        val page = b.newPage()
+        if (page.goto(goto.url, goto.waitUntil, goto.timeoutMs) == false) {
+            page.close()
+            return failed("browser-goto-failed")
+        }
+        val paginate = this.findPaginate(pipeline)
+        val out: MutableList<PipelineRecord> = MutableList<PipelineRecord>()
+        var pages = 1
+        var done = false
+        while (done == false) {
+            this.collectPage(page, collect, pipeline.required, out)
+            val next = this.nextUrl(page, paginate)
+            if (next == null) {
+                done = true
+            } else if (paginate != null && pages >= paginate.maxPages) {
+                page.close()
+                return ok(out.freeze(), "truncated-" + pages.toString())
+            } else if (page.goto(this.resolveUrl(goto.url, next), goto.waitUntil, goto.timeoutMs) == false) {
+                page.close()
+                return failed("browser-goto-failed")
+            } else {
+                pages = pages + 1
+            }
+        }
+        page.close()
+        if (out.size() == 0) {
+            return failed("browser-no-records")
+        }
+        return ok(out.freeze(), "pages-" + pages.toString())
+    }
+
+    fun findCollect(pipeline: Pipeline): Collect? {
+        repeat(pipeline.steps.size()) { i ->
+            val s = pipeline.steps.get(i)
+            if (s is Collect) {
+                return s as Collect
+            }
+        }
+        return null
+    }
+
+    fun findPaginate(pipeline: Pipeline): Paginate? {
+        repeat(pipeline.steps.size()) { i ->
+            val s = pipeline.steps.get(i)
+            if (s is Paginate) {
+                return s as Paginate
+            }
+        }
+        return null
+    }
+
+    fun collectPage(page: Page, collect: Collect, required: List<String>, out: MutableList<PipelineRecord>) {
+        if (collect.selector == "") {
+            val rec = this.readSingle(page, collect)
+            if (this.isValid(rec, required)) {
+                out.add(rec)
+            }
+            return
+        }
+        repeat(1000) { k ->
+            val item = page.locator(collect.selector).nth(k + 1)
+            val rec = this.readItem(item, collect)
+            if (rec.firstEmpty()) {
+                leave
+            }
+            if (this.isValid(rec, required)) {
+                out.add(rec)
+            }
+        }
+    }
+
+    fun readItem(item: Locator, collect: Collect): PipelineRecord {
+        val out: MutableList<RecordValue> = MutableList<RecordValue>()
+        repeat(collect.fields.size()) { i ->
+            out.add(this.readField(item.within(collect.fields.get(i).selector), collect.fields.get(i)))
+        }
+        return PipelineRecord(out.freeze())
+    }
+
+    fun readSingle(page: Page, collect: Collect): PipelineRecord {
+        val out: MutableList<RecordValue> = MutableList<RecordValue>()
+        repeat(collect.fields.size()) { i ->
+            val f = collect.fields.get(i)
+            out.add(this.readField(page.locator(f.selector), f))
+        }
+        return PipelineRecord(out.freeze())
+    }
+
+    fun readField(loc: Locator, field: FieldDef): RecordValue {
+        if (field.many == false) {
+            return RecordValue(field.name, this.readOne(loc, field), MutableList<String>().freeze())
+        }
+        val out: MutableList<String> = MutableList<String>()
+        repeat(100) { k ->
+            val v = this.readOne(loc.nth(k + 1), field)
+            if (v == "") {
+                leave
+            }
+            out.add(v)
+        }
+        return RecordValue(field.name, "", out.freeze())
+    }
+
+    fun readOne(loc: Locator, field: FieldDef): String {
+        if (field.attr != "") {
+            return loc.attribute(field.attr) ?: ""
+        }
+        return loc.text() ?: ""
+    }
+
+    fun isValid(rec: PipelineRecord, required: List<String>): Bool {
+        repeat(required.size()) { i ->
+            if (this.fieldPresent(rec, required.get(i)) == false) {
+                return false
+            }
+        }
+        return true
+    }
+
+    fun fieldPresent(rec: PipelineRecord, name: String): Bool {
+        repeat(rec.fields.size()) { i ->
+            val f = rec.fields.get(i)
+            if (f.name == name && (f.text != "" || f.texts.size() > 0)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    fun nextUrl(page: Page, paginate: Paginate?): String? {
+        if (paginate == null) {
+            return null
+        }
+        return page.locator(paginate.selector).attribute("href")
+    }
+
+    fun resolveUrl(base: String, href: String): String {
+        if (href.indexOf("http://") == 0 || href.indexOf("https://") == 0) {
+            return href
+        }
+        if (href.indexOf("/") == 0) {
+            val schemeEnd = base.indexOf("://")
+            if (schemeEnd < 0) {
+                return href
+            }
+            val hostEnd = base.indexOf("/", schemeEnd + 3)
+            if (hostEnd < 0) {
+                return base + href
+            }
+            return base.substring(0, hostEnd) + href
+        }
+        return href
+    }
+}

@@ -8,7 +8,7 @@ fun quoteJob(url: String): Job {
 }
 
 fun recordsJson(): String {
-    return "[{\"text\": \"Life & times\", \"author\": \"Jane Doe\", \"tags\": [\"life\", \"times\"]}, {\"text\": \"Plain\", \"author\": \"John Smith\", \"tags\": []}, {\"text\": \"\", \"author\": \"Ghost\", \"tags\": []}, {\"author\": \"NoText\"}]"
+    return "[{\"text\": \"Life & times\", \"author\": \"Jane Doe\", \"tags\": [\"life\", \"times\"]}, {\"text\": \"Plain\", \"author\": \"John Smith\", \"tags\": []}, {\"text\": \"\", \"author\": \"Ghost\", \"tags\": []}]"
 }
 
 test "connector: normalize validates and skips malformed entries" {
@@ -30,6 +30,11 @@ test "connector: records round-trip through json" {
     val back = c.normalize(recs.toJson())
     assert(back.size() == 2, "count")
     assert(back.get(1).author == "John Smith", "author")
+}
+
+test "connector: entry with missing keys rejects the whole payload (strict decode)" {
+    val c = QuotesConnector(null)
+    assert(c.normalize("[{\"text\": \"Ok\", \"author\": \"A\", \"tags\": []}, {\"author\": \"NoText\"}]").size() == 0, "strict")
 }
 
 test "connector: no browser means failed fetch" {

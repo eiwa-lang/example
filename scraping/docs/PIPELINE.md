@@ -23,6 +23,11 @@ Regras duras (não-negociáveis neste plano):
   URL, seletores, paginação e validação vêm do JSON, nunca do caller.
 - **Sem `targets/*.ei`.** `QuotesConnector` é deletado ao fim. `Scraper` nunca
   faz `if connector == "quotes"`.
+- **Gap de linguagem nunca se contorna.** Ao bater num bug/limite do
+  compilador ou da std: (1) isolar o repro mínimo, (2) escrever o RED em
+  `eiwa-lang/samples/tests/` (numerado L+n), (3) avisar e parar a fase até
+  ser resolvido upstream. Sem workaround aqui, sem parse manual, sem mudar o
+  schema para desviar do bug. Histórico: L1–L5.
 
 ## 1. Contrato novo
 
@@ -66,23 +71,21 @@ snapshot do pipeline usado (para reprodutibilidade):
 - `claim()` retorna `Job + Pipeline` (dois `fromJson`, nunca parse manual).
 - `deleteJob`/`fail`/`complete` inalterados.
 
-### 1.3 Pipeline JSON (schema v1, quotes)
+### 1.3 Pipeline JSON (schema v2 union, quotes)
 
-Arquivo `pipelines/quotes.json`. Rama `steps` ordenada, um verbo por item:
+Arquivo `pipelines/quotes.json`. `steps` é `List<Step>` onde `Step` é union
+fechada — um verbo por item, cada um só com seus campos:
 
 ```json
 {
   "name": "quotes",
   "steps": [
     {"goto": {"url": "https://quotes.toscrape.com/", "waitUntil": "load", "timeoutMs": 15000}},
-    {"collect": {
-      "selector": "div.quote",
-      "fields": {
-        "text": {"selector": "span.text"},
-        "author": {"selector": "small.author"},
-        "tags": {"selector": "a.tag", "many": true}
-      }
-    }},
+    {"collect": {"selector": "div.quote", "fields": [
+      {"name": "text", "selector": "span.text", "many": false, "attr": ""},
+      {"name": "author", "selector": "small.author", "many": false, "attr": ""},
+      {"name": "tags", "selector": "a.tag", "many": true, "attr": ""}
+    ]}},
     {"paginate": {"selector": "li.next a", "maxPages": 100}}
   ],
   "required": ["text", "author"]
@@ -95,56 +98,50 @@ Caso 1-por-página (produto): mesmo verbo `collect`, sem `selector`:
 {
   "name": "product",
   "steps": [
-    {"goto": {"url": "https://example.com/p/42"}},
-    {"collect": {
-      "fields": {
-        "name": {"selector": ".name"},
-        "price": {"selector": ".price"}
-      }
-    }}
+    {"goto": {"url": "https://example.com/p/42", "waitUntil": "load", "timeoutMs": 15000}},
+    {"collect": {"selector": "", "fields": [
+      {"name": "pname", "selector": ".name", "many": false, "attr": ""}
+    ]}}
   ],
-  "required": ["name", "price"]
+  "required": ["pname"]
 }
 ```
 
-Semântica do `collect` (verbo único, sem `extract` separado):
+Semântica do `collect`:
 
 - `selector` presente → itera `locator(selector).nth(k)` (para no primeiro
   vazio, como `readQuotes` em `targets/quotes.ei:110-125`), 1 record por match,
   campo relativo ao item (`within` implícito, sem flag).
-- `selector` ausente/vazio → `page.locator(field.selector).text()` direto,
-  1 record. `many: true` continua ortogonal (coleta N textos nos dois modos).
+- `selector` ausente/vazio → `page.locator(field.selector)` direto
+  (`text()` ou `attribute(attr)`), 1 record. `many` continua ortogonal.
 - `trim` é default do runner (todo `text()` já vem trimado); sem bloco
   `transform` no v1. `parse_money` fora — volta com caso real + tipo `Money`.
 - `required` (topo) filtra o item (descarta, não coage).
-- `output.sink` fixo `records` no v1 — chave omitida; volta com o 2º sink.
+- `challenge` nunca é verbo: por regra do `PLAN.md`, ao detectar o runner
+  aborta com `browser-challenge` (log + métrica, dead-letter, sem retry).
 
-Verbos reservados (tipos existem, runner v1 retorna `failed-unsupported`):
-`click {selector}`, `fill {selector, value}`, `wait {selector, timeoutMs}`.
-Entram entre `goto` e `collect` na ordem escrita (form/login). `challenge`
-nunca é verbo: por regra do `PLAN.md`, ao detectar o runner aborta com
-`browser-challenge` (log + métrica, dead-letter, sem retry silencioso).
-
-Tipos Eiwa (todos `Serializable + Json`, um por verbo — sem free-functions):
+Tipos Eiwa (membros `Serializable + Json`, union fecha o conjunto):
 
 ```eiwa
-type GotoStep(val url: String, val waitUntil: String = "load", val timeoutMs: Int = 15000) : Serializable + Json
-type CollectField(val selector: String, val many: Bool = false, val attr: String = "") : Serializable + Json
-type CollectStep(val selector: String = "", val fields: Map<String, CollectField>) : Serializable + Json
-type PaginateStep(val selector: String, val maxPages: Int = 100) : Serializable + Json
-type ClickStep(val selector: String) : Serializable + Json
-type FillStep(val selector: String, val value: String) : Serializable + Json
-type WaitStep(val selector: String, val timeoutMs: Int = 5000) : Serializable + Json
+type FieldDef(val name: String, val selector: String, val many: Bool, val attr: String) : Serializable + Json
+type Goto(val url: String, val waitUntil: String, val timeoutMs: Int) : Serializable + Json
+type Collect(val selector: String, val fields: List<FieldDef>) : Serializable + Json
+type Paginate(val selector: String, val maxPages: Int) : Serializable + Json
+
+union Step {
+    @Alias("goto") Goto,
+    @Alias("collect") Collect,
+    @Alias("paginate") Paginate
+}
 type Pipeline(val name: String, val steps: List<Step>, val required: List<String>) : Serializable + Json
 ```
 
-`Step` é tipo fechado (`goto|collect|paginate|click|fill|wait`), nunca
-`Map<String,String>` genérico. Verbo desconhecido → `InvalidPipeline` no load,
-fail-fast no boot. `Pipeline.validate()` puro checa: `steps` não vazio,
-primeiro é `goto`, `collect.fields` não vazio, `required ⊆ fields`,
-`selector != ""` onde exigido. Se `fromJson<Map>` aninhado estourar limite de
-genéricos, fallback é `fields: List<FieldDef{name, selector, many}>` (erro
-melhor: `duplicate field 'text'`).
+Tag desconhecida, objeto vazio ou duas chaves → `throw` no decode com detalhe
+(mapeado para `InvalidPipeline` em `parsePipeline`). `Pipeline.validate()`
+puro checa o resto: `steps` não vazio, primeiro é `goto`, `collect.fields`
+não vazio sem dupes, `required ⊆ fields`, `paginate` com `selector` e
+`maxPages > 0`. Interações (`click`/`fill`/`wait`) entram como novos membros
+da union quando o primeiro caso real chegar — sem reforma, sem string.
 
 ## 2. Handles novos / mortos
 
@@ -158,7 +155,7 @@ melhor: `duplicate field 'text'`).
 
 `FetchResult(kind, body: String, note)` morre. Vira
 `RunResult(val records: List<PipelineRecord>, val note: String)` —
-`PipelineRecord(val fields: Map<String, FieldValue>)` tipado, sem `body` cru.
+`PipelineRecord` com `fields: List<RecordValue>` tipado, sem `body` cru.
 `normalize` some: validação é `required` no runner.
 
 ## 3. Fases (TDD, RED primeiro, `eiwa test` verde em cada)
@@ -200,8 +197,9 @@ Ver tasks executáveis em `docs/TASKS.md` (fonte de verdade do sequenciamento).
 
 ## 4. Decisões travadas
 
-1. `steps` ordenado com 1 verbo por item (goto|collect|paginate executáveis no
-   v1; click|fill|wait reservados). `each/do` e `extract` aposentados.
+1. `steps: List<Step>` com `Step` = union fechada (`Goto|Collect|Paginate`,
+   wire `goto|collect|paginate` via `@Alias`). `each/do`, `extract` e o
+   `kind: String` aposentados. Interações entram como membros novos.
 2. `collect` único: com `selector` = N records, sem = 1 record. Sem `within`.
 3. Sem `transform` no v1 (`trim` default; `parse_money` com caso real + `Money`).
 4. Sem `output.sink` no v1 (fixo `records`; artifacts na Phase 4 do `PLAN.md`).
@@ -210,9 +208,14 @@ Ver tasks executáveis em `docs/TASKS.md` (fonte de verdade do sequenciamento).
 
 ## 5. Riscos
 
-- `fromJson` com `Map` aninhado + `List<Step>` pode esbarrar em limite de
-  genéricos — mitigação Fase 1: RED test de round-trip primeiro; fallback
-  `List<FieldDef>` (decisão volta aqui, sem workaround).
+- **Resolvido upstream (L1–L4 verdes):** `Map<String,Custom>` popula
+  (schema manteve `List<FieldDef>` mesmo assim — erro melhor);
+  chave ausente sem default **lança** (com default, aplica o default);
+  nested nullable ausente decodifica `null`. Consequência mantida: pipeline
+  JSON emite todas as chaves; `validate()` + `InvalidPipeline` cobrem o resto.
+- **Resolvido upstream (L5 verde):** `e.message()` em `+`/anotação dentro de
+  módulo importado perdia o tipo (`Void`). Workaround template revertido —
+  `pipeline.ei:parsePipeline` usa `+` de novo, provado em project mode.
 - Fake CDP da `service_test` usa XPath gerado pelo locator (`span[@class]`);
   seletores novos no JSON precisam de entrada equivalente no fake — custo por
   campo, não por alvo.

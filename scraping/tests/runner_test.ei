@@ -1,0 +1,265 @@
+import { assert } from "std.core"
+import { parseJson } from "std.json"
+import { sleepMs } from "std.time"
+import { TCPServer, Socket } from "std.net"
+import { buildFrame, wsRecv, writeAll, wsConnect } from "browser.net.ws"
+import { readHttpRequest, answerHandshake } from "browser.net.ws_server"
+import { Chromium } from "browser.chromium.chromium"
+import { cdpConn } from "browser.chromium.connection"
+import { Engine } from "browser.engine.engine"
+import { Browser } from "browser.browser"
+import { serveOneEngine } from "browser.worker.server"
+import { Job } from ".scraper.job"
+import { PipelineStore } from ".scraper.pipeline.store"
+import { PipelineRunner } from ".scraper.pipeline.runner"
+import { parsePipeline } from ".scraper.pipeline.pipeline"
+
+fun rnReply(id: Int, result: String): String {
+    return "{\"id\": $id, \"result\": $result}"
+}
+
+fun rnValue(result: String): String {
+    return "{\"result\": {\"type\": \"string\", \"value\": \"$result\"}}"
+}
+
+fun rnNull(): String {
+    return "{\"result\": {\"type\": \"object\", \"subtype\": \"null\", \"value\": null}}"
+}
+
+// Scripted Chromium: two quotes (one tagged), optional next href while
+// navigates <= hrefBudget, product fields for single-record mode.
+fun rnSession(sock: Socket, hrefBudget: Int): String {
+    var open = true
+    var navigates = 0
+    var texts = 0
+    var authors = 0
+    var tags = 0
+    var names = 0
+    var prices = 0
+    while (open) {
+        val f = wsRecv(sock)
+        if (f == null) {
+            return "closed"
+        }
+        if (f.opcode == 8) {
+            return "ok"
+        }
+        if (f.opcode == 1) {
+            val msg = parseJson(f.payload)
+            val id = msg.get("id")
+            if (id != null && id!!.isNumber()) {
+                val num = id!!.asNumber().toInt()
+                val method = msg.get("method")
+                if (method != null && method!!.isString()) {
+                    val mname = method!!.asString()
+                    if (mname == "Target.createBrowserContext") {
+                        writeAll(sock, buildFrame(1, rnReply(num, "{\"browserContextId\": \"CB1\"}"), null))
+                    } else if (mname == "Target.createTarget") {
+                        writeAll(sock, buildFrame(1, rnReply(num, "{\"targetId\": \"T1\"}"), null))
+                    } else if (mname == "Target.attachToTarget") {
+                        writeAll(sock, buildFrame(1, rnReply(num, "{\"sessionId\": \"S1\"}"), null))
+                    } else if (mname == "Target.closeTarget") {
+                        writeAll(sock, buildFrame(1, rnReply(num, "{}"), null))
+                    } else if (mname == "Page.navigate") {
+                        navigates = navigates + 1
+                        writeAll(sock, buildFrame(1, rnReply(num, "{\"frameId\": \"F1\"}"), null))
+                        writeAll(sock, buildFrame(1, "{\"method\": \"Page.loadEventFired\", \"params\": {}, \"sessionId\": \"S1\"}", null))
+                    } else if (mname == "Runtime.evaluate") {
+                        if (f.payload.indexOf("span[@class='text']") >= 0) {
+                            texts = texts + 1
+                            if (texts == 1) {
+                                writeAll(sock, buildFrame(1, rnReply(num, rnValue("Quote one")), null))
+                            } else if (texts == 2) {
+                                writeAll(sock, buildFrame(1, rnReply(num, rnValue("Quote two")), null))
+                            } else {
+                                writeAll(sock, buildFrame(1, rnReply(num, rnNull()), null))
+                            }
+                        } else if (f.payload.indexOf("small[@class='author']") >= 0) {
+                            authors = authors + 1
+                            if (authors == 1) {
+                                writeAll(sock, buildFrame(1, rnReply(num, rnValue("Author one")), null))
+                            } else if (authors == 2) {
+                                writeAll(sock, buildFrame(1, rnReply(num, rnValue("Author two")), null))
+                            } else {
+                                writeAll(sock, buildFrame(1, rnReply(num, rnNull()), null))
+                            }
+                        } else if (f.payload.indexOf("a[@class='tag']") >= 0) {
+                            tags = tags + 1
+                            if (tags == 1) {
+                                writeAll(sock, buildFrame(1, rnReply(num, rnValue("poetry")), null))
+                            } else {
+                                writeAll(sock, buildFrame(1, rnReply(num, rnNull()), null))
+                            }
+                        } else if (f.payload.indexOf("\\\"li.next a\\\"") >= 0) {
+                            if (navigates <= hrefBudget) {
+                                writeAll(sock, buildFrame(1, rnReply(num, rnValue("/page/2/")), null))
+                            } else {
+                                writeAll(sock, buildFrame(1, rnReply(num, rnNull()), null))
+                            }
+                        } else if (f.payload.indexOf("\\\".name\\\"") >= 0) {
+                            names = names + 1
+                            if (names == 1) {
+                                writeAll(sock, buildFrame(1, rnReply(num, rnValue("Widget")), null))
+                            } else {
+                                writeAll(sock, buildFrame(1, rnReply(num, rnNull()), null))
+                            }
+                        } else if (f.payload.indexOf("\\\".price\\\"") >= 0) {
+                            prices = prices + 1
+                            if (prices == 1) {
+                                writeAll(sock, buildFrame(1, rnReply(num, rnValue("$42")), null))
+                            } else {
+                                writeAll(sock, buildFrame(1, rnReply(num, rnNull()), null))
+                            }
+                        } else {
+                            writeAll(sock, buildFrame(1, rnReply(num, rnNull()), null))
+                        }
+                    } else {
+                        writeAll(sock, buildFrame(1, rnReply(num, "{}"), null))
+                    }
+                }
+            }
+        }
+    }
+    return "closed"
+}
+
+fun rnFakeCdp(port: Int, hrefBudget: Int): String {
+    val server = TCPServer()
+    if (server.bind(port) == false) {
+        return "bind-fail"
+    }
+    val conn = server.accept()
+    if (conn == null) {
+        server.close()
+        return "accept-fail"
+    }
+    val head = readHttpRequest(conn)
+    if (head == null || answerHandshake(conn, head) == false) {
+        conn.close()
+        server.close()
+        return "handshake-fail"
+    }
+    val out = rnSession(conn, hrefBudget)
+    conn.close()
+    server.close()
+    return out
+}
+
+fun rnEngine(port: Int): Engine? {
+    var tries = 0
+    while (tries < 50) {
+        val ws = wsConnect("127.0.0.1", port, "/fake")
+        if (ws != null) {
+            return Engine(Chromium("fake", 0, -1), cdpConn(ws))
+        }
+        sleepMs(100)
+        tries = tries + 1
+    }
+    return null
+}
+
+fun rnWorker(cdpPort: Int, server: TCPServer): String {
+    val engine = rnEngine(cdpPort)
+    if (engine == null) {
+        return "no-engine"
+    }
+    val conn = server.accept()
+    if (conn == null) {
+        server.close()
+        return "accept-fail"
+    }
+    val out = serveOneEngine(conn, engine)
+    engine.conn.close()
+    server.close()
+    return out
+}
+
+fun rnJob(): Job {
+    return Job("rn-1", "quotes", "https://quotes.toscrape.com/", "page", 0, 3, "rn-1")
+}
+
+fun rnLiveRunner(cdpPort: Int, wsPort: Int, hrefBudget: Int): Browser {
+    val cdp = task {
+        rnFakeCdp(cdpPort, hrefBudget)
+    }
+    sleepMs(150)
+    val server = TCPServer()
+    assert(server.bind(wsPort), "bind")
+    val worker = task {
+        rnWorker(cdpPort, server)
+    }
+    sleepMs(150)
+    return Browser(["ws://127.0.0.1:" + wsPort.toString()], 1)
+}
+
+test "runner: collects two quotes following pagination once" {
+    val browser = rnLiveRunner(28921, 28923, 1)
+    val pipeline = PipelineStore("pipelines").load("quotes")
+    val runner = PipelineRunner(browser)
+    val res = runner.run(rnJob(), pipeline)
+    assert(res.kind == "records", "kind-$res.note")
+    assert(res.records.size() == 2, "count")
+    assert(res.records.get(0).text("text") == "Quote one", "text")
+    assert(res.records.get(0).text("author") == "Author one", "author")
+    assert(res.records.get(0).texts("tags").size() == 1, "tags")
+    assert(res.records.get(1).text("author") == "Author two", "second")
+    assert(res.note == "pages-2", "note-$res.note")
+    browser.close()
+}
+
+test "runner: single-record collect without selector" {
+    val browser = rnLiveRunner(28925, 28927, 0)
+    val pipeline = parsePipeline("{\"name\": \"product\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/p/42\", \"waitUntil\": \"load\", \"timeoutMs\": 15000}}, {\"collect\": {\"selector\": \"\", \"fields\": [{\"name\": \"pname\", \"selector\": \".name\", \"many\": false, \"attr\": \"\"}, {\"name\": \"price\", \"selector\": \".price\", \"many\": false, \"attr\": \"\"}]}}], \"required\": [\"pname\"]}")
+    val runner = PipelineRunner(browser)
+    val res = runner.run(rnJob(), pipeline)
+    assert(res.kind == "records", "kind-$res.note")
+    assert(res.records.size() == 1, "count")
+    assert(res.records.get(0).text("pname") == "Widget", "name")
+    assert(res.records.get(0).text("price") == "$42", "price")
+    assert(res.note == "pages-1", "note-$res.note")
+    browser.close()
+}
+
+test "runner: truncates at maxPages" {
+    val browser = rnLiveRunner(28929, 28931, 99)
+    val patched = parsePipeline("{\"name\": \"quotes-1\", \"steps\": [{\"goto\": {\"url\": \"https://quotes.toscrape.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 15000}}, {\"collect\": {\"selector\": \"div.quote\", \"fields\": [{\"name\": \"text\", \"selector\": \"span.text\", \"many\": false, \"attr\": \"\"}, {\"name\": \"author\", \"selector\": \"small.author\", \"many\": false, \"attr\": \"\"}]}}, {\"paginate\": {\"selector\": \"li.next a\", \"maxPages\": 1}}], \"required\": [\"text\"]}")
+    assert(patched.steps.size() == 3, "shape")
+    val runner = PipelineRunner(browser)
+    val res = runner.run(rnJob(), patched)
+    assert(res.kind == "records", "kind-$res.note")
+    assert(res.records.size() == 2, "count")
+    assert(res.note == "truncated-1", "note-$res.note")
+    browser.close()
+}
+
+test "runner: no browser means failed fetch" {
+    val runner = PipelineRunner(null)
+    val pipeline = PipelineStore("pipelines").load("quotes")
+    val res = runner.run(rnJob(), pipeline)
+    assert(res.kind == "failed", "kind")
+    assert(res.note == "no-browser", "reason")
+}
+
+test "runner: unreachable worker fails on goto" {
+    val runner = PipelineRunner(Browser(["ws://127.0.0.1:28999"], 1))
+    val pipeline = PipelineStore("pipelines").load("quotes")
+    val res = runner.run(rnJob(), pipeline)
+    assert(res.kind == "failed", "kind")
+    assert(res.note == "browser-goto-failed", "reason-$res.note")
+}
+
+test "runner: empty pool is unavailable" {
+    val runner = PipelineRunner(Browser([], 1))
+    val pipeline = PipelineStore("pipelines").load("quotes")
+    val res = runner.run(rnJob(), pipeline)
+    assert(res.kind == "failed", "kind")
+    assert(res.note == "browser-unavailable", "reason-$res.note")
+}
+
+test "runner: pipeline without collect fails closed" {
+    val runner = PipelineRunner(Browser(["ws://127.0.0.1:28999"], 1))
+    val pipeline = parsePipeline("{\"name\": \"empty\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 15000}}], \"required\": []}")
+    val res = runner.run(rnJob(), pipeline)
+    assert(res.kind == "failed", "kind")
+    assert(res.note == "no-collect", "reason-$res.note")
+}

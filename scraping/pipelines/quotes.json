@@ -1,0 +1,13 @@
+{
+  "name": "quotes",
+  "steps": [
+    {"goto": {"url": "https://quotes.toscrape.com/", "waitUntil": "load", "timeoutMs": 15000}},
+    {"collect": {"selector": "div.quote", "fields": [
+      {"name": "text", "selector": "span.text", "many": false, "attr": ""},
+      {"name": "author", "selector": "small.author", "many": false, "attr": ""},
+      {"name": "tags", "selector": "a.tag", "many": true, "attr": ""}
+    ]}},
+    {"paginate": {"selector": "li.next a", "maxPages": 100}}
+  ],
+  "required": ["text", "author"]
+}
