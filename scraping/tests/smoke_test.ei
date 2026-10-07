@@ -11,6 +11,7 @@ fun validEnv(): Void {
     Env.set("CONCURRENCY", "4")
     Env.set("POLL_INTERVAL_MS", "1000")
     Env.set("ARTIFACT_DIR", "/tmp/scraper-artifacts")
+    Env.set("PIPELINES_DIR", "pipelines")
 }
 
 fun cleanEnv(): Void {
@@ -20,6 +21,7 @@ fun cleanEnv(): Void {
     Env.unset("CONCURRENCY")
     Env.unset("POLL_INTERVAL_MS")
     Env.unset("ARTIFACT_DIR")
+    Env.unset("PIPELINES_DIR")
 }
 
 fun loadFails(): Bool {

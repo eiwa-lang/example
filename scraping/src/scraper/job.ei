@@ -7,7 +7,9 @@ type Job(
     val kind: String,
     val attempt: Int,
     val maxAttempts: Int,
-    val idempotencyKey: String
+    val idempotencyKey: String,
+    val pipeline: String,
+    val pipelineJson: String
 )
 
 // Exponential backoff with cap, in ms. Pure: unit-tested without a DB.

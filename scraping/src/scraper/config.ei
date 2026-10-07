@@ -9,7 +9,8 @@ type Config(
     val databaseUrl: String,
     val concurrency: Int,
     val pollIntervalMs: Int,
-    val artifactDir: String
+    val artifactDir: String,
+    val pipelinesDir: String
 )
 
 type InvalidConfig(val detail: String) : Throwable {
@@ -89,5 +90,9 @@ fun loadConfig(): Config {
     if (artifacts == null || artifacts == "") {
         return throw InvalidConfig("set ARTIFACT_DIR")
     }
-    return Config(workers, db, concurrency, pollMs, artifacts)
+    val pipelines = Env.get("PIPELINES_DIR")
+    if (pipelines == null || pipelines == "") {
+        return throw InvalidConfig("set PIPELINES_DIR")
+    }
+    return Config(workers, db, concurrency, pollMs, artifacts, pipelines)
 }

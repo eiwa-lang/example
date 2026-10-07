@@ -8,13 +8,14 @@ import { Browser } from "browser.browser"
 import { InvalidConfig, loadConfig } from ".scraper.config"
 import { Store } from ".scraper.store"
 import { Scraper } from ".scraper.scraper"
+import { PipelineStore } from ".scraper.pipeline.store"
 
 fun main() {
     try {
         val config = loadConfig()
         val store = Store(Postgres.connect(config.databaseUrl))
         store.migrate()
-        val scraper = Scraper(config, store, Browser(config.browserWorkers, config.concurrency))
+        val scraper = Scraper(config, store, Browser(config.browserWorkers, config.concurrency), PipelineStore(config.pipelinesDir))
         task {
             scraper.serveArest(9090)
         }

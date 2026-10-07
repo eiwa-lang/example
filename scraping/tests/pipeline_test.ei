@@ -72,6 +72,11 @@ test "pipeline: round-trips through json" {
     assert(back.required.size() == 2, "required")
 }
 
+test "pipeline: gotoUrl returns the first goto url" {
+    val p = parsePipeline(quotesFixture())
+    assert(p.gotoUrl() == "https://quotes.toscrape.com/", "url")
+}
+
 test "pipeline: catch-bound message assigns to String" {
     var m = "unset"
     try {

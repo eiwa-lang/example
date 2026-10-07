@@ -1,5 +1,5 @@
 import { assert } from "std.core"
-import { parseJson } from "std.json"
+import { parseJson, fromJson } from "std.json"
 import { sleepMs } from "std.time"
 import { Env } from "std.env"
 import { Threads } from "std.thread"
@@ -18,6 +18,8 @@ import { Config } from ".scraper.config"
 import { Job } from ".scraper.job"
 import { Store } from ".scraper.store"
 import { Scraper, retryableNote, InvalidJob, DuplicateJob } from ".scraper.scraper"
+import { PipelineStore } from ".scraper.pipeline.store"
+import { PipelineRecord } from ".scraper.pipeline.runner"
 import { Metrics } from ".scraper.metrics"
 
 fun svcReply(id: Int, result: String): String {
@@ -149,7 +151,15 @@ fun svcWorker(cdpPort: Int, server: TCPServer): String {
 }
 
 fun svcConfig(): Config {
-    return Config(["ws://127.0.0.1:28913"], "postgres://localhost/scraping", 1, 100, "/tmp")
+    return Config(["ws://127.0.0.1:28913"], "postgres://localhost/scraping", 1, 100, "/tmp", "pipelines")
+}
+
+fun svcPipelines(): PipelineStore {
+    return PipelineStore("pipelines")
+}
+
+fun svcSnapshot(): String {
+    return svcPipelines().load("quotes").toJson()
 }
 
 fun svcStore(): Store? {
@@ -205,14 +215,20 @@ test "service: runOnce completes a quotes job end to end" {
         }
         sleepMs(150)
         val browser = Browser(["ws://127.0.0.1:28913"], 1)
-        val scraper = Scraper(svcConfig(), store, browser)
+        val scraper = Scraper(svcConfig(), store, browser, svcPipelines())
         store.deleteJob("quotes-svc-1")
-        assert(store.enqueue("quotes", "https://quotes.toscrape.com/", "page", 3, "svc-1"), "enqueue")
+        assert(store.enqueue("quotes", "https://quotes.toscrape.com/", "page", 3, "svc-1", "quotes", svcSnapshot()), "enqueue")
         assert(scraper.runOnce() == "done-2", "outcome")
         val rows = store.conn.query("SELECT payload FROM records WHERE job_id = 'quotes-svc-1' ORDER BY id").rows()
         assert(rows.size() == 2, "records")
-        assert(rows.get(0).string("payload").indexOf("Quote one") >= 0, "first")
-        assert(rows.get(1).string("payload").indexOf("Author two") >= 0, "second")
+        val first = fromJson<PipelineRecord>(rows.get(0).string("payload"))
+        assert(first != null, "typed-first")
+        assert(first!!.text("text") == "Quote one", "text")
+        assert(first!!.text("author") == "Author one", "author")
+        assert(first!!.texts("tags").size() == 1, "tags")
+        val second = fromJson<PipelineRecord>(rows.get(1).string("payload"))
+        assert(second != null, "typed-second")
+        assert(second!!.text("author") == "Author two", "second")
         assert(scraper.runOnce() == "empty", "drained")
         assert(scraper.storeHealth().toJson().indexOf("\"status\": \"ok\"") >= 0, "health")
         assert(scraper.metrics.render().indexOf("scrape_jobs_total{outcome=\"done\"} 1") >= 0, "metrics")
@@ -239,24 +255,24 @@ test "service: createJob validates without sockets" {
         echo("service live: skip (set SCRAPER_TEST_DATABASE_URL)")
     } else {
         val browser = Browser(["ws://127.0.0.1:28913"], 1)
-        val scraper = Scraper(svcConfig(), store, browser)
-        val created = scraper.createJob("{\"connector\": \"quotes\", \"url\": \"https://example.com/\", \"kind\": \"page\", \"maxAttempts\": 3, \"idempotencyKey\": \"pure-1\"}")
+        val scraper = Scraper(svcConfig(), store, browser, svcPipelines())
+        val created = scraper.createJob("{\"pipeline\": \"quotes\", \"maxAttempts\": 3, \"idempotencyKey\": \"pure-1\"}")
         assert(created.id == "quotes-pure-1", "id")
         assert(created.status == "queued", "status")
         store.deleteJob("quotes-pure-1")
         try {
-            scraper.createJob("{\"connector\": \"quotes\", \"url\": \"https://example.com/\", \"kind\": \"page\", \"maxAttempts\": 3, \"idempotencyKey\": \"pure-1\"}")
-            scraper.createJob("{\"connector\": \"quotes\", \"url\": \"https://example.com/\", \"kind\": \"page\", \"maxAttempts\": 3, \"idempotencyKey\": \"pure-1\"}")
+            scraper.createJob("{\"pipeline\": \"quotes\", \"maxAttempts\": 3, \"idempotencyKey\": \"pure-1\"}")
+            scraper.createJob("{\"pipeline\": \"quotes\", \"maxAttempts\": 3, \"idempotencyKey\": \"pure-1\"}")
             assert(false, "dupe-throws")
         } catch (e: DuplicateJob) {
             assert(e.id == "quotes-pure-1", "dupe-id")
         }
         store.deleteJob("quotes-pure-1")
         assert(invalidBody(scraper, "not json"), "garbage")
-        assert(invalidBody(scraper, "{\"connector\": \"nope\", \"url\": \"https://example.com/\", \"kind\": \"page\", \"maxAttempts\": 3, \"idempotencyKey\": \"k\"}"), "connector")
-        assert(invalidBody(scraper, "{\"connector\": \"quotes\", \"url\": \"ftp://example.com/x\", \"kind\": \"page\", \"maxAttempts\": 3, \"idempotencyKey\": \"k\"}"), "url")
-        assert(invalidBody(scraper, "{\"connector\": \"quotes\", \"url\": \"https://example.com/\", \"kind\": \"\", \"maxAttempts\": 3, \"idempotencyKey\": \"k\"}"), "kind")
-        assert(invalidBody(scraper, "{\"connector\": \"quotes\", \"url\": \"https://example.com/\", \"kind\": \"page\", \"maxAttempts\": 0, \"idempotencyKey\": \"k\"}"), "attempts")
+        assert(invalidBody(scraper, "{\"pipeline\": \"nope\", \"maxAttempts\": 3, \"idempotencyKey\": \"k\"}"), "pipeline")
+        assert(invalidBody(scraper, "{\"pipeline\": \"\", \"maxAttempts\": 3, \"idempotencyKey\": \"k\"}"), "empty")
+        assert(invalidBody(scraper, "{\"pipeline\": \"quotes\", \"maxAttempts\": 0, \"idempotencyKey\": \"k\"}"), "attempts")
+        assert(invalidBody(scraper, "{}"), "missing")
         browser.close()
         store.close()
     }
@@ -268,7 +284,7 @@ test "service: runOnce survives store outage" {
         echo("service live: skip (set SCRAPER_TEST_DATABASE_URL)")
     } else {
         val browser = Browser(["ws://127.0.0.1:28913"], 1)
-        val scraper = Scraper(svcConfig(), store, browser)
+        val scraper = Scraper(svcConfig(), store, browser, svcPipelines())
         store.close()
         assert(scraper.runOnce() == "store-down", "first")
         assert(scraper.runOnce() == "store-down", "survives")
@@ -278,19 +294,19 @@ test "service: runOnce survives store outage" {
     }
 }
 
-test "service: unknown connector dead-letters" {
+test "service: bad pipeline snapshot dead-letters" {
     val store = svcStore()
     if (store == null) {
         echo("service live: skip (set SCRAPER_TEST_DATABASE_URL)")
     } else {
         val browser = Browser(["ws://127.0.0.1:28913"], 1)
-        val scraper = Scraper(svcConfig(), store, browser)
-        store.deleteJob("nope-svc-2")
-        assert(store.enqueue("nope", "https://example.com/", "page", 3, "svc-2"), "enqueue")
-        assert(scraper.runOnce() == "unknown-nope", "outcome")
+        val scraper = Scraper(svcConfig(), store, browser, svcPipelines())
+        store.deleteJob("quotes-svc-2")
+        assert(store.enqueue("quotes", "https://example.com/", "page", 3, "svc-2", "quotes", "{}"), "enqueue")
+        assert(scraper.runOnce() == "dead-bad-pipeline", "outcome")
         assert(scraper.runOnce() == "empty", "drained")
-        assert(scraper.metrics.jobCount("unknown") == 1, "metric")
-        store.deleteJob("nope-svc-2")
+        assert(scraper.metrics.jobCount("dead") == 1, "metric")
+        store.deleteJob("quotes-svc-2")
         browser.close()
         store.close()
     }
@@ -302,7 +318,7 @@ test "service: api serves health, metrics and job submit" {
         echo("service live: skip (set SCRAPER_TEST_DATABASE_URL)")
     } else {
         val browser = Browser(["ws://127.0.0.1:28913"], 1)
-        val scraper = Scraper(svcConfig(), store, browser)
+        val scraper = Scraper(svcConfig(), store, browser, svcPipelines())
         scraper.metrics.bumpJobs("done")
         // Daemon thread by design: arest() blocks serving; the port is
         // unique to this file and dies with the test process.
@@ -318,20 +334,18 @@ test "service: api serves health, metrics and job submit" {
         assert(h.status == 200, "health-status")
         assert(h.body.indexOf("\"status\": \"ok\"") >= 0, "health-body")
         store.deleteJob("quotes-api-3")
-        val created = http.post("http://127.0.0.1:28914/jobs", "{\"connector\": \"quotes\", \"url\": \"https://example.com/\", \"kind\": \"page\", \"maxAttempts\": 3, \"idempotencyKey\": \"api-3\"}")
+        val created = http.post("http://127.0.0.1:28914/jobs", "{\"pipeline\": \"quotes\", \"maxAttempts\": 3, \"idempotencyKey\": \"api-3\"}")
         assert(created.status == 201, "created-status")
         assert(created.body.indexOf("quotes-api-3") >= 0, "created-id")
-        store.deleteJob("quotes-api-4")
-        val defaulted = http.post("http://127.0.0.1:28914/jobs", "{\"connector\": \"quotes\", \"url\": \"https://example.com/\"}")
+        store.deleteJob("quotes-https://quotes.toscrape.com/")
+        val defaulted = http.post("http://127.0.0.1:28914/jobs", "{\"pipeline\": \"quotes\"}")
         assert(defaulted.status == 201, "defaulted-status")
-        assert(defaulted.body.indexOf("quotes-https://example.com/") >= 0, "defaulted-id")
-        val dupe = http.post("http://127.0.0.1:28914/jobs", "{\"connector\": \"quotes\", \"url\": \"https://example.com/\", \"kind\": \"page\", \"maxAttempts\": 3, \"idempotencyKey\": \"api-3\"}")
+        assert(defaulted.body.indexOf("quotes-https://quotes.toscrape.com/") >= 0, "defaulted-id")
+        val dupe = http.post("http://127.0.0.1:28914/jobs", "{\"pipeline\": \"quotes\", \"maxAttempts\": 3, \"idempotencyKey\": \"api-3\"}")
         assert(dupe.status == 409, "duplicate")
-        val badConnector = http.post("http://127.0.0.1:28914/jobs", "{\"connector\": \"nope\", \"url\": \"https://example.com/\"}")
-        assert(badConnector.status == 400, "bad-connector")
-        assert(badConnector.body.indexOf("\"error\"") >= 0, "error-json")
-        val badUrl = http.post("http://127.0.0.1:28914/jobs", "{\"connector\": \"quotes\", \"url\": \"not-a-url\"}")
-        assert(badUrl.status == 400, "bad-url")
+        val badPipeline = http.post("http://127.0.0.1:28914/jobs", "{\"pipeline\": \"nope\"}")
+        assert(badPipeline.status == 400, "bad-pipeline")
+        assert(badPipeline.body.indexOf("\"error\"") >= 0, "error-json")
         val garbage = http.post("http://127.0.0.1:28914/jobs", "not json")
         assert(garbage.status == 400, "garbage")
         val miss = http.get("http://127.0.0.1:28914/nope")
@@ -339,7 +353,7 @@ test "service: api serves health, metrics and job submit" {
         // No worker on 28913: goto fails closed, job dead-letters.
         assert(scraper.runOnce() == "dead-browser-goto-failed", "outcome")
         store.deleteJob("quotes-api-3")
-        store.deleteJob("quotes-https://example.com/")
+        store.deleteJob("quotes-https://quotes.toscrape.com/")
         browser.close()
         store.close()
     }

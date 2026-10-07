@@ -41,6 +41,7 @@ services:
       CONCURRENCY: 4
       POLL_INTERVAL_MS: 1000
       ARTIFACT_DIR: /var/lib/scraper/artifacts
+      PIPELINES_DIR: /pipelines
     volumes:
       - artifacts:/var/lib/scraper/artifacts
     depends_on:

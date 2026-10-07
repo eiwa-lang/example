@@ -24,8 +24,8 @@ test "store: migrate is idempotent" {
     if (store == null) {
         echo("store live: skip (set SCRAPER_TEST_DATABASE_URL)")
     } else {
-        assert(store.migrate() == 1, "migrate")
-        assert(store.migrate() == 1, "remigrate")
+        assert(store.migrate() == 2, "migrate")
+        assert(store.migrate() == 2, "remigrate")
         store.close()
     }
 }
@@ -36,12 +36,14 @@ test "store: enqueue claim complete round-trip" {
         echo("store live: skip (set SCRAPER_TEST_DATABASE_URL)")
     } else {
         store.deleteJob("quotes-test-key-1")
-        assert(store.enqueue("quotes", "https://quotes.toscrape.com/", "page", 3, "test-key-1"), "enqueue")
-        assert(store.enqueue("quotes", "https://quotes.toscrape.com/", "page", 3, "test-key-1") == false, "dedupe")
+        assert(store.enqueue("quotes", "https://quotes.toscrape.com/", "page", 3, "test-key-1", "quotes", "{}"), "enqueue")
+        assert(store.enqueue("quotes", "https://quotes.toscrape.com/", "page", 3, "test-key-1", "quotes", "{}") == false, "dedupe")
         val job = store.claim()
         assert(job != null, "claimed")
         assert(job!!.connector == "quotes", "connector")
         assert(job!!.attempt == 1, "attempt")
+        assert(job!!.pipeline == "quotes", "pipeline")
+        assert(job!!.pipelineJson == "{}", "snapshot")
         assert(store.insertRecord(job!!.id, "quotes", "{\"text\": \"hi\"}", job!!.url, "rec-1"), "record")
         assert(store.complete(job!!.id), "complete")
         assert(store.claim() == null, "empty")
@@ -56,7 +58,7 @@ test "store: failure requeues or dead-letters" {
         echo("store live: skip (set SCRAPER_TEST_DATABASE_URL)")
     } else {
         store.deleteJob("quotes-test-key-2")
-        assert(store.enqueue("quotes", "https://quotes.toscrape.com/page/2/", "page", 3, "test-key-2"), "enqueue")
+        assert(store.enqueue("quotes", "https://quotes.toscrape.com/page/2/", "page", 3, "test-key-2", "quotes", "{}"), "enqueue")
         val job = store.claim()
         assert(job != null, "claimed")
         assert(store.fail(job!!.id, true, 60000), "requeue")

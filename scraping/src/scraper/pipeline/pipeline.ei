@@ -105,8 +105,17 @@ type Pipeline(val name: String, val steps: List<Step>, val required: List<String
         return out.freeze()
     }
 
-    fun hasField(names: List<String>, want: String): Bool {
-        repeat(names.size()) { i ->
+    fun gotoUrl(): String {
+        repeat(this.steps.size()) { i ->
+            val s = this.steps.get(i)
+            if (s is Goto) {
+                return (s as Goto).url
+            }
+        }
+        return ""
+    }
+
+    fun hasField(names: List<String>, want: String): Bool {        repeat(names.size()) { i ->
             if (names.get(i) == want) {
                 return true
             }

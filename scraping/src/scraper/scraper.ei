@@ -13,7 +13,9 @@ import { Config } from ".scraper.config"
 import { Job, backoffMs, shouldRetry } from ".scraper.job"
 import { Store } from ".scraper.store"
 import { Metrics } from ".scraper.metrics"
-import { QuotesConnector } from ".scraper.targets.quotes"
+import { PipelineStore } from ".scraper.pipeline.store"
+import { PipelineRunner } from ".scraper.pipeline.runner"
+import { InvalidPipeline, PipelineNotFound, parsePipeline } from ".scraper.pipeline.pipeline"
 
 // Notes that may retry with backoff (transient); everything else
 // dead-letters. Pure policy, unit-tested.
@@ -25,9 +27,7 @@ fun retryableNote(note: String): Bool {
 }
 
 type JobRequest(
-    val connector: String,
-    val url: String,
-    val kind: String = "page",
+    val pipeline: String,
     val maxAttempts: Int = 3,
     val idempotencyKey: String = ""
 ) : Serializable + Json
@@ -48,11 +48,18 @@ type DuplicateJob(val id: String) : Throwable {
 
 type HealthBody(val status: String, val pending: Int) : Serializable + Json
 
-type Scraper(val config: Config, val store: Store, val browser: Browser, val metrics: Metrics = Metrics()) : Closeable {
+type Scraper(val config: Config, val store: Store, val browser: Browser, val pipelines: PipelineStore, val metrics: Metrics = Metrics()) : Closeable {
 
-    fun runQuotes(job: Job): String {
-        val connector = QuotesConnector(this.browser)
-        val res = connector.fetch(job)
+    fun runPipeline(job: Job): String {
+        val pipeline = try {
+            parsePipeline(job.pipelineJson)
+        } catch (e: InvalidPipeline) {
+            this.store.fail(job.id, false, 0)
+            this.metrics.bumpJobs("dead")
+            Log.info { "job dead: ${job.id} bad-pipeline" }
+            return "dead-bad-pipeline"
+        }
+        val res = PipelineRunner(this.browser).run(job, pipeline)
         if (res.kind == "failed") {
             this.metrics.bumpFetchError(res.note)
             if (shouldRetry(job.attempt, job.maxAttempts, retryableNote(res.note))) {
@@ -66,14 +73,13 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val met
             Log.info { "job dead: ${job.id} ${res.note} attempt ${job.attempt}" }
             return "dead-" + res.note
         }
-        val recs = connector.normalize(res.body)
-        repeat(recs.size()) { i ->
-            this.store.insertRecord(job.id, job.connector, recs.get(i).toJson(), job.url, job.id + "-" + i.toString())
+        repeat(res.records.size()) { i ->
+            this.store.insertRecord(job.id, job.pipeline, res.records.get(i).toJson(), job.url, job.id + "-" + i.toString())
         }
         this.store.complete(job.id)
         this.metrics.bumpJobs("done")
-        Log.info { "job done: ${job.id} ${recs.size()} records" }
-        return "done-" + recs.size().toString()
+        Log.info { "job done: ${job.id} ${res.records.size()} records" }
+        return "done-" + res.records.size().toString()
     }
 
     fun runOnce(): String {
@@ -83,14 +89,8 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val met
                 this.metrics.bumpJobs("empty")
                 return "empty"
             }
-            Log.info { "job claimed: ${job.id} ${job.connector} attempt ${job.attempt}" }
-            if (job.connector == "quotes") {
-                return this.runQuotes(job)
-            }
-            this.store.fail(job.id, false, 0)
-            this.metrics.bumpJobs("unknown")
-            Log.info { "job dead: ${job.id} unknown connector ${job.connector}" }
-            return "unknown-" + job.connector
+            Log.info { "job claimed: ${job.id} ${job.pipeline} attempt ${job.attempt}" }
+            return this.runPipeline(job)
         } catch (e: DbError) {
             this.metrics.bumpJobs("store-down")
             Log.error { "store unreachable in run loop" }
@@ -116,37 +116,38 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val met
     }
 
     // POST /jobs body is a JobRequest DTO (arest deserializes shape;
-    // domain rules stay here). Strict at the boundary: unknown
-    // connector, bad url, or malformed fields fail fast instead of
-    // dead-lettering later. Pure domain: raw body in, created job out.
-    // Validation failures throw InvalidJob, duplicates throw
-    // DuplicateJob, store failures propagate as DbError. No HTTP here
-    // — the handler maps outcomes.
+    // domain rules stay here). Only the pipeline name comes from the
+    // caller; url, selectors and rules come from pipelines/<name>.json.
+    // Unknown pipeline, bad maxAttempts or malformed body fail fast with
+    // InvalidJob instead of dead-lettering later. Duplicates throw
+    // DuplicateJob, store failures propagate as DbError. Pure domain:
+    // raw body in, created job out.
     fun createJob(rawBody: String): CreatedJob {
         val req = try {
             fromJson<JobRequest>(rawBody)
+        } catch (e: Exception) {
+            throw InvalidJob("bad job request")
         }
         if (req == null) {
             throw InvalidJob("bad job request")
         }
-        if (req.connector != "quotes") {
-            throw InvalidJob("unknown connector")
-        }
-        if (req.url.indexOf("http://") != 0 && req.url.indexOf("https://") != 0) {
-            throw InvalidJob("bad url")
-        }
-        if (req.kind == "") {
-            throw InvalidJob("bad kind")
+        if (req.pipeline == "") {
+            throw InvalidJob("unknown pipeline")
         }
         if (req.maxAttempts <= 0) {
             throw InvalidJob("bad maxAttempts")
         }
-        var key = req.url
+        val pipeline = try {
+            this.pipelines.load(req.pipeline)
+        } catch (e: PipelineNotFound) {
+            throw InvalidJob("unknown pipeline")
+        }
+        var key = pipeline.gotoUrl()
         if (req.idempotencyKey != "") {
             key = req.idempotencyKey
         }
-        val id = req.connector + "-" + key
-        if (this.store.enqueue(req.connector, req.url, req.kind, req.maxAttempts, key)) {
+        val id = req.pipeline + "-" + key
+        if (this.store.enqueue(req.pipeline, pipeline.gotoUrl(), "page", req.maxAttempts, key, req.pipeline, pipeline.toJson())) {
             return CreatedJob(id, "queued")
         }
         throw DuplicateJob(id)

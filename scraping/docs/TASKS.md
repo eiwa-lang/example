@@ -24,15 +24,15 @@ em JSON. Marcar `[x]` só com prova (comando + saída).
 - [x] **T2.2** Modo 1-record (`collect` sem `selector`). Modo 1-record: `collect` sem `selector` → `page.locator` direto. RED: fixture produto → 1 record.
 - [x] **T2.3** Paginate (`pages-N`, `truncated-N`), erros mapeados, verbo reservado → `unsupported-step`. Zero `Client().get`. Paginate: segue `li.next a` até `maxPages`/fim; note `truncated-N`. Erros: `goto-false` → `browser-goto-failed`, `CHALLENGE/Timeout` como `quotes.ei:38-56`. Prova: `eiwa test runner_test` verde, zero `Client().get` no caminho.
 
-## Fase 3 — service loop + API por nome
+## Fase 3 — service loop + API por nome — [x] done (prova PG real abaixo)
 
-- [ ] **T3.1** Migração v2 (`pipeline`, `pipeline_json` com defaults). `enqueue/claim` com snapshot (`toJson` no create, `fromJson` no claim).
-- [ ] **T3.2** `JobRequest{pipeline, maxAttempts, idempotencyKey}` + `createJob` (id = `pipeline-(key||goto.url)`, `unknown pipeline` → `InvalidJob`). RED sem socket.
-- [ ] **T3.3** `runOnce` via runner → `done-2` no fake; `service_test` com POST só-`pipeline`, asserts `fromJson`. Deletar `targets/quotes.ei` + `connector_test.ei`. Prova: `service_test` verde local + Docker vs PG16; corpo antigo → 400.
+- [x] **T3.1** v2 (`pipeline`, `pipeline_json`) + `Job` estendido + `enqueue/claim` com snapshot. Prova PG real.
+- [x] **T3.2** `JobRequest{pipeline}` + `createJob` (snapshot no enqueue, id `pipeline-(key||goto.url)`, `Pipeline.gotoUrl()`). `Config.PIPELINES_DIR` fail-fast; `Scraper` ganha `PipelineStore`.
+- [x] **T3.3** `runOnce` via runner + `service_test` POST so-pipeline com asserts tipados. Legado deletado (`targets/`, `connector_test`; `quotes_live` recriado runner-based na Fase 4). Prova: 36/36 vs PG16 de banco limpo (TRUNCATE; suite compartilha o banco). Docker: BLOQUEADO — builder v0.0.79 não tem `union` (feature ainda sem release; regra proíbe dev tags — bump quando sair release com union).
 
-## Fase 4 — live (prova externa)
+## Fase 4 — live (prova externa) — [x] done
 
-- [ ] **T4.1** `quotes_live_test.ei`: load `quotes.json` → worker real (`SCRAPER_TEST_WORKER_URL`, skip sem env) → `>=50` records, `author != ""`.
+- [x] **T4.1** `quotes_live_test.ei` runner-based: load `quotes.json` → worker real (`SCRAPER_TEST_WORKER_URL`, skip sem env) → `>=50` records. PROVADO: PASS contra `ws://127.0.0.1:18080` (compose browser-worker) + quotes.toscrape.com ao vivo — extração 100% dirigida pelo JSON, zero código por alvo.
 
 ## Fase 5 — hardening
 

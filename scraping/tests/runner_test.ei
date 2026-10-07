@@ -175,7 +175,7 @@ fun rnWorker(cdpPort: Int, server: TCPServer): String {
 }
 
 fun rnJob(): Job {
-    return Job("rn-1", "quotes", "https://quotes.toscrape.com/", "page", 0, 3, "rn-1")
+    return Job("rn-1", "quotes", "https://quotes.toscrape.com/", "page", 0, 3, "rn-1", "quotes", "{}")
 }
 
 fun rnLiveRunner(cdpPort: Int, wsPort: Int, hrefBudget: Int): Browser {

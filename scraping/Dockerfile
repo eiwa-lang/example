@@ -24,6 +24,7 @@ WORKDIR /src
 COPY eiwa.yaml eiwa.yaml
 COPY src src
 COPY tests tests
+COPY pipelines pipelines
 # Live proof: the suite runs inside the image build; a broken service
 # fails the image here. PG-backed tests skip without a database (their
 # skip is the honest signal); live store proof runs against compose
@@ -42,6 +43,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /out/scraper /usr/local/bin/scraper
+COPY --from=builder /src/pipelines /pipelines
 # No ENV defaults baked in: missing config must fail fast at boot.
 # Defaults for local dev live in compose.yaml.
 VOLUME /var/lib/scraper/artifacts
