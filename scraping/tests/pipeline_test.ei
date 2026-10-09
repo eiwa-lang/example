@@ -1,5 +1,5 @@
 import { assert } from "std.core"
-import { InvalidPipeline, PipelineNotFound, parsePipeline, Goto, Collect, Paginate } from ".scraper.pipeline.pipeline"
+import { InvalidPipeline, PipelineNotFound, parsePipeline, Goto, Collect, Paginate, Click, Wait } from ".scraper.pipeline.pipeline"
 import { PipelineStore } from ".scraper.pipeline.store"
 
 fun quotesFixture(): String {
@@ -72,6 +72,18 @@ test "pipeline: round-trips through json" {
     assert(back.required.size() == 2, "required")
 }
 
+test "pipeline: click and wait validate" {
+    val raw = "{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"click\": {\"selector\": \"button.tab\", \"index\": 6}}, {\"wait\": {\"selector\": \"#view h3\", \"timeoutMs\": 5000, \"text\": \"MCP\"}}, {\"collect\": {\"selector\": \"\", \"fields\": [{\"name\": \"t\", \"selector\": \"h3\", \"many\": false, \"attr\": \"\"}]}}], \"required\": [\"t\"]}"
+    val p = parsePipeline(raw)
+    assert(p.steps.size() == 4, "steps")
+    assert(p.steps.get(1) is Click, "click")
+    assert(p.steps.get(2) is Wait, "wait")
+    assert(invalidFixture("{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"click\": {\"selector\": \"\", \"index\": 1}}], \"required\": []}"), "click-selector")
+    assert(invalidFixture("{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"click\": {\"selector\": \"b\", \"index\": 0}}], \"required\": []}"), "click-index")
+    assert(invalidFixture("{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"wait\": {\"selector\": \"\", \"timeoutMs\": 1000, \"text\": \"\"}}], \"required\": []}"), "wait-selector")
+    assert(invalidFixture("{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"wait\": {\"selector\": \"h3\", \"timeoutMs\": 0, \"text\": \"\"}}], \"required\": []}"), "wait-timeout")
+}
+
 test "pipeline: gotoUrl returns the first goto url" {
     val p = parsePipeline(quotesFixture())
     assert(p.gotoUrl() == "https://quotes.toscrape.com/", "url")
@@ -122,6 +134,15 @@ test "pipeline: store loads quotes.json from disk" {
     assert(p.steps.size() == 3, "steps")
     assert((p.steps.get(1) as Collect).selector == "div.quote", "selector")
     assert(p.required.size() == 2, "required")
+}
+
+test "pipeline: store loads eiwa-mcp with click and wait" {
+    val p = PipelineStore("pipelines").load("eiwa-mcp")
+    assert(p.name == "eiwa-mcp", "name")
+    assert(p.steps.size() == 4, "steps")
+    assert(p.steps.get(1) is Click, "click")
+    assert(p.steps.get(2) is Wait, "wait")
+    assert(p.gotoUrl() == "https://eiwa.dev/", "url")
 }
 
 test "pipeline: store maps missing file to PipelineNotFound" {

@@ -3,6 +3,7 @@
 // JSON. Single-record mode when collect.selector == ""; N records when set.
 import { List, MutableList } from "std.collections"
 import { repeat } from "std.system"
+import { sleepMs } from "std.time"
 import { Serializable } from "std.serde"
 import { Json } from "std.json"
 import { Browser, NoWorkerAvailable, UnknownContext } from "browser.browser"
@@ -88,50 +89,103 @@ type PipelineRunner(val browser: Browser?) {
     }
 
     fun runSteps(b: Browser, pipeline: Pipeline): RunResult {
-        val collect = this.findCollect(pipeline)
-        if (collect == null) {
+        var lastCollect: Collect? = null
+        repeat(pipeline.steps.size()) { i ->
+            val s = pipeline.steps.get(i)
+            if (s is Collect) {
+                lastCollect = s as Collect
+            }
+        }
+        if (lastCollect == null) {
             return failed("no-collect")
         }
-        val goto = pipeline.steps.get(0) as Goto
+        val first = pipeline.steps.get(0) as Goto
         val page = b.newPage()
-        if (page.goto(goto.url, goto.waitUntil, goto.timeoutMs) == false) {
+        if (page.goto(first.url, first.waitUntil, first.timeoutMs) == false) {
             page.close()
             return failed("browser-goto-failed")
         }
-        val paginate = this.findPaginate(pipeline)
         val out: MutableList<PipelineRecord> = MutableList<PipelineRecord>()
-        var pages = 1
+        var early: RunResult? = null
+        repeat(pipeline.steps.size()) { i ->
+            if (i > 0 && early == null) {
+                val s = pipeline.steps.get(i)
+                if (s is Goto) {
+                    val g = s as Goto
+                    if (page.goto(g.url, g.waitUntil, g.timeoutMs) == false) {
+                        early = failed("browser-goto-failed")
+                    }
+                } else if (s is Click) {
+                    if (this.doClick(page, s as Click) == false) {
+                        early = failed("click-failed")
+                    }
+                } else if (s is Wait) {
+                    if (this.doWait(page, s as Wait) == false) {
+                        early = failed("wait-timeout")
+                    }
+                } else if (s is Collect) {
+                    this.collectPage(page, s as Collect, pipeline.required, out)
+                }
+            }
+        }
+        if (early != null) {
+            page.close()
+            return early!!
+        }
+        return this.paginate(page, pipeline, first, lastCollect!!, out, 1)
+    }
+
+    fun paginate(page: Page, pipeline: Pipeline, goto: Goto, collect: Collect, out: MutableList<PipelineRecord>, pages: Int): RunResult {
+        val paginate = this.findPaginate(pipeline)
+        if (paginate == null) {
+            page.close()
+            if (out.size() == 0) {
+                return failed("browser-no-records")
+            }
+            return ok(out.freeze(), "pages-" + pages.toString())
+        }
         var done = false
+        var count = pages
         while (done == false) {
-            this.collectPage(page, collect, pipeline.required, out)
             val next = this.nextUrl(page, paginate)
             if (next == null) {
                 done = true
-            } else if (paginate != null && pages >= paginate.maxPages) {
+            } else if (count >= paginate.maxPages) {
                 page.close()
-                return ok(out.freeze(), "truncated-" + pages.toString())
+                return ok(out.freeze(), "truncated-" + count.toString())
             } else if (page.goto(this.resolveUrl(goto.url, next), goto.waitUntil, goto.timeoutMs) == false) {
                 page.close()
                 return failed("browser-goto-failed")
             } else {
-                pages = pages + 1
+                count = count + 1
+                this.collectPage(page, collect, pipeline.required, out)
             }
         }
         page.close()
         if (out.size() == 0) {
             return failed("browser-no-records")
         }
-        return ok(out.freeze(), "pages-" + pages.toString())
+        return ok(out.freeze(), "pages-" + count.toString())
     }
 
-    fun findCollect(pipeline: Pipeline): Collect? {
-        repeat(pipeline.steps.size()) { i ->
-            val s = pipeline.steps.get(i)
-            if (s is Collect) {
-                return s as Collect
-            }
+    fun doClick(page: Page, c: Click): Bool {
+        return page.locator(c.selector).nth(c.index).click()
+    }
+
+    fun doWait(page: Page, w: Wait): Bool {
+        if (w.text == "") {
+            return page.locator(w.selector).waitFor(w.timeoutMs)
         }
-        return null
+        var waited = 0
+        while (waited < w.timeoutMs) {
+            val t = page.locator(w.selector).text()
+            if (t != null && t.indexOf(w.text) >= 0) {
+                return true
+            }
+            sleepMs(250)
+            waited = waited + 250
+        }
+        return false
     }
 
     fun findPaginate(pipeline: Pipeline): Paginate? {

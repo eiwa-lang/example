@@ -38,3 +38,9 @@ em JSON. Marcar `[x]` só com prova (comando + saída).
 
 - [x] **T5.1** metricas `scrape_jobs_total{pipeline,outcome}` (mapa unico, `""` = infra); `PipelineStore` rejeita nomes inseguros (`/`, `.`, `|`, vazio). `PIPELINES_DIR`/compose ja feitos na Fase 3. Prova: 38/38 vs PG16.
 - [x] **T5.2** DERRUBADA com rationale: store e read-through (le do disco a cada `load`), nao ha cache para invalidar; endpoint de reload seria no-op desonesto.
+
+## Segundo pipeline (eiwa-mcp) — [x] done
+
+- [x] Union += `Click(selector, index)` + `Wait(selector, timeoutMs, text)`; runner executa steps em ordem (goto/click/wait/collect, paginate por ultimo). `wait.text != ""` faz polling de `text()` com `sleepMs` (sem mudar o browser).
+- [x] `pipelines/eiwa-mcp.json`: goto eiwa.dev → click tab MCP (`//button[contains(@class,…)]`, CSS exato nao casa multi-classe) → wait texto "MCP" → collect title/lede/snippets. Achado: click com match exato falha (`ENGINE: click failed`) — documentado no PIPELINE §1.3.
+- [x] Prova: `runner_test` 9/9 (fake com ramos click/wait; script-kind antes de seletor), live `eiwa-mcp` PASS (title + 3 snippets), suite 43/43 vs PG16 + worker real.

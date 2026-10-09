@@ -65,7 +65,11 @@ fun rnSession(sock: Socket, hrefBudget: Int): String {
                         writeAll(sock, buildFrame(1, rnReply(num, "{\"frameId\": \"F1\"}"), null))
                         writeAll(sock, buildFrame(1, "{\"method\": \"Page.loadEventFired\", \"params\": {}, \"sessionId\": \"S1\"}", null))
                     } else if (mname == "Runtime.evaluate") {
-                        if (f.payload.indexOf("span[@class='text']") >= 0) {
+                        if (f.payload.indexOf("el.click()") >= 0) {
+                            writeAll(sock, buildFrame(1, rnReply(num, rnValue("ok")), null))
+                        } else if (f.payload.indexOf("getBoundingClientRect") >= 0) {
+                            writeAll(sock, buildFrame(1, rnReply(num, rnValue("found")), null))
+                        } else if (f.payload.indexOf("span[@class='text']") >= 0) {
                             texts = texts + 1
                             if (texts == 1) {
                                 writeAll(sock, buildFrame(1, rnReply(num, rnValue("Quote one")), null))
@@ -110,6 +114,8 @@ fun rnSession(sock: Socket, hrefBudget: Int): String {
                             } else {
                                 writeAll(sock, buildFrame(1, rnReply(num, rnNull()), null))
                             }
+                        } else if (f.payload.indexOf("\\\"div.quote\\\"") >= 0) {
+                            writeAll(sock, buildFrame(1, rnReply(num, rnValue("Quote one by Author one")), null))
                         } else {
                             writeAll(sock, buildFrame(1, rnReply(num, rnNull()), null))
                         }
@@ -229,6 +235,28 @@ test "runner: truncates at maxPages" {
     assert(res.kind == "records", "kind-$res.note")
     assert(res.records.size() == 2, "count")
     assert(res.note == "truncated-1", "note-$res.note")
+    browser.close()
+}
+
+test "runner: click then wait-text then collect" {
+    val browser = rnLiveRunner(28933, 28935, 0)
+    val pipeline = parsePipeline("{\"name\": \"tabbed\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 15000}}, {\"click\": {\"selector\": \"button.tab\", \"index\": 1}}, {\"wait\": {\"selector\": \"div.quote\", \"timeoutMs\": 5000, \"text\": \"Quote\"}}, {\"collect\": {\"selector\": \"div.quote\", \"fields\": [{\"name\": \"text\", \"selector\": \"span.text\", \"many\": false, \"attr\": \"\"}, {\"name\": \"author\", \"selector\": \"small.author\", \"many\": false, \"attr\": \"\"}]}}], \"required\": [\"text\", \"author\"]}")
+    val runner = PipelineRunner(browser)
+    val res = runner.run(rnJob(), pipeline)
+    assert(res.kind == "records", "kind-$res.note")
+    assert(res.records.size() == 2, "count")
+    assert(res.records.get(0).text("text") == "Quote one", "text")
+    assert(res.note == "pages-1", "note-$res.note")
+    browser.close()
+}
+
+test "runner: wait presence passes" {
+    val browser = rnLiveRunner(28937, 28939, 0)
+    val pipeline = parsePipeline("{\"name\": \"w\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 15000}}, {\"wait\": {\"selector\": \"div.quote\", \"timeoutMs\": 5000, \"text\": \"\"}}, {\"collect\": {\"selector\": \"\", \"fields\": [{\"name\": \"pname\", \"selector\": \".name\", \"many\": false, \"attr\": \"\"}]}}], \"required\": [\"pname\"]}")
+    val runner = PipelineRunner(browser)
+    val res = runner.run(rnJob(), pipeline)
+    assert(res.kind == "records", "kind-$res.note")
+    assert(res.records.size() == 1, "count")
     browser.close()
 }
 

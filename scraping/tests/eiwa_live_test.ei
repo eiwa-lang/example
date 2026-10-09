@@ -1,0 +1,24 @@
+import { assert } from "std.core"
+import { Env } from "std.env"
+import { Browser } from "browser.browser"
+import { Job } from ".scraper.job"
+import { PipelineStore } from ".scraper.pipeline.store"
+import { PipelineRunner } from ".scraper.pipeline.runner"
+
+test "pipeline: live eiwa-mcp tab click through a real worker" {
+    val url = Env.get("SCRAPER_TEST_WORKER_URL")
+    if (url == null || url == "") {
+        echo("eiwa-mcp live: skip (set SCRAPER_TEST_WORKER_URL)")
+    } else {
+        val pipeline = PipelineStore("pipelines").load("eiwa-mcp")
+        val browser = Browser([url], 2)
+        val runner = PipelineRunner(browser)
+        val job = Job("live-mcp-1", "eiwa-mcp", "https://eiwa.dev/", "page", 0, 3, "live-mcp-1", "eiwa-mcp", pipeline.toJson())
+        val res = runner.run(job, pipeline)
+        assert(res.kind == "records", "kind-$res.note")
+        assert(res.records.size() == 1, "count")
+        assert(res.records.get(0).text("title") == "MCP tools in arest", "title")
+        assert(res.records.get(0).texts("snippets").size() == 3, "snippets")
+        browser.close()
+    }
+}

@@ -27,8 +27,14 @@ type Collect(val selector: String, val fields: List<FieldDef>) : Serializable + 
 
 type Paginate(val selector: String, val maxPages: Int) : Serializable + Json
 
+type Click(val selector: String, val index: Int) : Serializable + Json
+
+type Wait(val selector: String, val timeoutMs: Int, val text: String) : Serializable + Json
+
 union Step {
     @Alias("goto") Goto,
+    @Alias("click") Click,
+    @Alias("wait") Wait,
     @Alias("collect") Collect,
     @Alias("paginate") Paginate
 }
@@ -55,6 +61,22 @@ type Pipeline(val name: String, val steps: List<Step>, val required: List<String
         if (s is Goto) {
             if ((s as Goto).url == "") {
                 throw InvalidPipeline("goto needs url")
+            }
+        } else if (s is Click) {
+            val c = s as Click
+            if (c.selector == "") {
+                throw InvalidPipeline("click needs selector")
+            }
+            if (c.index < 1) {
+                throw InvalidPipeline("click needs index >= 1")
+            }
+        } else if (s is Wait) {
+            val w = s as Wait
+            if (w.selector == "") {
+                throw InvalidPipeline("wait needs selector")
+            }
+            if (w.timeoutMs <= 0) {
+                throw InvalidPipeline("wait needs timeoutMs > 0")
             }
         } else if (s is Collect) {
             this.validateFields(s as Collect)

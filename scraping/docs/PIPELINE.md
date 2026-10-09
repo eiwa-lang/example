@@ -119,6 +119,9 @@ Semântica do `collect`:
 - `required` (topo) filtra o item (descarta, não coage).
 - `challenge` nunca é verbo: por regra do `PLAN.md`, ao detectar o runner
   aborta com `browser-challenge` (log + métrica, dead-letter, sem retry).
+- Seletores CSS do conversor usam match exato de classe (`div.quote` não casa
+  `class="a quote"`); para multi-classe use XPath `contains()` direto
+  (ex. `//button[contains(@class, 'example-tab')]` — ver `eiwa-mcp.json`).
 
 Tipos Eiwa (membros `Serializable + Json`, union fecha o conjunto):
 
