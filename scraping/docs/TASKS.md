@@ -28,7 +28,7 @@ em JSON. Marcar `[x]` só com prova (comando + saída).
 
 - [x] **T3.1** v2 (`pipeline`, `pipeline_json`) + `Job` estendido + `enqueue/claim` com snapshot. Prova PG real.
 - [x] **T3.2** `JobRequest{pipeline}` + `createJob` (snapshot no enqueue, id `pipeline-(key||goto.url)`, `Pipeline.gotoUrl()`). `Config.PIPELINES_DIR` fail-fast; `Scraper` ganha `PipelineStore`.
-- [x] **T3.3** `runOnce` via runner + `service_test` POST so-pipeline com asserts tipados. Legado deletado (`targets/`, `connector_test`; `quotes_live` recriado runner-based na Fase 4). Prova: 36/36 vs PG16 de banco limpo (TRUNCATE; suite compartilha o banco). Docker: BLOQUEADO — builder v0.0.79 não tem `union` (feature ainda sem release; regra proíbe dev tags — bump quando sair release com union).
+- [x] **T3.3** `runOnce` via runner + `service_test` POST so-pipeline com asserts tipados. Legado deletado. Prova: 36/36 vs PG16 de banco limpo (TRUNCATE) + `docker build` verde com toolchain v0.0.83 (37/37 no builder, PG/live com skip honesto).
 
 ## Fase 4 — live (prova externa) — [x] done
 
