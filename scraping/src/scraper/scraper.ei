@@ -55,7 +55,7 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val pip
             parsePipeline(job.pipelineJson)
         } catch (e: InvalidPipeline) {
             this.store.fail(job.id, false, 0)
-            this.metrics.bumpJobs("dead")
+            this.metrics.bumpJobs(job.pipeline, "dead")
             Log.info { "job dead: ${job.id} bad-pipeline" }
             return "dead-bad-pipeline"
         }
@@ -64,12 +64,12 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val pip
             this.metrics.bumpFetchError(res.note)
             if (shouldRetry(job.attempt, job.maxAttempts, retryableNote(res.note))) {
                 this.store.fail(job.id, true, backoffMs(job.attempt))
-                this.metrics.bumpJobs("retry")
+                this.metrics.bumpJobs(job.pipeline, "retry")
                 Log.info { "job retry: ${job.id} ${res.note} attempt ${job.attempt}" }
                 return "retry-" + res.note
             }
             this.store.fail(job.id, false, 0)
-            this.metrics.bumpJobs("dead")
+            this.metrics.bumpJobs(job.pipeline, "dead")
             Log.info { "job dead: ${job.id} ${res.note} attempt ${job.attempt}" }
             return "dead-" + res.note
         }
@@ -77,7 +77,7 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val pip
             this.store.insertRecord(job.id, job.pipeline, res.records.get(i).toJson(), job.url, job.id + "-" + i.toString())
         }
         this.store.complete(job.id)
-        this.metrics.bumpJobs("done")
+        this.metrics.bumpJobs(job.pipeline, "done")
         Log.info { "job done: ${job.id} ${res.records.size()} records" }
         return "done-" + res.records.size().toString()
     }
@@ -86,13 +86,13 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val pip
         try {
             val job = this.store.claim()
             if (job == null) {
-                this.metrics.bumpJobs("empty")
+                this.metrics.bumpJobs("", "empty")
                 return "empty"
             }
             Log.info { "job claimed: ${job.id} ${job.pipeline} attempt ${job.attempt}" }
             return this.runPipeline(job)
         } catch (e: DbError) {
-            this.metrics.bumpJobs("store-down")
+            this.metrics.bumpJobs("", "store-down")
             Log.error { "store unreachable in run loop" }
             return "store-down"
         }

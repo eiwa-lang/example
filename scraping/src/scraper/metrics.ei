@@ -1,5 +1,6 @@
 // Metrics handle: in-memory Prometheus counters, snake_case.
-// No I/O here; Scraper serves render() over HTTP.
+// Jobs keyed "pipeline|outcome" (internal format; pipeline "" means
+// unattributed infra outcome). No I/O here; Scraper serves render().
 import { MutableMap } from "std.collections"
 
 type Metrics(
@@ -7,22 +8,30 @@ type Metrics(
     val fetchErrors: MutableMap<String, Int> = MutableMap<String, Int>()
 ) {
 
-    fun bumpJobs(outcome: String): Void {
-        this.jobs.put(outcome, (this.jobs.get(outcome) ?: 0) + 1)
+    fun jobKey(pipeline: String, outcome: String): String {
+        return pipeline + "|" + outcome
+    }
+
+    fun bumpJobs(pipeline: String, outcome: String): Void {
+        val k = this.jobKey(pipeline, outcome)
+        this.jobs.put(k, (this.jobs.get(k) ?: 0) + 1)
     }
 
     fun bumpFetchError(reason: String): Void {
         this.fetchErrors.put(reason, (this.fetchErrors.get(reason) ?: 0) + 1)
     }
 
-    fun jobCount(outcome: String): Int {
-        return this.jobs.get(outcome) ?: 0
+    fun jobCount(pipeline: String, outcome: String): Int {
+        return this.jobs.get(this.jobKey(pipeline, outcome)) ?: 0
     }
 
     fun render(): String {
         var out = ""
         for (this.jobs) { entry ->
-            out = out + "scrape_jobs_total{outcome=\"${entry.key}\"} ${entry.value}\n"
+            val sep = entry.key.indexOf("|")
+            val pipe = entry.key.substring(0, sep)
+            val outcome = entry.key.substring(sep + 1, entry.key.length)
+            out = out + "scrape_jobs_total{pipeline=\"${pipe}\",outcome=\"${outcome}\"} ${entry.value}\n"
         }
         for (this.fetchErrors) { entry ->
             out = out + "scrape_fetch_errors_total{reason=\"${entry.key}\"} ${entry.value}\n"

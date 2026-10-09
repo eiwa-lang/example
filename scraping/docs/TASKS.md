@@ -34,7 +34,7 @@ em JSON. Marcar `[x]` só com prova (comando + saída).
 
 - [x] **T4.1** `quotes_live_test.ei` runner-based: load `quotes.json` → worker real (`SCRAPER_TEST_WORKER_URL`, skip sem env) → `>=50` records. PROVADO: PASS contra `ws://127.0.0.1:18080` (compose browser-worker) + quotes.toscrape.com ao vivo — extração 100% dirigida pelo JSON, zero código por alvo.
 
-## Fase 5 — hardening
+## Fase 5 — hardening — [x] done
 
-- [ ] **T5.1** `PIPELINES_DIR` em `config.ei` (fail-fast) + `compose.yaml`; métricas `scrape_jobs_total{pipeline,outcome}`.
-- [ ] **T5.2** (opcional) `POST /pipelines/reload` → `PipelineStore.reload()`.
+- [x] **T5.1** metricas `scrape_jobs_total{pipeline,outcome}` (mapa unico, `""` = infra); `PipelineStore` rejeita nomes inseguros (`/`, `.`, `|`, vazio). `PIPELINES_DIR`/compose ja feitos na Fase 3. Prova: 38/38 vs PG16.
+- [x] **T5.2** DERRUBADA com rationale: store e read-through (le do disco a cada `load`), nao ha cache para invalidar; endpoint de reload seria no-op desonesto.

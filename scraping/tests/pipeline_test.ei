@@ -98,6 +98,23 @@ fun missingPipeline(store: PipelineStore, name: String): Bool {
     }
 }
 
+fun badName(store: PipelineStore, name: String): Bool {
+    try {
+        store.load(name)
+        return false
+    } catch (e: InvalidPipeline) {
+        return true
+    }
+}
+
+test "pipeline: store rejects unsafe names" {
+    val store = PipelineStore("pipelines")
+    assert(badName(store, "../eiwa"), "traversal")
+    assert(badName(store, "a/b"), "subdir")
+    assert(badName(store, ""), "empty")
+    assert(badName(store, "a|b"), "separator")
+}
+
 test "pipeline: store loads quotes.json from disk" {
     val store = PipelineStore("pipelines")
     val p = store.load("quotes")

@@ -187,16 +187,16 @@ test "service: retryable notes are transient only" {
 
 test "service: metrics render prometheus text" {
     val m = Metrics()
-    m.bumpJobs("done")
-    m.bumpJobs("done")
-    m.bumpJobs("dead")
+    m.bumpJobs("quotes", "done")
+    m.bumpJobs("quotes", "done")
+    m.bumpJobs("quotes", "dead")
     m.bumpFetchError("browser-goto-failed")
     val body = m.render()
-    assert(body.indexOf("scrape_jobs_total{outcome=\"done\"} 2") >= 0, "done")
-    assert(body.indexOf("scrape_jobs_total{outcome=\"dead\"} 1") >= 0, "dead")
+    assert(body.indexOf("scrape_jobs_total{pipeline=\"quotes\",outcome=\"done\"} 2") >= 0, "done")
+    assert(body.indexOf("scrape_jobs_total{pipeline=\"quotes\",outcome=\"dead\"} 1") >= 0, "dead")
     assert(body.indexOf("scrape_fetch_errors_total{reason=\"browser-goto-failed\"} 1") >= 0, "err")
-    assert(m.jobCount("done") == 2, "count")
-    assert(m.jobCount("retry") == 0, "zero")
+    assert(m.jobCount("quotes", "done") == 2, "count")
+    assert(m.jobCount("quotes", "retry") == 0, "zero")
 }
 
 test "service: runOnce completes a quotes job end to end" {
@@ -231,7 +231,7 @@ test "service: runOnce completes a quotes job end to end" {
         assert(second!!.text("author") == "Author two", "second")
         assert(scraper.runOnce() == "empty", "drained")
         assert(scraper.storeHealth().toJson().indexOf("\"status\": \"ok\"") >= 0, "health")
-        assert(scraper.metrics.render().indexOf("scrape_jobs_total{outcome=\"done\"} 1") >= 0, "metrics")
+        assert(scraper.metrics.render().indexOf("scrape_jobs_total{pipeline=\"quotes\",outcome=\"done\"} 1") >= 0, "metrics")
         store.deleteJob("quotes-svc-1")
         browser.close()
         store.close()
@@ -288,7 +288,7 @@ test "service: runOnce survives store outage" {
         store.close()
         assert(scraper.runOnce() == "store-down", "first")
         assert(scraper.runOnce() == "store-down", "survives")
-        assert(scraper.metrics.jobCount("store-down") == 2, "metric")
+        assert(scraper.metrics.jobCount("", "store-down") == 2, "metric")
         browser.close()
         store.close()
     }
@@ -305,7 +305,7 @@ test "service: bad pipeline snapshot dead-letters" {
         assert(store.enqueue("quotes", "https://example.com/", "page", 3, "svc-2", "quotes", "{}"), "enqueue")
         assert(scraper.runOnce() == "dead-bad-pipeline", "outcome")
         assert(scraper.runOnce() == "empty", "drained")
-        assert(scraper.metrics.jobCount("dead") == 1, "metric")
+        assert(scraper.metrics.jobCount("quotes", "dead") == 1, "metric")
         store.deleteJob("quotes-svc-2")
         browser.close()
         store.close()
@@ -319,7 +319,7 @@ test "service: api serves health, metrics and job submit" {
     } else {
         val browser = Browser(["ws://127.0.0.1:28913"], 1)
         val scraper = Scraper(svcConfig(), store, browser, svcPipelines())
-        scraper.metrics.bumpJobs("done")
+        scraper.metrics.bumpJobs("quotes", "done")
         // Daemon thread by design: arest() blocks serving; the port is
         // unique to this file and dies with the test process.
         val srv = Threads.spawn {
@@ -329,7 +329,7 @@ test "service: api serves health, metrics and job submit" {
         val http = Client()
         val m = http.get("http://127.0.0.1:28914/metrics")
         assert(m.status == 200, "metrics-status")
-        assert(m.body.indexOf("scrape_jobs_total{outcome=\"done\"} 1") >= 0, "metrics-body")
+        assert(m.body.indexOf("scrape_jobs_total{pipeline=\"quotes\",outcome=\"done\"} 1") >= 0, "metrics-body")
         val h = http.get("http://127.0.0.1:28914/health")
         assert(h.status == 200, "health-status")
         assert(h.body.indexOf("\"status\": \"ok\"") >= 0, "health-body")
