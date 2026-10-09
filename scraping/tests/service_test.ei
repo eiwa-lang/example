@@ -179,6 +179,7 @@ fun svcStore(): Store? {
 test "service: retryable notes are transient only" {
     assert(retryableNote("browser-timeout"))
     assert(retryableNote("browser-exhausted"))
+    assert(retryableNote("wait-timeout"))
     assert(retryableNote("browser-goto-failed") == false)
     assert(retryableNote("browser-challenge") == false)
     assert(retryableNote("no-browser") == false)

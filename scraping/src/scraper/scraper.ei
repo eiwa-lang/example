@@ -20,7 +20,7 @@ import { InvalidPipeline, PipelineNotFound, parsePipeline } from ".scraper.pipel
 // Notes that may retry with backoff (transient); everything else
 // dead-letters. Pure policy, unit-tested.
 fun retryableNote(note: String): Bool {
-    if (note == "browser-timeout" || note == "browser-exhausted") {
+    if (note == "browser-timeout" || note == "browser-exhausted" || note == "wait-timeout") {
         return true
     }
     return false

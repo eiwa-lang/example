@@ -139,9 +139,9 @@ test "pipeline: store loads quotes.json from disk" {
 test "pipeline: store loads eiwa-mcp with click and wait" {
     val p = PipelineStore("pipelines").load("eiwa-mcp")
     assert(p.name == "eiwa-mcp", "name")
-    assert(p.steps.size() == 4, "steps")
-    assert(p.steps.get(1) is Click, "click")
-    assert(p.steps.get(2) is Wait, "wait")
+    assert(p.steps.size() == 5, "steps")
+    assert(p.steps.get(2) is Click, "click")
+    assert(p.steps.get(3) is Wait, "wait")
     assert(p.gotoUrl() == "https://eiwa.dev/", "url")
 }
 

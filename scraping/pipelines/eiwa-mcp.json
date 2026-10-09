@@ -2,8 +2,9 @@
   "name": "eiwa-mcp",
   "steps": [
     {"goto": {"url": "https://eiwa.dev/", "waitUntil": "load", "timeoutMs": 30000}},
+    {"wait": {"selector": "#example-view h3", "timeoutMs": 6000, "text": "HTTP"}},
     {"click": {"selector": "//button[contains(@class, 'example-tab')]", "index": 6}},
-    {"wait": {"selector": "#example-view h3", "timeoutMs": 15000, "text": "MCP"}},
+    {"wait": {"selector": "#example-view h3", "timeoutMs": 1000, "text": "MCP"}},
     {"collect": {"selector": "", "fields": [
       {"name": "title", "selector": "#example-view h3", "many": false, "attr": ""},
       {"name": "lede", "selector": "#example-view p", "many": false, "attr": ""},
