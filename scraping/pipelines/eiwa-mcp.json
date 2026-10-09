@@ -3,7 +3,7 @@
   "steps": [
     {"goto": {"url": "https://eiwa.dev/", "waitUntil": "load", "timeoutMs": 30000}},
     {"click": {"selector": "//button[contains(@class, 'example-tab')]", "index": 6}},
-    {"wait": {"selector": "#example-view h3", "timeoutMs": 30000, "text": "MCP"}},
+    {"wait": {"selector": "#example-view h3", "timeoutMs": 15000, "text": "MCP"}},
     {"collect": {"selector": "", "fields": [
       {"name": "title", "selector": "#example-view h3", "many": false, "attr": ""},
       {"name": "lede", "selector": "#example-view p", "many": false, "attr": ""},

@@ -44,3 +44,4 @@ em JSON. Marcar `[x]` só com prova (comando + saída).
 - [x] Union += `Click(selector, index)` + `Wait(selector, timeoutMs, text)`; runner executa steps em ordem (goto/click/wait/collect, paginate por ultimo). `wait.text != ""` faz polling de `text()` com `sleepMs` (sem mudar o browser).
 - [x] `pipelines/eiwa-mcp.json`: goto eiwa.dev → click tab MCP (`//button[contains(@class,…)]`, CSS exato nao casa multi-classe) → wait texto "MCP" → collect title/lede/snippets. Achado: click com match exato falha (`ENGINE: click failed`) — documentado no PIPELINE §1.3.
 - [x] Prova: `runner_test` 9/9 (fake com ramos click/wait; script-kind antes de seletor), live `eiwa-mcp` PASS (title + 3 snippets), suite 43/43 vs PG16 + worker real.
+- Flake isolado: 1 run live deu `wait-timeout` (fetch htmx travou; rerun verde; swap saudavel ~1s em timeline medida). Timeout mantido em 15s de proposito — 30s mascararia, nao resolve. Rede do container e degradada (logs Chromium com net errors).
