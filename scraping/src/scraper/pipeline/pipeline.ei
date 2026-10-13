@@ -1,7 +1,5 @@
 // Pipeline types: agnostic extraction DSL. Only the JSON knows the
-// product/page/rules; this file knows only the verbs. Steps are a closed
-// union (Goto|Collect|Paginate): unknown tags throw at decode, the
-// compiler enforces handling. Wire keys are aliased (goto/collect/paginate).
+// product/page/rules; this file knows only the verbs (closed union).
 import { List, MutableList } from "std.collections"
 import { repeat } from "std.system"
 import { Serializable } from "std.serde"

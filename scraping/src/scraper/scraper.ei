@@ -115,13 +115,9 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val pip
         }
     }
 
-    // POST /jobs body is a JobRequest DTO (arest deserializes shape;
-    // domain rules stay here). Only the pipeline name comes from the
-    // caller; url, selectors and rules come from pipelines/<name>.json.
+    // POST /jobs takes only the pipeline name; domain rules stay here.
     // Unknown pipeline, bad maxAttempts or malformed body fail fast with
-    // InvalidJob instead of dead-lettering later. Duplicates throw
-    // DuplicateJob, store failures propagate as DbError. Pure domain:
-    // raw body in, created job out.
+    // InvalidJob instead of dead-lettering later.
     fun createJob(rawBody: String): CreatedJob {
         val req = try {
             fromJson<JobRequest>(rawBody)

@@ -1,6 +1,5 @@
 // PipelineStore: loads versioned pipeline JSON from disk. Read-through
-// on every load (no cache in v1; cache arrives with the reload endpoint).
-// File content always enters via parsePipeline (fromJson + validate).
+// on every load; content always enters via parsePipeline.
 import { File } from "std.fs"
 import { Pipeline, PipelineNotFound, InvalidPipeline, parsePipeline } from ".scraper.pipeline.pipeline"
 
