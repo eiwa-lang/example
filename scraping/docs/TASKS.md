@@ -46,3 +46,14 @@ em JSON. Marcar `[x]` só com prova (comando + saída).
 - [x] Prova: `runner_test` 9/9 (fake com ramos click/wait; script-kind antes de seletor), live `eiwa-mcp` PASS (title + 3 snippets), suite 43/43 vs PG16 + worker real.
 - Timeouts minimos verificados (10 amostras, poll 100ms): ready inicial max 1826ms / swap max 313ms; sem pre-wait o swap variava 263-1507ms + stalls (>10s) por congestao do burst inicial de fragmentos. wait inicial 6000ms, swap 1000ms (~3x do max medido). `wait-timeout` entrou em `retryableNote` (transiente com budget, nao dead direto).
 - Flake isolado: 1 run live deu `wait-timeout` (fetch htmx travou; rerun verde; swap saudavel ~1s em timeline medida). Timeout mantido em 15s de proposito — 30s mascararia, nao resolve. Rede do container e degradada (logs Chromium com net errors).
+
+## Burn-in compose-level (binario nativo) — [x] done
+
+- [x] Serviço nativo drenou a fila com POSTs intercalados, sem crash, sem retry
+  espúrio: 5x quotes `done` (100 records cada) + 3x eiwa-mcp `done`
+  (title/lede/snippets persistidos). `/metrics` com labels por pipeline,
+  `/health` pending 0. Pré-requisitos desta prova: fix L6+L7 no toolchain,
+  fix 512B no driver postgres (path override local; manifesto segue no
+  `github:main`), banco limpo via TRUNCATE.
+- [x] Observabilidade: `dead-bad-pipeline` agora loga o detalhe do
+  `InvalidPipeline` (foi assim que o teto 512B foi diagnosticado).

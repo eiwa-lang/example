@@ -56,7 +56,7 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val pip
         } catch (e: InvalidPipeline) {
             this.store.fail(job.id, false, 0)
             this.metrics.bumpJobs(job.pipeline, "dead")
-            Log.info { "job dead: ${job.id} bad-pipeline" }
+            Log.info { "job dead: ${job.id} bad-pipeline: ${e.message()}" }
             return "dead-bad-pipeline"
         }
         val res = PipelineRunner(this.browser).run(job, pipeline)
