@@ -57,3 +57,13 @@ em JSON. Marcar `[x]` só com prova (comando + saída).
   `github:main`), banco limpo via TRUNCATE.
 - [x] Observabilidade: `dead-bad-pipeline` agora loga o detalhe do
   `InvalidPipeline` (foi assim que o teto 512B foi diagnosticado).
+
+## Burn-in final (nativo + fixes) — [x] done 2026-10-13
+
+- Binário nativo (toolchain L6+L7, driver postgres path-override local):
+  POST quotes + eiwa-mcp intercalados → `done` 100 + 1 records, pending 0,
+  métricas por pipeline, vivo por toda a janela. Restart: health ok,
+  re-POSTs → `duplicate job` (101 records intactos, sem re-crawl).
+- eiwa.yaml segue pinado em `github:main` (override foi só local e revertido).
+- Bloqueio restante: imagem Docker com fixes exige release do toolchain
+  (regra de pinagem) e merge do fix postgres upstream.
