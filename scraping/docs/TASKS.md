@@ -67,3 +67,10 @@ em JSON. Marcar `[x]` só com prova (comando + saída).
 - eiwa.yaml segue pinado em `github:main` (override foi só local e revertido).
 - Bloqueio restante: imagem Docker com fixes exige release do toolchain
   (regra de pinagem) e merge do fix postgres upstream.
+
+## Migracao YAML — [x] done
+
+- [x] `pipelines/*.json` -> `*.yaml` (union + aliases + listas via
+  `fromYaml`; especiais `#`, XPath com quotes). `PipelineStore` le YAML
+  (`parsePipelineYaml`, malformado -> `InvalidPipeline`); snapshots no banco
+  seguem JSON (detalhe interno). `.json` deletados. Prova: 44/44 vs PG16.

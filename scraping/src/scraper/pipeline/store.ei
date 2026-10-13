@@ -1,12 +1,13 @@
 // PipelineStore: loads versioned pipeline JSON from disk. Read-through
 // on every load; content always enters via parsePipeline.
 import { File } from "std.fs"
-import { Pipeline, PipelineNotFound, InvalidPipeline, parsePipeline } from ".scraper.pipeline.pipeline"
+import { fromYaml } from "std.yaml"
+import { Pipeline, PipelineNotFound, InvalidPipeline } from ".scraper.pipeline.pipeline"
 
 type PipelineStore(val dir: String) {
 
     fun path(name: String): String {
-        return this.dir + "/" + name + ".json"
+        return this.dir + "/" + name + ".yaml"
     }
 
     fun validName(name: String): Bool {
@@ -34,6 +35,19 @@ type PipelineStore(val dir: String) {
         if (raw == "") {
             throw PipelineNotFound(name)
         }
-        return parsePipeline(raw)
+        return parsePipelineYaml(raw)
     }
+}
+
+fun parsePipelineYaml(raw: String): Pipeline {
+    val p = try {
+        fromYaml<Pipeline>(raw)
+    } catch (e: Exception) {
+        throw InvalidPipeline("bad pipeline yaml: " + e.message())
+    }
+    if (p == null) {
+        throw InvalidPipeline("bad pipeline yaml")
+    }
+    p.validate()
+    return p
 }
