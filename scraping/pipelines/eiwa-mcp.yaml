@@ -2,6 +2,7 @@ name: eiwa-mcp
 steps:
   - goto:
       url: https://eiwa.dev/
+      timeoutMs: 30000
   - wait:
       selector: "#example-view h3"
       timeoutMs: 6000
