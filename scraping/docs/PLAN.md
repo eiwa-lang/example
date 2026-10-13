@@ -83,11 +83,11 @@ deterministic via a local fake file server (browser's
 
 - **Scraper**: owns config, the job queue loop, connector dispatch,
   metrics endpoint. One process, N worker tasks.
-- **Connector (SUPERSEDED por `docs/PIPELINE.md` — mantido para histórico):**
+- **Connector (SUPERSEDED by `docs/PIPELINE.md` — kept for history):**
   per-target handle (`QuotesConnector` for the MVP
   target `quotes.toscrape.com`, `JudicialConnector` in Phase 5, ...).
-  Decisão atual: nenhum connector por alvo; `PipelineRunner` genérico +
-  `pipelines/*.json` (só o pipeline conhece produto/página/regras).
+  Current decision: no per-target connector; generic `PipelineRunner` +
+  `pipelines/*.yaml` (only the pipeline knows product/page/rules).
   Each implements:
   `fetch(job): FetchResult` (HTTP-first, browser fallback),
   `normalize(raw): Record`. Connectors never touch sockets directly
@@ -168,7 +168,7 @@ validated against per-connector schema before insert (reject, don't
 coerce); artifacts hashed (sha256) and deduplicated by
 `(sha256, connector)`.
 
-## 6. Connector contract (SUPERSEDED por `docs/PIPELINE.md` — histórico abaixo)
+## 6. Connector contract (SUPERSEDED by `docs/PIPELINE.md` — history below)
 
 ```eiwa
 type FetchResult(val kind: String, val body: String)
@@ -314,7 +314,7 @@ type QuotesConnector(val browser: Browser, val store: Store) {
   Missing keys yield `""`/`0`, ignoring declared defaults — the
   `JobRequest` DTO therefore declares all fields required and the
   API validates explicitly. Also: bare `receive<T>()` inside a
-  receiver lambda fails (`this.` explícito obrigatório), and an
+  receiver lambda fails (explicit `this.` required), and an
   assert failure while an arest server thread runs bus-errors
   instead of reporting cleanly (test-only shape; prod asserts run
   before serve starts, except the DbError path).
