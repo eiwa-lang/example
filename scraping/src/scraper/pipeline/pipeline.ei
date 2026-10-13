@@ -1,4 +1,4 @@
-// Pipeline types: agnostic extraction DSL. Only the JSON knows the
+// Pipeline types: agnostic extraction DSL. Only the YAML knows the
 // product/page/rules; this file knows only the verbs (closed union).
 import { List, MutableList } from "std.collections"
 import { repeat } from "std.system"
@@ -17,17 +17,17 @@ type PipelineNotFound(val name: String) : Throwable {
     }
 }
 
-type FieldDef(val name: String, val selector: String, val many: Bool, val attr: String) : Serializable + Json
+type FieldDef(val name: String, val selector: String, val many: Bool = false, val attr: String? = null) : Serializable + Json
 
-type Goto(val url: String, val waitUntil: String, val timeoutMs: Int) : Serializable + Json
+type Goto(val url: String, val waitUntil: String = "load", val timeoutMs: Int = 15000) : Serializable + Json
 
-type Collect(val selector: String, val fields: List<FieldDef>) : Serializable + Json
+type Collect(val fields: List<FieldDef>, val selector: String? = null) : Serializable + Json
 
 type Paginate(val selector: String, val maxPages: Int) : Serializable + Json
 
-type Click(val selector: String, val index: Int) : Serializable + Json
+type Click(val selector: String, val index: Int = 1) : Serializable + Json
 
-type Wait(val selector: String, val timeoutMs: Int, val text: String) : Serializable + Json
+type Wait(val selector: String, val text: String? = null, val timeoutMs: Int = 5000) : Serializable + Json
 
 union Step {
     @Alias("goto") Goto,

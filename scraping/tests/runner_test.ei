@@ -215,7 +215,7 @@ test "runner: collects two quotes following pagination once" {
 
 test "runner: single-record collect without selector" {
     val browser = rnLiveRunner(28925, 28927, 0)
-    val pipeline = parsePipeline("{\"name\": \"product\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/p/42\", \"waitUntil\": \"load\", \"timeoutMs\": 15000}}, {\"collect\": {\"selector\": \"\", \"fields\": [{\"name\": \"pname\", \"selector\": \".name\", \"many\": false, \"attr\": \"\"}, {\"name\": \"price\", \"selector\": \".price\", \"many\": false, \"attr\": \"\"}]}}], \"required\": [\"pname\"]}")
+    val pipeline = parsePipeline("{\"name\": \"product\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/p/42\"}}, {\"collect\": {\"fields\": [{\"name\": \"pname\", \"selector\": \".name\"}, {\"name\": \"price\", \"selector\": \".price\"}]}}], \"required\": [\"pname\"]}")
     val runner = PipelineRunner(browser)
     val res = runner.run(rnJob(), pipeline)
     assert(res.kind == "records", "kind-$res.note")
@@ -228,7 +228,7 @@ test "runner: single-record collect without selector" {
 
 test "runner: truncates at maxPages" {
     val browser = rnLiveRunner(28929, 28931, 99)
-    val patched = parsePipeline("{\"name\": \"quotes-1\", \"steps\": [{\"goto\": {\"url\": \"https://quotes.toscrape.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 15000}}, {\"collect\": {\"selector\": \"div.quote\", \"fields\": [{\"name\": \"text\", \"selector\": \"span.text\", \"many\": false, \"attr\": \"\"}, {\"name\": \"author\", \"selector\": \"small.author\", \"many\": false, \"attr\": \"\"}]}}, {\"paginate\": {\"selector\": \"li.next a\", \"maxPages\": 1}}], \"required\": [\"text\"]}")
+    val patched = parsePipeline("{\"name\": \"quotes-1\", \"steps\": [{\"goto\": {\"url\": \"https://quotes.toscrape.com/\"}}, {\"collect\": {\"selector\": \"div.quote\", \"fields\": [{\"name\": \"text\", \"selector\": \"span.text\"}, {\"name\": \"author\", \"selector\": \"small.author\"}]}}, {\"paginate\": {\"selector\": \"li.next a\", \"maxPages\": 1}}], \"required\": [\"text\"]}")
     assert(patched.steps.size() == 3, "shape")
     val runner = PipelineRunner(browser)
     val res = runner.run(rnJob(), patched)
@@ -240,7 +240,7 @@ test "runner: truncates at maxPages" {
 
 test "runner: click then wait-text then collect" {
     val browser = rnLiveRunner(28933, 28935, 0)
-    val pipeline = parsePipeline("{\"name\": \"tabbed\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 15000}}, {\"click\": {\"selector\": \"button.tab\", \"index\": 1}}, {\"wait\": {\"selector\": \"div.quote\", \"timeoutMs\": 5000, \"text\": \"Quote\"}}, {\"collect\": {\"selector\": \"div.quote\", \"fields\": [{\"name\": \"text\", \"selector\": \"span.text\", \"many\": false, \"attr\": \"\"}, {\"name\": \"author\", \"selector\": \"small.author\", \"many\": false, \"attr\": \"\"}]}}], \"required\": [\"text\", \"author\"]}")
+    val pipeline = parsePipeline("{\"name\": \"tabbed\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"click\": {\"selector\": \"button.tab\", \"index\": 1}}, {\"wait\": {\"selector\": \"div.quote\", \"text\": \"Quote\"}}, {\"collect\": {\"selector\": \"div.quote\", \"fields\": [{\"name\": \"text\", \"selector\": \"span.text\"}, {\"name\": \"author\", \"selector\": \"small.author\"}]}}], \"required\": [\"text\", \"author\"]}")
     val runner = PipelineRunner(browser)
     val res = runner.run(rnJob(), pipeline)
     assert(res.kind == "records", "kind-$res.note")
@@ -252,7 +252,7 @@ test "runner: click then wait-text then collect" {
 
 test "runner: wait presence passes" {
     val browser = rnLiveRunner(28937, 28939, 0)
-    val pipeline = parsePipeline("{\"name\": \"w\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 15000}}, {\"wait\": {\"selector\": \"div.quote\", \"timeoutMs\": 5000, \"text\": \"\"}}, {\"collect\": {\"selector\": \"\", \"fields\": [{\"name\": \"pname\", \"selector\": \".name\", \"many\": false, \"attr\": \"\"}]}}], \"required\": [\"pname\"]}")
+    val pipeline = parsePipeline("{\"name\": \"w\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"wait\": {\"selector\": \"div.quote\"}}, {\"collect\": {\"fields\": [{\"name\": \"pname\", \"selector\": \".name\"}]}}], \"required\": [\"pname\"]}")
     val runner = PipelineRunner(browser)
     val res = runner.run(rnJob(), pipeline)
     assert(res.kind == "records", "kind-$res.note")
@@ -286,7 +286,7 @@ test "runner: empty pool is unavailable" {
 
 test "runner: pipeline without collect fails closed" {
     val runner = PipelineRunner(Browser(["ws://127.0.0.1:28999"], 1))
-    val pipeline = parsePipeline("{\"name\": \"empty\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 15000}}], \"required\": []}")
+    val pipeline = parsePipeline("{\"name\": \"empty\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}], \"required\": []}")
     val res = runner.run(rnJob(), pipeline)
     assert(res.kind == "failed", "kind")
     assert(res.note == "no-collect", "reason-$res.note")

@@ -3,7 +3,7 @@ import { InvalidPipeline, PipelineNotFound, parsePipeline, Goto, Collect, Pagina
 import { PipelineStore, parsePipelineYaml } from ".scraper.pipeline.store"
 
 fun quotesFixture(): String {
-    return "{\"name\": \"quotes\", \"steps\": [{\"goto\": {\"url\": \"https://quotes.toscrape.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 15000}}, {\"collect\": {\"selector\": \"div.quote\", \"fields\": [{\"name\": \"text\", \"selector\": \"span.text\", \"many\": false, \"attr\": \"\"}, {\"name\": \"author\", \"selector\": \"small.author\", \"many\": false, \"attr\": \"\"}, {\"name\": \"tags\", \"selector\": \"a.tag\", \"many\": true, \"attr\": \"\"}]}}, {\"paginate\": {\"selector\": \"li.next a\", \"maxPages\": 100}}], \"required\": [\"text\", \"author\"]}"
+    return "{\"name\": \"quotes\", \"steps\": [{\"goto\": {\"url\": \"https://quotes.toscrape.com/\"}}, {\"collect\": {\"selector\": \"div.quote\", \"fields\": [{\"name\": \"text\", \"selector\": \"span.text\"}, {\"name\": \"author\", \"selector\": \"small.author\"}, {\"name\": \"tags\", \"selector\": \"a.tag\", \"many\": true}]}}, {\"paginate\": {\"selector\": \"li.next a\", \"maxPages\": 100}}], \"required\": [\"text\", \"author\"]}"
 }
 
 fun invalidFixture(raw: String): Bool {
@@ -27,40 +27,63 @@ test "pipeline: quotes fixture parses and validates" {
     assert(p.fieldNames().size() == 3, "names")
 }
 
+test "pipeline: omitted keys fall back to defaults" {
+    val p = parsePipeline(quotesFixture())
+    assert((p.steps.get(0) as Goto).waitUntil == "load", "waitUntil")
+    assert((p.steps.get(0) as Goto).timeoutMs == 15000, "timeout")
+    assert((p.steps.get(1) as Collect).fields.get(0).many == false, "many")
+    assert((p.steps.get(1) as Collect).fields.get(0).attr == null, "attr-absent-is-null")
+}
+
+test "pipeline: omitted optionals decode as null" {
+    val p = parsePipeline(quotesFixture())
+    assert((p.steps.get(1) as Collect).fields.get(0).attr == null, "attr")
+    val raw = "{\"name\": \"product\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/p/42\"}}, {\"collect\": {\"fields\": [{\"name\": \"pname\", \"selector\": \".name\"}]}}], \"required\": [\"pname\"]}"
+    val q = parsePipeline(raw)
+    assert((q.steps.get(1) as Collect).selector == null, "selector")
+}
+
+test "pipeline: legacy empty-string snapshot still runs as absent" {
+    val raw = "{\"name\": \"product\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/p/42\"}}, {\"collect\": {\"selector\": \"\", \"fields\": [{\"name\": \"pname\", \"selector\": \".name\", \"many\": false, \"attr\": \"\"}]}}], \"required\": [\"pname\"]}"
+    val p = parsePipeline(raw)
+    assert((p.steps.get(1) as Collect).selector == "", "tolerated")
+    assert((p.steps.get(1) as Collect).fields.get(0).attr == "", "tolerated-attr")
+}
+
 test "pipeline: unknown step tag is rejected" {
-    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"fly\": {}}], \"required\": []}"
+    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"fly\": {}}], \"required\": []}"
     assert(invalidFixture(raw), "tag")
 }
 
 test "pipeline: first step must be goto" {
-    val raw = "{\"name\": \"q\", \"steps\": [{\"collect\": {\"selector\": \"\", \"fields\": [{\"name\": \"n\", \"selector\": \".n\", \"many\": false, \"attr\": \"\"}]}}], \"required\": []}"
+    val raw = "{\"name\": \"q\", \"steps\": [{\"collect\": {\"fields\": [{\"name\": \"n\", \"selector\": \".n\"}]}}], \"required\": []}"
     assert(invalidFixture(raw), "order")
 }
 
 test "pipeline: collect without fields is rejected" {
-    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"collect\": {\"selector\": \"div.x\", \"fields\": []}}], \"required\": []}"
+    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"collect\": {\"selector\": \"div.x\", \"fields\": []}}], \"required\": []}"
     assert(invalidFixture(raw), "fields")
 }
 
 test "pipeline: unknown required field is rejected" {
-    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"collect\": {\"selector\": \"\", \"fields\": [{\"name\": \"n\", \"selector\": \".n\", \"many\": false, \"attr\": \"\"}]}}], \"required\": [\"autor\"]}"
+    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"collect\": {\"fields\": [{\"name\": \"n\", \"selector\": \".n\"}]}}], \"required\": [\"autor\"]}"
     assert(invalidFixture(raw), "required")
 }
 
 test "pipeline: duplicate field names are rejected" {
-    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"collect\": {\"selector\": \"\", \"fields\": [{\"name\": \"n\", \"selector\": \".a\", \"many\": false, \"attr\": \"\"}, {\"name\": \"n\", \"selector\": \".b\", \"many\": false, \"attr\": \"\"}]}}], \"required\": []}"
+    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"collect\": {\"fields\": [{\"name\": \"n\", \"selector\": \".a\"}, {\"name\": \"n\", \"selector\": \".b\"}]}}], \"required\": []}"
     assert(invalidFixture(raw), "dupe")
 }
 
 test "pipeline: decode error maps to InvalidPipeline" {
-    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}]}"
+    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}]}"
     assert(invalidFixture(raw), "missing-required-key")
 }
 
-test "pipeline: single-record collect has empty selector" {
-    val raw = "{\"name\": \"product\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/p/42\", \"waitUntil\": \"load\", \"timeoutMs\": 15000}}, {\"collect\": {\"selector\": \"\", \"fields\": [{\"name\": \"pname\", \"selector\": \".name\", \"many\": false, \"attr\": \"\"}]}}], \"required\": [\"pname\"]}"
+test "pipeline: single-record collect omits selector" {
+    val raw = "{\"name\": \"product\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/p/42\"}}, {\"collect\": {\"fields\": [{\"name\": \"pname\", \"selector\": \".name\"}]}}], \"required\": [\"pname\"]}"
     val p = parsePipeline(raw)
-    assert((p.steps.get(1) as Collect).selector == "", "no-selector")
+    assert((p.steps.get(1) as Collect).selector == null, "no-selector")
 }
 
 test "pipeline: round-trips through json" {
@@ -73,15 +96,16 @@ test "pipeline: round-trips through json" {
 }
 
 test "pipeline: click and wait validate" {
-    val raw = "{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"click\": {\"selector\": \"button.tab\", \"index\": 6}}, {\"wait\": {\"selector\": \"#view h3\", \"timeoutMs\": 5000, \"text\": \"MCP\"}}, {\"collect\": {\"selector\": \"\", \"fields\": [{\"name\": \"t\", \"selector\": \"h3\", \"many\": false, \"attr\": \"\"}]}}], \"required\": [\"t\"]}"
+    val raw = "{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"click\": {\"selector\": \"button.tab\", \"index\": 6}}, {\"wait\": {\"selector\": \"#view h3\", \"text\": \"MCP\"}}, {\"collect\": {\"fields\": [{\"name\": \"t\", \"selector\": \"h3\"}]}}], \"required\": [\"t\"]}"
     val p = parsePipeline(raw)
     assert(p.steps.size() == 4, "steps")
     assert(p.steps.get(1) is Click, "click")
     assert(p.steps.get(2) is Wait, "wait")
-    assert(invalidFixture("{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"click\": {\"selector\": \"\", \"index\": 1}}], \"required\": []}"), "click-selector")
-    assert(invalidFixture("{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"click\": {\"selector\": \"b\", \"index\": 0}}], \"required\": []}"), "click-index")
-    assert(invalidFixture("{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"wait\": {\"selector\": \"\", \"timeoutMs\": 1000, \"text\": \"\"}}], \"required\": []}"), "wait-selector")
-    assert(invalidFixture("{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\", \"waitUntil\": \"load\", \"timeoutMs\": 1000}}, {\"wait\": {\"selector\": \"h3\", \"timeoutMs\": 0, \"text\": \"\"}}], \"required\": []}"), "wait-timeout")
+    assert((p.steps.get(2) as Wait).timeoutMs == 5000, "wait-default")
+    assert(invalidFixture("{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"click\": {\"selector\": \"\", \"index\": 1}}], \"required\": []}"), "click-selector")
+    assert(invalidFixture("{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"click\": {\"selector\": \"b\", \"index\": 0}}], \"required\": []}"), "click-index")
+    assert(invalidFixture("{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"wait\": {\"selector\": \"\", \"text\": \"\"}}], \"required\": []}"), "wait-selector")
+    assert(invalidFixture("{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"wait\": {\"selector\": \"h3\", \"timeoutMs\": 0}}], \"required\": []}"), "wait-timeout")
 }
 
 test "pipeline: gotoUrl returns the first goto url" {
@@ -127,12 +151,13 @@ test "pipeline: store rejects unsafe names" {
     assert(badName(store, "a|b"), "separator")
 }
 
-test "pipeline: store loads quotes.json from disk" {
+test "pipeline: store loads quotes.yaml from disk" {
     val store = PipelineStore("pipelines")
     val p = store.load("quotes")
     assert(p.name == "quotes", "name")
     assert(p.steps.size() == 3, "steps")
     assert((p.steps.get(1) as Collect).selector == "div.quote", "selector")
+    assert((p.steps.get(0) as Goto).timeoutMs == 15000, "default")
     assert(p.required.size() == 2, "required")
 }
 

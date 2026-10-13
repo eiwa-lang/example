@@ -1,6 +1,6 @@
 // PipelineRunner: executes validated pipelines through browser goto +
 // locator reads. Only generic verbs here; product/page/rules live in the
-// JSON. Single-record mode when collect.selector == ""; N records when set.
+// YAML. Single-record mode when collect.selector is absent; N records when set.
 import { List, MutableList } from "std.collections"
 import { repeat } from "std.system"
 import { sleepMs } from "std.time"
@@ -173,13 +173,14 @@ type PipelineRunner(val browser: Browser?) {
     }
 
     fun doWait(page: Page, w: Wait): Bool {
-        if (w.text == "") {
+        val want = w.text ?: ""
+        if (want == "") {
             return page.locator(w.selector).waitFor(w.timeoutMs)
         }
         var waited = 0
         while (waited < w.timeoutMs) {
             val t = page.locator(w.selector).text()
-            if (t != null && t.indexOf(w.text) >= 0) {
+            if (t != null && t.indexOf(want) >= 0) {
                 return true
             }
             sleepMs(250)
@@ -199,7 +200,8 @@ type PipelineRunner(val browser: Browser?) {
     }
 
     fun collectPage(page: Page, collect: Collect, required: List<String>, out: MutableList<PipelineRecord>) {
-        if (collect.selector == "") {
+        val sel = collect.selector ?: ""
+        if (sel == "") {
             val rec = this.readSingle(page, collect)
             if (this.isValid(rec, required)) {
                 out.add(rec)
@@ -207,7 +209,7 @@ type PipelineRunner(val browser: Browser?) {
             return
         }
         repeat(1000) { k ->
-            val item = page.locator(collect.selector).nth(k + 1)
+            val item = page.locator(sel).nth(k + 1)
             val rec = this.readItem(item, collect)
             if (rec.firstEmpty()) {
                 leave
@@ -251,8 +253,9 @@ type PipelineRunner(val browser: Browser?) {
     }
 
     fun readOne(loc: Locator, field: FieldDef): String {
-        if (field.attr != "") {
-            return loc.attribute(field.attr) ?: ""
+        val a = field.attr ?: ""
+        if (a != "") {
+            return loc.attribute(a) ?: ""
         }
         return loc.text() ?: ""
     }

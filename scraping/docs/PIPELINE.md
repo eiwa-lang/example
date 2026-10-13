@@ -123,16 +123,23 @@ Semântica do `collect`:
   `class="a quote"`); para multi-classe use XPath `contains()` direto
   (ex. `//button[contains(@class, 'example-tab')]` — ver `eiwa-mcp.json`).
 
-Tipos Eiwa (membros `Serializable + Json`, union fecha o conjunto):
+Tipos Eiwa (membros `Serializable + Json`, union fecha o conjunto).
+Opcionais com ausência significativa são `String? = null` (omitido no
+YAML); demais defaults (`waitUntil`, `timeoutMs`, `many`, `index`)
+sempre têm valor:
 
 ```eiwa
-type FieldDef(val name: String, val selector: String, val many: Bool, val attr: String) : Serializable + Json
-type Goto(val url: String, val waitUntil: String, val timeoutMs: Int) : Serializable + Json
-type Collect(val selector: String, val fields: List<FieldDef>) : Serializable + Json
+type FieldDef(val name: String, val selector: String, val many: Bool = false, val attr: String? = null) : Serializable + Json
+type Goto(val url: String, val waitUntil: String = "load", val timeoutMs: Int = 15000) : Serializable + Json
+type Collect(val fields: List<FieldDef>, val selector: String? = null) : Serializable + Json
 type Paginate(val selector: String, val maxPages: Int) : Serializable + Json
+type Click(val selector: String, val index: Int = 1) : Serializable + Json
+type Wait(val selector: String, val text: String? = null, val timeoutMs: Int = 5000) : Serializable + Json
 
 union Step {
     @Alias("goto") Goto,
+    @Alias("click") Click,
+    @Alias("wait") Wait,
     @Alias("collect") Collect,
     @Alias("paginate") Paginate
 }
@@ -214,8 +221,11 @@ Ver tasks executáveis em `docs/TASKS.md` (fonte de verdade do sequenciamento).
 - **Resolvido upstream (L1–L4 verdes):** `Map<String,Custom>` popula
   (schema manteve `List<FieldDef>` mesmo assim — erro melhor);
   chave ausente sem default **lança** (com default, aplica o default);
-  nested nullable ausente decodifica `null`. Consequência mantida: pipeline
-  JSON emite todas as chaves; `validate()` + `InvalidPipeline` cobrem o resto.
+  nullable ausente decodifica `null`. Consequência: YAML omite opcionais
+  (`Collect.selector`, `FieldDef.attr`, `Wait.text` são `String? = null`;
+  runner normaliza com `?: ""`); snapshots antigos com `""` explícito
+  continuam válidos (tolerados como ausentes). `validate()` +
+  `InvalidPipeline` cobrem o resto.
 - **Resolvido upstream (L5 verde):** `e.message()` em `+`/anotação dentro de
   módulo importado perdia o tipo (`Void`). Workaround template revertido —
   `pipeline.ei:parsePipeline` usa `+` de novo, provado em project mode.
