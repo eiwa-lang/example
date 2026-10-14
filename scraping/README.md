@@ -136,7 +136,7 @@ names return 400, never dead-letter).
 | Method | Response |
 |---|---|
 | `POST /jobs {"pipeline": "<name>"}` (+ `maxAttempts?`, `idempotencyKey?`) | `201 {"id","status":"queued"}` · `400` bad pipeline · `409` duplicate |
-| `GET /health` | `{"status": "ok"\|"degraded", "pending": N}` |
+| `GET /health` | `{"status": "ok"\|"degraded", "pending": N\|null}` (`null` when the store is unreachable) |
 | `GET /metrics` | Prometheus (`scrape_jobs_total{pipeline,outcome}`, `scrape_fetch_errors_total{reason}`, `scrape_captcha_total{provider,outcome}`) |
 
 Job `id` = `pipeline-(idempotencyKey || goto.url)`.
@@ -162,6 +162,11 @@ Mechanics (`src/scraper/scheduler.ei`, `src/scraper/shedlock.ei`):
   ULIDs generated at boot — no pod naming, nothing persisted.
 - Single-flight: a due pipeline with a `queued`/`running` job is
   skipped for that window. Occurrence key = `sched-<pipeline>-<epochMs>`.
+- Orphan hygiene: every tick reclaims `running` jobs idle longer than
+  `ORPHAN_TIMEOUT_MS` (default 10min — above the longest legit captcha
+  run). Within attempt budget they return to `queued` (the next claim
+  consumes an attempt); exhausted ones dead-letter. Counted as
+  `scrape_jobs_total{pipeline="",outcome="reaped"}`.
 
 ## Tests
 

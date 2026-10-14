@@ -116,6 +116,22 @@ type Store(val conn: Connection) : Closeable, LockStore {
         return res.rows().size() > 0
     }
 
+    // Orphan reclamation: running jobs idle longer than timeoutMs belong
+    // to dead workers. Within attempt budget they return to queued (the
+    // next claim consumes an attempt, so poison jobs still terminate);
+    // exhausted ones dead-letter. Returns the total reclaimed.
+    fun reapOrphans(timeoutMs: Int): Int {
+        val requeued = this.conn.execute("
+            UPDATE jobs SET status = 'queued', not_before = now(), updated_at = now()
+            WHERE status = 'running' AND attempt < max_attempts AND updated_at < now() - ($1 || ' milliseconds')::interval
+        ", [timeoutMs.toString()])
+        val dead = this.conn.execute("
+            UPDATE jobs SET status = 'dead', updated_at = now()
+            WHERE status = 'running' AND attempt >= max_attempts AND updated_at < now() - ($1 || ' milliseconds')::interval
+        ", [timeoutMs.toString()])
+        return requeued.rowsAffected() + dead.rowsAffected()
+    }
+
     fun fail(id: String, retryable: Bool, delayMs: Int): Bool {
         val status = if (retryable) { "queued" } else { "dead" }
         val res = this.conn.execute(

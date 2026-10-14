@@ -160,8 +160,7 @@ test "pipeline: store loads quotes.yaml from disk" {
     assert((p.steps.get(1) as Collect).selector == "div.quote", "selector")
     assert((p.steps.get(0) as Goto).timeoutMs == 15000, "default")
     assert(p.required.size() == 2, "required")
-    assert(p.schedule != null, "scheduled")
-    assert(p.schedule!!.every == "1h", "cadence")
+    assert(p.schedule == null, "manual-only")
 }
 
 test "pipeline: malformed yaml maps to InvalidPipeline" {
@@ -205,12 +204,12 @@ test "pipeline: every parses durations to ms" {
     assert(parseEvery("15m") == 900000, "minutes")
     assert(parseEvery("2h") == 7200000, "hours")
     assert(parseEvery("1d") == 86400000, "days")
-    assert(parseEvery("") == -1, "empty")
-    assert(parseEvery("10") == -1, "no-unit")
-    assert(parseEvery("m") == -1, "no-count")
-    assert(parseEvery("1x") == -1, "unit")
-    assert(parseEvery("0h") == -1, "zero")
-    assert(parseEvery("1.5h") == -1, "fraction")
+    assert(parseEvery("") == null, "empty")
+    assert(parseEvery("10") == null, "no-unit")
+    assert(parseEvery("m") == null, "no-count")
+    assert(parseEvery("1x") == null, "unit")
+    assert(parseEvery("0h") == null, "zero")
+    assert(parseEvery("1.5h") == null, "fraction")
 }
 
 test "pipeline: bad schedule every is rejected" {
@@ -233,4 +232,14 @@ test "pipeline: store lists yaml pipelines" {
     assert(names.contains("quotes"), "quotes")
     assert(names.contains("eiwa-mcp"), "mcp")
     assert(names.contains("recaptcha-demo"), "demo")
+}
+
+test "pipeline: store loads dolar with schedule" {
+    val p = PipelineStore("pipelines").load("dolar")
+    assert(p.name == "dolar", "name")
+    assert(p.schedule != null, "scheduled")
+    assert(p.schedule!!.everyMs() == 60000, "every-minute")
+    assert(p.gotoUrl() == "https://br.investing.com/currencies/usd-brl", "url")
+    assert((p.steps.get(2) as Collect).fields.size() == 5, "fields")
+    assert((p.steps.get(2) as Collect).fields.get(0).name == "price", "field")
 }

@@ -9,15 +9,15 @@ import { Json } from "std.json"
 // Absent = manual runs only.
 type Schedule(val every: String) : Serializable + Json {
 
-    fun everyMs(): Int {
+    fun everyMs(): Int? {
         return parseEvery(this.every)
     }
 }
 
-// Duration to milliseconds, -1 when malformed. Pure: unit-tested.
-fun parseEvery(raw: String): Int {
+// Duration to milliseconds, null when malformed. Pure: unit-tested.
+fun parseEvery(raw: String): Int? {
     if (raw.length < 2) {
-        return -1
+        return null
     }
     val unit = raw.substring(raw.length - 1, raw.length)
     var mult = 0
@@ -30,24 +30,24 @@ fun parseEvery(raw: String): Int {
     } else if (unit == "d") {
         mult = 86400000
     } else {
-        return -1
+        return null
     }
     val count = parseEveryCount(raw.substring(0, raw.length - 1))
-    if (count <= 0 || count > 1000000000) {
-        return -1
+    if (count == null || count!! <= 0 || count!! > 1000000000) {
+        return null
     }
-    return count * mult
+    return count!! * mult
 }
 
-fun parseEveryCount(raw: String): Int {
+fun parseEveryCount(raw: String): Int? {
     if (raw.length == 0) {
-        return -1
+        return null
     }
     var n = 0
     repeat(raw.length) { i ->
         val d = "0123456789".indexOf(raw.substring(i, i + 1))
         if (d < 0) {
-            return -1
+            return null
         }
         n = n * 10 + d
     }

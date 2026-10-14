@@ -1,0 +1,24 @@
+name: dolar
+steps:
+  - goto:
+      url: https://br.investing.com/currencies/usd-brl
+      waitUntil: commit
+      timeoutMs: 30000
+  - wait:
+      selector: '[data-test="instrument-price-last"]'
+      timeoutMs: 60000
+  - collect:
+      fields:
+        - name: price
+          selector: '[data-test="instrument-price-last"]'
+        - name: change
+          selector: '[data-test="instrument-price-change"]'
+        - name: change_pct
+          selector: '[data-test="instrument-price-change-percent"]'
+        - name: bid
+          selector: '[data-test="bid"]'
+        - name: ask
+          selector: '[data-test="ask"]'
+required: [price]
+schedule:
+  every: "1m"

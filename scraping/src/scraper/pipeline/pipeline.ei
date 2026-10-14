@@ -57,7 +57,7 @@ type Pipeline(val name: String, val steps: List<Step>, val required: List<String
             this.validateStep(this.steps.get(i))
         }
         this.validateRequired()
-        if (this.schedule != null && this.schedule!!.everyMs() <= 0) {
+        if (this.schedule != null && this.schedule!!.everyMs() == null) {
             throw InvalidPipeline("bad schedule every: " + this.schedule!!.every)
         }
     }

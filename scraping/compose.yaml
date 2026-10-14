@@ -46,6 +46,7 @@ services:
       SOLVER_URL: http://captcha-solver:8855
       SOLVER_KEY: ${SOLVER_KEY:-}
       SCHEDULER_INTERVAL_MS: ${SCHEDULER_INTERVAL_MS:-}
+      ORPHAN_TIMEOUT_MS: ${ORPHAN_TIMEOUT_MS:-}
     volumes:
       - artifacts:/var/lib/scraper/artifacts
     depends_on:

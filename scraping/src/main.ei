@@ -24,7 +24,7 @@ fun main() {
             scraper.run()
         }
         task {
-            PipelineScheduler(config, store, scraper.pipelines).run()
+            PipelineScheduler(config, store, scraper.pipelines, metrics = scraper.metrics).run()
         }
         Log.info { "scraper boot: ${config.concurrency} workers, ${config.browserWorkers.size()} browser endpoint(s)" }
         park()

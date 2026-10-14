@@ -18,5 +18,3 @@ steps:
 required:
   - text
   - author
-schedule:
-  every: "1h"

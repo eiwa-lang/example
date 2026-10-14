@@ -48,7 +48,7 @@ type DuplicateJob(val id: String) : Throwable {
     }
 }
 
-type HealthBody(val status: String, val pending: Int) : Serializable + Json
+type HealthBody(val status: String, val pending: Int?) : Serializable + Json
 
 type Scraper(val config: Config, val store: Store, val browser: Browser, val pipelines: PipelineStore, val metrics: Metrics = Metrics(), val solver: CaptchaSolver? = null) : Closeable {
 
@@ -124,7 +124,7 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val pip
         try {
             return HealthBody("ok", this.store.pendingCount())
         } catch (e: DbError) {
-            return HealthBody("degraded", -1)
+            return HealthBody("degraded", null)
         }
     }
 

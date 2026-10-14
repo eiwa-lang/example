@@ -14,7 +14,8 @@ type Config(
     val captchaProviders: List<String> = [],
     val solverUrl: String = "",
     val solverKey: String = "",
-    val scheduleIntervalMs: Int = 60000
+    val scheduleIntervalMs: Int = 60000,
+    val orphanTimeoutMs: Int = 600000
 )
 
 type InvalidConfig(val detail: String) : Throwable {
@@ -47,9 +48,9 @@ fun digitValue(ch: String): Int {
     return "0123456789".indexOf(ch)
 }
 
-fun parsePositive(raw: String?, fallback: Int): Int {
-    if (raw == null) {
-        return fallback
+fun parsePositive(raw: String?): Int? {
+    if (raw == null || raw == "") {
+        return null
     }
     var n = 0
     var digits = 0
@@ -57,16 +58,30 @@ fun parsePositive(raw: String?, fallback: Int): Int {
     while (i < raw.length) {
         val d = digitValue(raw.substring(i, i + 1))
         if (d < 0) {
-            return -1
+            return null
         }
         n = n * 10 + d
         digits = digits + 1
         i = i + 1
     }
     if (digits == 0) {
-        return -1
+        return null
     }
     return n
+}
+
+// Env positive with default: absent/blank takes the fallback, present
+// but malformed or non-positive throws. Typos stay fail-fast instead
+// of silently defaulting.
+fun envPositive(raw: String?, fallback: Int, name: String): Int {
+    if (raw == null || raw == "") {
+        return fallback
+    }
+    val parsed = parsePositive(raw)
+    if (parsed == null || parsed!! <= 0) {
+        return throw InvalidConfig(name + " must be a positive integer")
+    }
+    return parsed!!
 }
 
 fun loadConfig(): Config {
@@ -82,14 +97,8 @@ fun loadConfig(): Config {
     if (db == null || db == "") {
         return throw InvalidConfig("set DATABASE_URL")
     }
-    val concurrency = parsePositive(Env.get("CONCURRENCY"), 4)
-    if (concurrency <= 0) {
-        return throw InvalidConfig("CONCURRENCY must be a positive integer")
-    }
-    val pollMs = parsePositive(Env.get("POLL_INTERVAL_MS"), 1000)
-    if (pollMs <= 0) {
-        return throw InvalidConfig("POLL_INTERVAL_MS must be a positive integer")
-    }
+    val concurrency = envPositive(Env.get("CONCURRENCY"), 4, "CONCURRENCY")
+    val pollMs = envPositive(Env.get("POLL_INTERVAL_MS"), 1000, "POLL_INTERVAL_MS")
     val artifacts = Env.get("ARTIFACT_DIR")
     if (artifacts == null || artifacts == "") {
         return throw InvalidConfig("set ARTIFACT_DIR")
@@ -101,13 +110,9 @@ fun loadConfig(): Config {
     val caps = splitCsv(Env.get("CAPTCHA_PROVIDERS") ?: "")
     val solverUrl = Env.get("SOLVER_URL") ?: ""
     val solverKey = Env.get("SOLVER_KEY") ?: ""
-    val schedRaw = Env.get("SCHEDULER_INTERVAL_MS")
-    var schedMs = 60000
-    if (schedRaw != null && schedRaw != "") {
-        schedMs = parsePositive(schedRaw, -1)
-    }
-    if (schedMs <= 0) {
-        return throw InvalidConfig("SCHEDULER_INTERVAL_MS must be a positive integer")
-    }
-    return Config(workers, db, concurrency, pollMs, artifacts, pipelines, caps, solverUrl, solverKey, schedMs)
+    val schedMs = envPositive(Env.get("SCHEDULER_INTERVAL_MS"), 60000, "SCHEDULER_INTERVAL_MS")
+    // Reap threshold for running jobs of dead workers. Must exceed the
+    // longest legitimate run (captcha solves take minutes).
+    val orphanMs = envPositive(Env.get("ORPHAN_TIMEOUT_MS"), 600000, "ORPHAN_TIMEOUT_MS")
+    return Config(workers, db, concurrency, pollMs, artifacts, pipelines, caps, solverUrl, solverKey, schedMs, orphanMs)
 }

@@ -13,6 +13,7 @@ import { DbError } from "std.db"
 import { Config } from ".scraper.config"
 import { Store } from ".scraper.store"
 import { Shedlock } from ".scraper.shedlock"
+import { Metrics } from ".scraper.metrics"
 import { PipelineStore } from ".scraper.pipeline.store"
 import { InvalidPipeline, PipelineNotFound } from ".scraper.pipeline.pipeline"
 
@@ -27,7 +28,7 @@ fun occurrenceKey(pipeline: String, atMs: Int): String {
     return "sched-" + pipeline + "-" + atMs.toString()
 }
 
-type PipelineScheduler(val config: Config, val store: Store, val pipelines: PipelineStore, val owner: String = Ulid.generate().toString()) {
+type PipelineScheduler(val config: Config, val store: Store, val pipelines: PipelineStore, val owner: String = Ulid.generate().toString(), val metrics: Metrics? = null) {
 
     // Boot-time discovery: every *.yaml on disk that exists and
     // declares a schedule. The rest logs once and stays out.
@@ -53,18 +54,18 @@ type PipelineScheduler(val config: Config, val store: Store, val pipelines: Pipe
     }
 
     // Fresh cadence per fire: the YAML is read through on every load,
-    // so an edited `every` applies without restart. -1 when unloadable.
-    fun everyMsOf(name: String): Int {
+    // so an edited `every` applies without restart. Null when unloadable.
+    fun everyMsOf(name: String): Int? {
         try {
             val p = this.pipelines.load(name)
             if (p.schedule == null) {
-                return -1
+                return null
             }
             return p.schedule!!.everyMs()
         } catch (e: PipelineNotFound) {
-            return -1
+            return null
         } catch (e: InvalidPipeline) {
-            return -1
+            return null
         }
     }
 
@@ -76,7 +77,7 @@ type PipelineScheduler(val config: Config, val store: Store, val pipelines: Pipe
     // lock retries next tick, an active job suppresses this window.
     fun fire(name: String, nowMs: Int, due: MutableMap<String, Int>): String {
         val every = this.everyMsOf(name)
-        if (every <= 0) {
+        if (every == null) {
             Log.error { "scheduler: ${name} unreadable or unscheduled, skipping" }
             return "invalid"
         }
@@ -89,7 +90,7 @@ type PipelineScheduler(val config: Config, val store: Store, val pipelines: Pipe
             Log.error { "scheduler: store unreachable acquiring ${name}" }
             return "store-down"
         }
-        val outcome = this.fireLocked(name, nowMs, every, due)
+        val outcome = this.fireLocked(name, nowMs, every!!, due)
         try {
             this.guard(name).unlock()
         } catch (e: DbError) {
@@ -138,7 +139,28 @@ type PipelineScheduler(val config: Config, val store: Store, val pipelines: Pipe
                 skipped = skipped + 1
             }
         }
+        this.reap()
         return "tick scheduled-" + done.toString() + " skipped-" + skipped.toString()
+    }
+
+    // Queue hygiene on the slow loop: orphan running jobs (dead workers)
+    // return to the queue or dead-letter, so one crashed run never wedges
+    // a pipeline forever. Count reclaimed, null when the store is down.
+    fun reap(): Int? {
+        try {
+            val n = this.store.reapOrphans(this.config.orphanTimeoutMs)
+            if (n > 0) {
+                Log.info { "scheduler: reaped ${n} orphan running job(s)" }
+                val m = this.metrics
+                if (m != null) {
+                    repeat(n) { m.bumpJobs("", "reaped") }
+                }
+            }
+            return n
+        } catch (e: DbError) {
+            Log.error { "scheduler: store unreachable reaping orphans" }
+            return null
+        }
     }
 
     fun run() {

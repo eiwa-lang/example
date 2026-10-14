@@ -1,6 +1,6 @@
 import { assert } from "std.core"
 import { Env } from "std.env"
-import { InvalidConfig, loadConfig, splitCsv, parsePositive } from ".scraper.config"
+import { InvalidConfig, loadConfig, splitCsv, parsePositive, envPositive } from ".scraper.config"
 
 fun validEnv(): Void {
     // Load first so explicit sets below win over repo .env values
@@ -23,6 +23,7 @@ fun cleanEnv(): Void {
     Env.unset("ARTIFACT_DIR")
     Env.unset("PIPELINES_DIR")
     Env.unset("SCHEDULER_INTERVAL_MS")
+    Env.unset("ORPHAN_TIMEOUT_MS")
 }
 
 fun loadFails(): Bool {
@@ -64,9 +65,13 @@ test "config: malformed numbers throw" {
 test "config: csv splits and trims empties" {
     assert(splitCsv("").size() == 0)
     assert(splitCsv("ws://a:8080,ws://b:8080").size() == 2)
-    assert(parsePositive(null, 4) == 4)
-    assert(parsePositive("12", 4) == 12)
-    assert(parsePositive("1x", 4) == -1)
+    assert(parsePositive(null) == null)
+    assert(parsePositive("") == null)
+    assert(parsePositive("12") == 12)
+    assert(parsePositive("1x") == null)
+    assert(envPositive(null, 4, "X") == 4)
+    assert(envPositive("", 4, "X") == 4)
+    assert(envPositive("12", 4, "X") == 12)
 }
 
 test "config: captcha providers default to empty allowlist" {
@@ -84,9 +89,13 @@ test "config: scheduler tick defaults" {
     validEnv()
     val cfg = loadConfig()
     assert(cfg.scheduleIntervalMs == 60000, "tick")
+    assert(cfg.orphanTimeoutMs == 600000, "orphan")
     Env.set("SCHEDULER_INTERVAL_MS", "0")
     assert(loadFails(), "zero")
     Env.set("SCHEDULER_INTERVAL_MS", "30s")
     assert(loadFails(), "nan")
+    Env.set("SCHEDULER_INTERVAL_MS", "60000")
+    Env.set("ORPHAN_TIMEOUT_MS", "0")
+    assert(loadFails(), "orphan-zero")
     cleanEnv()
 }

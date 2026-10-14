@@ -7,6 +7,7 @@ import { Config } from ".scraper.config"
 import { Store } from ".scraper.store"
 import { PipelineStore } from ".scraper.pipeline.store"
 import { PipelineScheduler, lockName, occurrenceKey } from ".scraper.scheduler"
+import { Metrics } from ".scraper.metrics"
 
 test "scheduler: lock and key names are stable" {
     assert(lockName("quotes") == "sched-quotes", "lock")
@@ -72,11 +73,11 @@ test "scheduler: tick schedules once then single-flights" {
     } else {
         val sc = PipelineScheduler(schedConfig(), store, PipelineStore("pipelines"))
         val names = sc.discover()
-        assert(names.contains("quotes"), "discovered")
+        assert(names.contains("dolar"), "discovered")
         val due: MutableMap<String, Int> = MutableMap<String, Int>()
-        assert(sc.tick(1000, ["quotes"], due) == "tick scheduled-1 skipped-0", "first")
-        assert(sc.tick(3601000, ["quotes"], due) == "tick scheduled-0 skipped-1", "active-skips")
-        store.deleteJob("quotes-sched-quotes-1000")
+        assert(sc.tick(1000, ["dolar"], due) == "tick scheduled-1 skipped-0", "first")
+        assert(sc.tick(61000, ["dolar"], due) == "tick scheduled-0 skipped-1", "active-skips")
+        store.deleteJob("dolar-sched-dolar-1000")
         store.close()
     }
 }
@@ -87,11 +88,11 @@ test "scheduler: lost lock retries next tick without advancing" {
         echo("scheduler live: skip (set SCRAPER_TEST_DATABASE_URL)")
     } else {
         val sc = PipelineScheduler(schedConfig(), store, PipelineStore("pipelines"))
-        assert(store.acquireLock("sched-quotes", 60000, "other-process"), "held")
+        assert(store.acquireLock("sched-dolar", 60000, "other-process"), "held")
         val due: MutableMap<String, Int> = MutableMap<String, Int>()
-        assert(sc.tick(1000, ["quotes"], due) == "tick scheduled-0 skipped-1", "locked")
-        assert(due.contains("quotes") == false, "due-kept")
-        assert(store.releaseLock("sched-quotes", "other-process"), "cleanup")
+        assert(sc.tick(1000, ["dolar"], due) == "tick scheduled-0 skipped-1", "locked")
+        assert(due.contains("dolar") == false, "due-kept")
+        assert(store.releaseLock("sched-dolar", "other-process"), "cleanup")
         store.close()
     }
 }
@@ -103,9 +104,88 @@ test "scheduler: discover skips pipelines without schedule" {
     } else {
         val sc = PipelineScheduler(schedConfig(), store, PipelineStore("pipelines"))
         val names = sc.discover()
-        assert(names.contains("quotes"), "scheduled")
-        assert(names.contains("eiwa-mcp") == false, "manual")
+        assert(names.contains("dolar"), "scheduled")
+        assert(names.contains("quotes") == false, "manual")
+        assert(names.contains("eiwa-mcp") == false, "manual-mcp")
         assert(names.contains("recaptcha-demo") == false, "manual-demo")
+        store.close()
+    }
+}
+
+fun backdateRunning(store: Store, id: String): Void {
+    store.conn.execute("UPDATE jobs SET updated_at = now() - interval '1 hour' WHERE id = $1", [id])
+}
+
+test "scheduler: reaps idle running job back to queued" {
+    val store = schedStore()
+    if (store == null) {
+        echo("scheduler live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        store.deleteJob("quotes-reap-1")
+        assert(store.enqueue("quotes", "https://example.com/", "page", 3, "reap-1", "quotes", "{}"), "enqueue")
+        val claimed = store.claim()
+        assert(claimed != null, "running")
+        backdateRunning(store, claimed!!.id)
+        assert(store.reapOrphans(60000) == 1, "reaped")
+        val again = store.claim()
+        assert(again != null, "requeued")
+        assert(again!!.attempt == 2, "attempt-consumed")
+        store.deleteJob(claimed!!.id)
+        store.close()
+    }
+}
+
+test "scheduler: reap dead-letters exhausted budget" {
+    val store = schedStore()
+    if (store == null) {
+        echo("scheduler live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        store.deleteJob("quotes-reap-2")
+        assert(store.enqueue("quotes", "https://example.com/", "page", 1, "reap-2", "quotes", "{}"), "enqueue")
+        val claimed = store.claim()
+        assert(claimed != null, "running")
+        backdateRunning(store, claimed!!.id)
+        assert(store.reapOrphans(60000) == 1, "reaped")
+        assert(store.claim() == null, "not-requeued")
+        val rows = store.conn.query("SELECT status AS s FROM jobs WHERE id = $1", [claimed!!.id]).rows()
+        assert(rows.size() == 1, "row")
+        assert(rows.get(0).string("s") == "dead", "dead")
+        store.deleteJob(claimed!!.id)
+        store.close()
+    }
+}
+
+test "scheduler: fresh running jobs are not reaped" {
+    val store = schedStore()
+    if (store == null) {
+        echo("scheduler live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        store.deleteJob("quotes-reap-3")
+        assert(store.enqueue("quotes", "https://example.com/", "page", 3, "reap-3", "quotes", "{}"), "enqueue")
+        val claimed = store.claim()
+        assert(claimed != null, "running")
+        assert(store.reapOrphans(600000) == 0, "spared")
+        store.deleteJob(claimed!!.id)
+        store.close()
+    }
+}
+
+test "scheduler: tick reaps orphans into metrics" {
+    val store = schedStore()
+    if (store == null) {
+        echo("scheduler live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        store.deleteJob("quotes-reap-4")
+        assert(store.enqueue("quotes", "https://example.com/", "page", 3, "reap-4", "quotes", "{}"), "enqueue")
+        val claimed = store.claim()
+        assert(claimed != null, "running")
+        backdateRunning(store, claimed!!.id)
+        val m = Metrics()
+        val sc = PipelineScheduler(schedConfig(), store, PipelineStore("pipelines"), "test", m)
+        val due: MutableMap<String, Int> = MutableMap<String, Int>()
+        sc.tick(1, [], due)
+        assert(m.jobCount("", "reaped") == 1, "metric")
+        store.deleteJob(claimed!!.id)
         store.close()
     }
 }
