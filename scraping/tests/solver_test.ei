@@ -1,0 +1,35 @@
+import { assert } from "std.core"
+import { UniversalSolver } from ".scraper.pipeline.universal"
+
+fun solver(): UniversalSolver {
+    return UniversalSolver("http://127.0.0.1:8855", "k")
+}
+
+test "solver: submit body carries method, sitekey and encoded pageurl" {
+    val b = solver().submitBody("SITE123", "https://example.com/form?a=b&c=d")
+    assert(b.indexOf("method=userrecaptcha") >= 0, "method")
+    assert(b.indexOf("googlekey=SITE123") >= 0, "sitekey")
+    assert(b.indexOf("https://example.com/form?a=b&c=d") < 0, "encoded")
+    assert(b.indexOf("pageurl=") >= 0, "pageurl")
+}
+
+test "solver: task id parses OK prefix only" {
+    val s = solver()
+    assert(s.taskId("OK|abc123") == "abc123", "ok")
+    assert(s.taskId("ERROR_ZERO_BALANCE") == null, "error")
+    assert(s.taskId("") == null, "empty")
+}
+
+test "solver: poll states distinguish ready, waiting and error" {
+    val s = solver()
+    assert(s.pollReady("OK|tok"), "ready")
+    assert(s.pollReady("CAPCHA_NOT_READY") == false, "waiting")
+    assert(s.pollReady("ERROR_X") == false, "error")
+    assert(s.pollReady("") == false, "empty")
+    assert(s.pollToken("OK|tok") == "tok", "token")
+    assert(s.pollToken("ERROR_X") == null, "error-null")
+}
+
+test "solver: name is universal" {
+    assert(solver().name() == "universal", "name")
+}

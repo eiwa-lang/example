@@ -4,9 +4,10 @@ import { Closeable } from "std.core"
 import { repeat } from "std.system"
 import { Connection } from "std.db"
 import { Job } from ".scraper.job"
+import { LockStore } from ".scraper.shedlock"
 
 fun migrationCount(): Int {
-    return 2
+    return 3
 }
 
 fun migrationSql(version: Int): String {
@@ -24,18 +25,42 @@ fun migrationSql(version: Int): String {
             ALTER TABLE jobs ADD COLUMN IF NOT EXISTS pipeline_json JSONB NOT NULL DEFAULT '{}'
         "
     }
+    if (version == 3) {
+        return "CREATE TABLE IF NOT EXISTS shedlock (name TEXT PRIMARY KEY, locked_until TIMESTAMPTZ NOT NULL DEFAULT now(), locked_by TEXT NOT NULL DEFAULT '')"
+    }
     return ""
 }
 
-type Store(val conn: Connection) : Closeable {
+type Store(val conn: Connection) : Closeable, LockStore {
+
+    // Version-tracked: reads schema_version and applies only pending
+    // migrations, so a settled database boots silent. Missing table
+    // means a fresh database (start from zero); concurrent boots stay
+    // safe via IF NOT EXISTS + ON CONFLICT DO NOTHING.
+    fun appliedVersion(): Int {
+        try {
+            val rows = this.conn.query("SELECT version AS v FROM schema_version ORDER BY version").rows()
+            var top = 0
+            repeat(rows.size()) { i ->
+                val v = rows.get(i).int("v")
+                if (v > top) {
+                    top = v
+                }
+            }
+            return top
+        } catch (e: DbError) {
+            return 0
+        }
+    }
 
     fun migrate(): Int {
         var applied = 0
-        repeat(migrationCount()) { n ->
-            val v = n + 1
+        var v = this.appliedVersion() + 1
+        while (v <= migrationCount()) {
             this.conn.execute(migrationSql(v))
             this.conn.execute("INSERT INTO schema_version (version) VALUES ($1) ON CONFLICT (version) DO NOTHING", [v.toString()])
             applied = applied + 1
+            v = v + 1
         }
         return applied
     }
@@ -66,6 +91,29 @@ type Store(val conn: Connection) : Closeable {
     fun complete(id: String): Bool {
         val res = this.conn.execute("UPDATE jobs SET status = 'done', updated_at = now() WHERE id = $1", [id])
         return res.rowsAffected() == 1
+    }
+
+    // Shedlock: distributed mutex over Postgres so N pods schedule a
+    // due pipeline exactly once. Acquire is atomic (single statement);
+    // ttlMs is crash insurance, release narrows the exclusion window.
+    implement fun acquireLock(name: String, ttlMs: Int, owner: String): Bool {
+        val res = this.conn.query("
+            INSERT INTO shedlock (name, locked_until, locked_by) VALUES ($1, now() + ($2 || ' milliseconds')::interval, $3)
+            ON CONFLICT (name) DO UPDATE SET locked_until = EXCLUDED.locked_until, locked_by = EXCLUDED.locked_by
+            WHERE shedlock.locked_until <= now() RETURNING name
+        ", [name, ttlMs.toString(), owner])
+        return res.rows().size() == 1
+    }
+
+    implement fun releaseLock(name: String, owner: String): Bool {
+        val res = this.conn.execute("UPDATE shedlock SET locked_until = now() WHERE name = $1 AND locked_by = $2", [name, owner])
+        return res.rowsAffected() == 1
+    }
+
+    // Single-flight: a pipeline with a queued/running job is not scheduled.
+    fun hasActive(pipeline: String): Bool {
+        val res = this.conn.query("SELECT 1 AS one FROM jobs WHERE pipeline = $1 AND status IN ('queued', 'running') LIMIT 1", [pipeline])
+        return res.rows().size() > 0
     }
 
     fun fail(id: String, retryable: Bool, delayMs: Int): Bool {

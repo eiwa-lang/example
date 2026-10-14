@@ -1,0 +1,21 @@
+// CaptchaSolver: third-party challenge-solving provider behind an
+// explicit operator allowlist (CAPTCHA_PROVIDERS). The runner never calls
+// a provider the operator did not authorize; without a wired solver every
+// captcha step fails closed. FakeCaptchaSolver is test-only.
+import { MutableList } from "std.collections"
+
+contract CaptchaSolver {
+    fun name(): String
+    fun solve(sitekey: String, pageUrl: String, timeoutMs: Int): String?
+}
+
+type FakeCaptchaSolver(val token: String = "fake-token", val seen: MutableList<String> = MutableList<String>()) : CaptchaSolver {
+    implement fun name(): String {
+        return "fake"
+    }
+
+    implement fun solve(sitekey: String, pageUrl: String, timeoutMs: Int): String? {
+        this.seen.add(sitekey)
+        return this.token
+    }
+}

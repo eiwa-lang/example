@@ -43,6 +43,12 @@ set -a; source .env; set +a
 eiwa run
 ```
 
+macOS/homebrew needs libpq on the link path first (one-off per shell):
+
+```bash
+export C_INCLUDE_PATH=$(brew --prefix libpq)/include LIBRARY_PATH=$(brew --prefix libpq)/lib
+```
+
 ```bash
 # enqueue extractions (pipeline name only)
 curl -X POST http://127.0.0.1:9090/jobs -d '{"pipeline": "quotes"}'
@@ -53,9 +59,15 @@ curl http://127.0.0.1:9090/health     # {"status": "ok", "pending": N}
 curl http://127.0.0.1:9090/metrics    # scrape_jobs_total{pipeline,outcome}
 ```
 
-Env vars (`config.ei` fails fast when any is missing): `BROWSER_WORKERS`,
-`DATABASE_URL`, `CONCURRENCY`, `POLL_INTERVAL_MS`, `ARTIFACT_DIR`,
-`PIPELINES_DIR`.
+Env vars (`config.ei` fails fast when any required one is missing):
+`BROWSER_WORKERS`, `DATABASE_URL`, `CONCURRENCY`, `POLL_INTERVAL_MS`,
+`ARTIFACT_DIR`, `PIPELINES_DIR`. Optional: `CAPTCHA_PROVIDERS`
+(comma-separated allowlist, e.g. `two-captcha`; empty/absent = captcha
+steps fail closed).
+Scheduler (all optional): `SCHEDULER_INTERVAL_MS` (tick, default 60000).
+Discovery is proactive — every `*.yaml` under `PIPELINES_DIR` declaring
+`schedule:` is picked up, no list to maintain. Shedlock owner is a
+per-process ULID generated at boot (in-memory, no pod naming needed).
 
 ## Pipeline YAML — reference
 
@@ -81,10 +93,16 @@ steps:
           selector: a.tag
           many: true                         # many: true collects N texts
                                              # attr: "href" reads an attribute
+  - captcha:                                 # third-party solving, gated
+      provider: two-captcha                  # must be in CAPTCHA_PROVIDERS
+      responseSelector: "#g-recaptcha-response"
+      submitSelector: "#submit"              # optional: clicked after fill
   - paginate:                                # optional; without it, 1 page
       selector: li.next a
       maxPages: 100
 required: [title]                            # drops items missing these fields
+schedule:                                    # optional; absent = manual runs only
+  every: "1h"                                # s/m/h/d — Scheduler enqueues when due
 ```
 
 Hard rules:
@@ -103,8 +121,11 @@ Hard rules:
   `InvalidPipeline`, never path traversal.
 - `trim` is a runner default (every `text()` comes trimmed); no `transform`
   block in v1. `parse_money` is out — returns with a real case + `Money` type.
-- `challenge` is never a verb: on detection the runner aborts with
+- `challenge` is never auto-solved: on detection the runner aborts with
   `browser-challenge` (log + metric, dead-letter, no silent retry).
+  The `captcha` step is the only exception, and only when the operator
+  allowlists its provider via `CAPTCHA_PROVIDERS` — YAML alone never
+  enables it. Every attempt is audited (`scrape_captcha_total{provider,outcome}`).
 
 To add a target: copy a YAML, adjust selectors, verify with
 `PipelineStore("pipelines").load("<name>")` (or `POST /jobs` — unknown
@@ -116,9 +137,31 @@ names return 400, never dead-letter).
 |---|---|
 | `POST /jobs {"pipeline": "<name>"}` (+ `maxAttempts?`, `idempotencyKey?`) | `201 {"id","status":"queued"}` · `400` bad pipeline · `409` duplicate |
 | `GET /health` | `{"status": "ok"\|"degraded", "pending": N}` |
-| `GET /metrics` | Prometheus (`scrape_jobs_total{pipeline,outcome}`, `scrape_fetch_errors_total{reason}`) |
+| `GET /metrics` | Prometheus (`scrape_jobs_total{pipeline,outcome}`, `scrape_fetch_errors_total{reason}`, `scrape_captcha_total{provider,outcome}`) |
 
 Job `id` = `pipeline-(idempotencyKey || goto.url)`.
+
+## Scheduled runs
+
+Pipelines declaring `schedule: {every: ...}` are discovered on disk and
+enqueued automatically — no list to maintain:
+
+```bash
+./scraper   # picks up every scheduled *.yaml in PIPELINES_DIR
+```
+
+Mechanics (`src/scraper/scheduler.ei`, `src/scraper/shedlock.ei`):
+
+- One `PipelineScheduler` loop per process ticks every `SCHEDULER_INTERVAL_MS`.
+- Discovery runs once at boot over `PIPELINES_DIR` (unreadable entries
+  log and stay out); `every` is re-read from disk on every fire, so
+  cadence edits apply without restart.
+- Due state is in-memory; a Postgres `shedlock` row per pipeline makes
+  the scheduling decision atomic across processes (first wins, losers
+  retry next tick; lock TTL = one tick). Lock owners are per-process
+  ULIDs generated at boot — no pod naming, nothing persisted.
+- Single-flight: a due pipeline with a `queued`/`running` job is
+  skipped for that window. Occurrence key = `sched-<pipeline>-<epochMs>`.
 
 ## Tests
 

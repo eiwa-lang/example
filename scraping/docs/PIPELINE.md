@@ -130,9 +130,16 @@ required:
   `transform` block in v1. `parse_money` is out — returns with a real case
   + `Money` type.
 - Top-level `required` filters items (drops, never coerces).
-- `challenge` is never a verb: per `PLAN.md`, on detection the runner
+- `challenge` is never auto-solved: per `PLAN.md`, on detection the runner
   aborts with `browser-challenge` (log + metric, dead-letter, no silent
-  retry).
+  retry). The `captcha` step is the only exception: it solves via a
+  third-party provider, fills `responseSelector`, optionally clicks
+  `submitSelector`, and runs only when the operator allowlists its provider
+  in `CAPTCHA_PROVIDERS` — YAML alone never enables it. Denied/unwired/
+  failed attempts dead-letter (`captcha-denied`/`captcha-no-solver`/
+  `captcha-failed`, never retried) and every attempt is audited via
+  `scrape_captcha_total{provider,outcome}`. Provider names are
+  `[a-z0-9-]` (fail-fast, no metric injection).
 - The CSS converter uses exact class match (`div.quote` does not match
   `class="a quote"`); for multi-class use XPath `contains()` directly
   (e.g. `//button[contains(@class, 'example-tab')]` — see `eiwa-mcp.yaml`).
@@ -149,13 +156,15 @@ type Collect(val fields: List<FieldDef>, val selector: String? = null) : Seriali
 type Paginate(val selector: String, val maxPages: Int) : Serializable + Json
 type Click(val selector: String, val index: Int = 1) : Serializable + Json
 type Wait(val selector: String, val text: String? = null, val timeoutMs: Int = 5000) : Serializable + Json
+type Captcha(val provider: String, val responseSelector: String, val sitekey: String? = null, val submitSelector: String? = null) : Serializable + Json
 
 union Step {
     @Alias("goto") Goto,
     @Alias("click") Click,
     @Alias("wait") Wait,
     @Alias("collect") Collect,
-    @Alias("paginate") Paginate
+    @Alias("paginate") Paginate,
+    @Alias("captcha") Captcha
 }
 type Pipeline(val name: String, val steps: List<Step>, val required: List<String>) : Serializable + Json
 ```
@@ -219,7 +228,7 @@ Executable tasks in `docs/TASKS.md` (sequencing source of truth).
 ## 4. Locked decisions
 
 1. `steps: List<Step>` with `Step` a closed union (`Goto|Collect|Paginate` +
-   `Click|Wait`, wire keys via `@Alias`). `each/do`, `extract`, and
+   `Click|Wait|Captcha`, wire keys via `@Alias`). `each/do`, `extract`, and
    `kind: String` retired.
 2. Single `collect`: with `selector` = N records, without = 1 record
    (`String? = null`). No `within` flag.
@@ -232,6 +241,10 @@ Executable tasks in `docs/TASKS.md` (sequencing source of truth).
 8. Measured minimal timeouts (pre-wait anti-congestion; `wait-timeout`
    retryable, not directly dead).
 9. Traversal-safe pipeline names; `dead-bad-pipeline` logs the detail.
+10. Captcha plugin (third-party auto-solve): union member + operator
+    allowlist (`CAPTCHA_PROVIDERS`, empty = disabled) + per-attempt audit;
+    denied/unwired/failed dead-letter, never retried. Real provider wiring
+    is future work (prototype proves the mechanism with a fake).
 
 ## 5. Risks
 

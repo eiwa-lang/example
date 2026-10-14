@@ -1,0 +1,59 @@
+// UniversalSolver: 2captcha-compatible solver backend (in.php/res.php),
+// e.g. the self-hosted universal-captcha-solver stack. Submit is a GET
+// with query params; polling suspends cooperatively between attempts.
+// Plain-text OK|/ERROR_ replies are protocol framing, parsed in one
+// tested helper — never JSON-in-String.
+import { Client, urlEncode } from "std.http"
+import { sleepMs } from "std.time"
+import { CaptchaSolver } from ".scraper.pipeline.captcha"
+
+type UniversalSolver(val baseUrl: String, val apiKey: String) : CaptchaSolver {
+    implement fun name(): String {
+        return "universal"
+    }
+
+    fun submitBody(sitekey: String, pageUrl: String): String {
+        return "key=" + this.apiKey + "&method=userrecaptcha&googlekey=" + sitekey + "&pageurl=" + urlEncode(pageUrl)
+    }
+
+    fun pollUrl(taskId: String): String {
+        return this.baseUrl + "/res.php?key=" + this.apiKey + "&action=get&id=" + taskId
+    }
+
+    fun taskId(body: String): String? {
+        if (body.indexOf("OK|") != 0) {
+            return null
+        }
+        return body.substring(3, body.length)
+    }
+
+    fun pollReady(body: String): Bool {
+        return body != "" && body != "CAPCHA_NOT_READY" && body.indexOf("ERROR_") != 0
+    }
+
+    fun pollToken(body: String): String? {
+        return this.taskId(body)
+    }
+
+    implement fun solve(sitekey: String, pageUrl: String, timeoutMs: Int): String? {
+        val sent = Client().post(this.baseUrl + "/in.php", this.submitBody(sitekey, pageUrl))
+        if (sent.status != 200) {
+            return null
+        }
+        val id = this.taskId(sent.body)
+        if (id == null || id == "") {
+            return null
+        }
+        sleepMs(15000)
+        var waited = 15000
+        while (waited < timeoutMs) {
+            val res = Client().get(this.pollUrl(id))
+            if (res.status == 200 && this.pollReady(res.body)) {
+                return this.pollToken(res.body)
+            }
+            sleepMs(5000)
+            waited = waited + 5000
+        }
+        return null
+    }
+}

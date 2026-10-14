@@ -1,0 +1,19 @@
+// Shedlock: distributed mutex. The policy lives here; the SQL behind
+// LockStore can be swapped without touching callers. This module is
+// storage-agnostic on purpose: nothing here imports scraper modules,
+// so it can move to a shared lib untouched.
+contract LockStore {
+    fun acquireLock(name: String, ttlMs: Int, owner: String): Bool
+    fun releaseLock(name: String, owner: String): Bool
+}
+
+type Shedlock(val store: LockStore, val name: String, val ttlMs: Int, val owner: String) {
+
+    fun lock(): Bool {
+        return this.store.acquireLock(this.name, this.ttlMs, this.owner)
+    }
+
+    fun unlock(): Bool {
+        return this.store.releaseLock(this.name, this.owner)
+    }
+}

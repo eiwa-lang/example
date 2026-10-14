@@ -1,0 +1,153 @@
+// PipelineScheduler: time-based enqueue for pipelines declaring
+// `schedule`. Discovery is proactive: every *.yaml in the pipelines
+// directory is inspected, no configured list. Due state lives in
+// memory per process; a Shedlock serializes processes so a due
+// pipeline is scheduled exactly once per window, and a queued/running
+// job suppresses the next occurrence (single-flight).
+import { List, MutableList, MutableMap } from "std.collections"
+import { repeat, loop } from "std.system"
+import { Log } from "std.log"
+import { nowMillis, sleepMs } from "std.time"
+import { Ulid } from "std.ulid"
+import { DbError } from "std.db"
+import { Config } from ".scraper.config"
+import { Store } from ".scraper.store"
+import { Shedlock } from ".scraper.shedlock"
+import { PipelineStore } from ".scraper.pipeline.store"
+import { InvalidPipeline, PipelineNotFound } from ".scraper.pipeline.pipeline"
+
+// Shedlock row guarding one pipeline's scheduling decision.
+fun lockName(pipeline: String): String {
+    return "sched-" + pipeline
+}
+
+// Idempotency key of one scheduled occurrence: unique per tick,
+// traceable back to the window that created it.
+fun occurrenceKey(pipeline: String, atMs: Int): String {
+    return "sched-" + pipeline + "-" + atMs.toString()
+}
+
+type PipelineScheduler(val config: Config, val store: Store, val pipelines: PipelineStore, val owner: String = Ulid.generate().toString()) {
+
+    // Boot-time discovery: every *.yaml on disk that exists and
+    // declares a schedule. The rest logs once and stays out.
+    fun discover(): List<String> {
+        val out: MutableList<String> = MutableList<String>()
+        val names = this.pipelines.list()
+        repeat(names.size()) { i ->
+            val name = names.get(i)
+            try {
+                val p = this.pipelines.load(name)
+                if (p.schedule == null) {
+                    Log.info { "scheduler: ${name} declares no schedule, skipping" }
+                } else {
+                    out.add(name)
+                }
+            } catch (e: PipelineNotFound) {
+                Log.error { "scheduler: ${name} vanished, skipping" }
+            } catch (e: InvalidPipeline) {
+                Log.error { "scheduler: invalid pipeline ${name}: ${e.message()}, skipping" }
+            }
+        }
+        return out.freeze()
+    }
+
+    // Fresh cadence per fire: the YAML is read through on every load,
+    // so an edited `every` applies without restart. -1 when unloadable.
+    fun everyMsOf(name: String): Int {
+        try {
+            val p = this.pipelines.load(name)
+            if (p.schedule == null) {
+                return -1
+            }
+            return p.schedule!!.everyMs()
+        } catch (e: PipelineNotFound) {
+            return -1
+        } catch (e: InvalidPipeline) {
+            return -1
+        }
+    }
+
+    fun guard(name: String): Shedlock {
+        return Shedlock(this.store, lockName(name), this.config.scheduleIntervalMs, this.owner)
+    }
+
+    // One scheduling decision. Due advances only on success: a lost
+    // lock retries next tick, an active job suppresses this window.
+    fun fire(name: String, nowMs: Int, due: MutableMap<String, Int>): String {
+        val every = this.everyMsOf(name)
+        if (every <= 0) {
+            Log.error { "scheduler: ${name} unreadable or unscheduled, skipping" }
+            return "invalid"
+        }
+        try {
+            if (this.guard(name).lock() == false) {
+                Log.info { "scheduler: ${name} locked by another process, retry next tick" }
+                return "locked"
+            }
+        } catch (e: DbError) {
+            Log.error { "scheduler: store unreachable acquiring ${name}" }
+            return "store-down"
+        }
+        val outcome = this.fireLocked(name, nowMs, every, due)
+        try {
+            this.guard(name).unlock()
+        } catch (e: DbError) {
+            Log.error { "scheduler: lock release failed for ${name}, ttl covers it" }
+        }
+        return outcome
+    }
+
+    fun fireLocked(name: String, nowMs: Int, every: Int, due: MutableMap<String, Int>): String {
+        try {
+            if (this.store.hasActive(name)) {
+                Log.info { "scheduler: ${name} already queued/running, skipping window" }
+                return "active"
+            }
+            val p = this.pipelines.load(name)
+            val key = occurrenceKey(name, nowMs)
+            this.store.enqueue(name, p.gotoUrl(), "page", 3, key, name, p.toJson())
+            due.put(name, nowMs + every)
+            Log.info { "scheduler: ${name} scheduled as ${key}" }
+            return "scheduled"
+        } catch (e: PipelineNotFound) {
+            Log.error { "scheduler: ${name} disappeared, skipping" }
+            return "invalid"
+        } catch (e: InvalidPipeline) {
+            Log.error { "scheduler: ${name} invalid: ${e.message()}, skipping" }
+            return "invalid"
+        } catch (e: DbError) {
+            Log.error { "scheduler: store unreachable scheduling ${name}" }
+            return "store-down"
+        }
+    }
+
+    fun tick(nowMs: Int, names: List<String>, due: MutableMap<String, Int>): String {
+        var done = 0
+        var skipped = 0
+        repeat(names.size()) { i ->
+            val name = names.get(i)
+            val at = due.get(name)
+            if (at == null || nowMs >= at!!) {
+                if (this.fire(name, nowMs, due) == "scheduled") {
+                    done = done + 1
+                } else {
+                    skipped = skipped + 1
+                }
+            } else {
+                skipped = skipped + 1
+            }
+        }
+        return "tick scheduled-" + done.toString() + " skipped-" + skipped.toString()
+    }
+
+    fun run() {
+        val names = this.discover()
+        val due: MutableMap<String, Int> = MutableMap<String, Int>()
+        Log.info { "scheduler boot: ${names.size()} pipeline(s) every ${this.config.scheduleIntervalMs}ms as ${this.owner}" }
+        loop {
+            this.tick(nowMillis(), names, due)
+            sleepMs(this.config.scheduleIntervalMs)
+        }
+    }
+}

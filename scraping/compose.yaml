@@ -15,7 +15,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U scraper"]
+      test: ["CMD-SHELL", "pg_isready -U scraper -d scraping"]
       interval: 5s
       retries: 12
     ports:
@@ -42,11 +42,54 @@ services:
       POLL_INTERVAL_MS: 1000
       ARTIFACT_DIR: /var/lib/scraper/artifacts
       PIPELINES_DIR: /pipelines
+      CAPTCHA_PROVIDERS: ${CAPTCHA_PROVIDERS:-}
+      SOLVER_URL: http://captcha-solver:8855
+      SOLVER_KEY: ${SOLVER_KEY:-}
+      SCHEDULER_INTERVAL_MS: ${SCHEDULER_INTERVAL_MS:-}
     volumes:
       - artifacts:/var/lib/scraper/artifacts
     depends_on:
       postgres:
         condition: service_healthy
+
+  # LOCAL ONLY (uncommitted experiment): self-hosted captcha solver stack
+  # for live proofs. Opt-in via profile so default `up` is unaffected:
+  #   docker compose --profile captcha up -d captcha-solver
+  # Build contexts are absolute /tmp clones on purpose — final placement
+  # (vendored dir vs git-URL contexts) is still an open decision.
+  captcha-recaptcha:
+    profiles: [captcha]
+    build:
+      context: /tmp/captchasolver/recaptcha
+    ports:
+      - "127.0.0.1:8866:8866"
+    environment:
+      SOLVER_API_KEY: local-dev-key-001
+    shm_size: 1gb
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8866/health')\""]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
+  captcha-solver:
+    profiles: [captcha]
+    build:
+      context: /tmp/captchasolver/universal
+      dockerfile: Dockerfile.local
+    ports:
+      - "127.0.0.1:8855:8855"
+    environment:
+      SOLVER_API_KEY: local-dev-key-001
+      RECAPTCHA_SOLVER_URL: http://captcha-recaptcha:8866
+    depends_on:
+      captcha-recaptcha:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8855/health')\""]
+      interval: 15s
+      timeout: 5s
+      retries: 20
 
 volumes:
   pgdata:

@@ -1,6 +1,8 @@
 // PipelineStore: loads versioned pipeline JSON from disk. Read-through
 // on every load; content always enters via parsePipeline.
-import { File } from "std.fs"
+import { List, MutableList } from "std.collections"
+import { repeat } from "std.system"
+import { File, Dir } from "std.fs"
 import { fromYaml } from "std.yaml"
 import { Pipeline, PipelineNotFound, InvalidPipeline } from ".scraper.pipeline.pipeline"
 
@@ -36,6 +38,20 @@ type PipelineStore(val dir: String) {
             throw PipelineNotFound(name)
         }
         return parsePipelineYaml(raw)
+    }
+
+    // Names of every *.yaml in the directory. The scheduler uses it to
+    // discover scheduled pipelines instead of a configured list.
+    fun list(): List<String> {
+        val out: MutableList<String> = MutableList<String>()
+        val files = Dir.names(this.dir)
+        repeat(files.size()) { i ->
+            val file = files.get(i)
+            if (file.length > 5 && file.substring(file.length - 5, file.length) == ".yaml") {
+                out.add(file.substring(0, file.length - 5))
+            }
+        }
+        return out.freeze()
     }
 }
 

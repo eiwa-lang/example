@@ -1,5 +1,5 @@
 import { assert } from "std.core"
-import { parseJson } from "std.json"
+import { parseJson, fromJson } from "std.json"
 import { sleepMs } from "std.time"
 import { TCPServer, Socket } from "std.net"
 import { buildFrame, wsRecv, writeAll, wsConnect } from "browser.net.ws"
@@ -11,7 +11,9 @@ import { Browser } from "browser.browser"
 import { serveOneEngine } from "browser.worker.server"
 import { Job } from ".scraper.job"
 import { PipelineStore } from ".scraper.pipeline.store"
-import { PipelineRunner } from ".scraper.pipeline.runner"
+import { PipelineRunner, PipelineRecord, RecordValue } from ".scraper.pipeline.runner"
+import { FakeCaptchaSolver } from ".scraper.pipeline.captcha"
+import { Metrics } from ".scraper.metrics"
 import { parsePipeline } from ".scraper.pipeline.pipeline"
 
 fun rnReply(id: Int, result: String): String {
@@ -66,6 +68,8 @@ fun rnSession(sock: Socket, hrefBudget: Int): String {
                         writeAll(sock, buildFrame(1, "{\"method\": \"Page.loadEventFired\", \"params\": {}, \"sessionId\": \"S1\"}", null))
                     } else if (mname == "Runtime.evaluate") {
                         if (f.payload.indexOf("el.click()") >= 0) {
+                            writeAll(sock, buildFrame(1, rnReply(num, rnValue("ok")), null))
+                        } else if (f.payload.indexOf("el.value = s.value") >= 0) {
                             writeAll(sock, buildFrame(1, rnReply(num, rnValue("ok")), null))
                         } else if (f.payload.indexOf("getBoundingClientRect") >= 0) {
                             writeAll(sock, buildFrame(1, rnReply(num, rnValue("found")), null))
@@ -205,10 +209,10 @@ test "runner: collects two quotes following pagination once" {
     val res = runner.run(rnJob(), pipeline)
     assert(res.kind == "records", "kind-$res.note")
     assert(res.records.size() == 2, "count")
-    assert(res.records.get(0).text("text") == "Quote one", "text")
-    assert(res.records.get(0).text("author") == "Author one", "author")
-    assert(res.records.get(0).texts("tags").size() == 1, "tags")
-    assert(res.records.get(1).text("author") == "Author two", "second")
+    assert(res.records.get(0).value("text") == "Quote one", "text")
+    assert(res.records.get(0).value("author") == "Author one", "author")
+    assert(res.records.get(0).values("tags").size() == 1, "tags")
+    assert(res.records.get(1).value("author") == "Author two", "second")
     assert(res.note == "pages-2", "note-$res.note")
     browser.close()
 }
@@ -220,8 +224,8 @@ test "runner: single-record collect without selector" {
     val res = runner.run(rnJob(), pipeline)
     assert(res.kind == "records", "kind-$res.note")
     assert(res.records.size() == 1, "count")
-    assert(res.records.get(0).text("pname") == "Widget", "name")
-    assert(res.records.get(0).text("price") == "$42", "price")
+    assert(res.records.get(0).value("pname") == "Widget", "name")
+    assert(res.records.get(0).value("price") == "$42", "price")
     assert(res.note == "pages-1", "note-$res.note")
     browser.close()
 }
@@ -245,7 +249,7 @@ test "runner: click then wait-text then collect" {
     val res = runner.run(rnJob(), pipeline)
     assert(res.kind == "records", "kind-$res.note")
     assert(res.records.size() == 2, "count")
-    assert(res.records.get(0).text("text") == "Quote one", "text")
+    assert(res.records.get(0).value("text") == "Quote one", "text")
     assert(res.note == "pages-1", "note-$res.note")
     browser.close()
 }
@@ -290,4 +294,87 @@ test "runner: pipeline without collect fails closed" {
     val res = runner.run(rnJob(), pipeline)
     assert(res.kind == "failed", "kind")
     assert(res.note == "no-collect", "reason-$res.note")
+}
+
+test "runner: captcha solves through allowlisted provider" {
+    val browser = rnLiveRunner(28941, 28943, 0)
+    val pipeline = parsePipeline("{\"name\": \"capped\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"captcha\": {\"provider\": \"fake\", \"responseSelector\": \".captcha-response\", \"submitSelector\": \".captcha-submit\"}}, {\"collect\": {\"fields\": [{\"name\": \"pname\", \"selector\": \".name\"}]}}], \"required\": [\"pname\"]}")
+    val solver = FakeCaptchaSolver()
+    val metrics = Metrics()
+    val runner = PipelineRunner(browser, solver, ["fake"], metrics)
+    val res = runner.run(rnJob(), pipeline)
+    assert(res.kind == "records", "kind-$res.note")
+    assert(res.records.size() == 1, "count")
+    assert(res.records.get(0).value("pname") == "Widget", "record")
+    assert(solver.seen.size() == 1, "called-once")
+    assert(metrics.captchaCount("fake", "solved") == 1, "metric")
+    assert(res.note == "pages-1", "note-$res.note")
+    browser.close()
+}
+
+test "runner: captcha with denied provider fails closed without calling solver" {
+    val browser = rnLiveRunner(28945, 28947, 0)
+    val pipeline = parsePipeline("{\"name\": \"capped\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"captcha\": {\"provider\": \"fake\", \"responseSelector\": \".captcha-response\"}}, {\"collect\": {\"fields\": [{\"name\": \"pname\", \"selector\": \".name\"}]}}], \"required\": [\"pname\"]}")
+    val solver = FakeCaptchaSolver()
+    val metrics = Metrics()
+    val runner = PipelineRunner(browser, solver, ["other"], metrics)
+    val res = runner.run(rnJob(), pipeline)
+    assert(res.kind == "failed", "kind")
+    assert(res.note == "captcha-denied", "reason-$res.note")
+    assert(solver.seen.size() == 0, "never-called")
+    assert(metrics.captchaCount("fake", "denied") == 1, "metric")
+    browser.close()
+}
+
+test "runner: captcha without solver fails closed" {
+    val browser = rnLiveRunner(28949, 28951, 0)
+    val pipeline = parsePipeline("{\"name\": \"capped\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"captcha\": {\"provider\": \"fake\", \"responseSelector\": \".captcha-response\"}}, {\"collect\": {\"fields\": [{\"name\": \"pname\", \"selector\": \".name\"}]}}], \"required\": [\"pname\"]}")
+    val metrics = Metrics()
+    val runner = PipelineRunner(browser, null, ["fake"], metrics)
+    val res = runner.run(rnJob(), pipeline)
+    assert(res.kind == "failed", "kind")
+    assert(res.note == "captcha-no-solver", "reason-$res.note")
+    assert(metrics.captchaCount("fake", "no-solver") == 1, "metric")
+    browser.close()
+}
+
+test "runner: captcha with mismatched wired provider fails closed" {
+    val browser = rnLiveRunner(28953, 28955, 0)
+    val pipeline = parsePipeline("{\"name\": \"capped\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"captcha\": {\"provider\": \"other-name\", \"responseSelector\": \".captcha-response\"}}, {\"collect\": {\"fields\": [{\"name\": \"pname\", \"selector\": \".name\"}]}}], \"required\": [\"pname\"]}")
+    val solver = FakeCaptchaSolver()
+    val metrics = Metrics()
+    val runner = PipelineRunner(browser, solver, ["other-name"], metrics)
+    val res = runner.run(rnJob(), pipeline)
+    assert(res.kind == "failed", "kind")
+    assert(res.note == "captcha-no-solver", "reason-$res.note")
+    assert(solver.seen.size() == 0, "never-called")
+    browser.close()
+}
+
+test "runner: record value omits empty members" {
+    val single = RecordValue("success", "hi", List<String>())
+    val singleRaw = single.toJson()
+    assert(singleRaw.indexOf("\"value\"") >= 0, "value-present")
+    assert(singleRaw.indexOf("values") < 0, "values-omitted")
+    val multi = RecordValue("tags", "", ["a", "b"])
+    val multiRaw = multi.toJson()
+    assert(multiRaw.indexOf("\"values\"") >= 0, "values-present")
+    assert(multiRaw.indexOf("\"value\"") < 0, "value-omitted")
+}
+
+test "runner: record value round-trips sparse shape" {
+    val rec = PipelineRecord([RecordValue("success", "hi", List<String>()), RecordValue("tags", "", ["a"])])
+    val back = fromJson<PipelineRecord>(rec.toJson())
+    assert(back != null, "typed")
+    assert(back!!.value("success") == "hi", "single")
+    assert(back!!.values("tags").size() == 1, "multi")
+}
+
+test "runner: record value still reads legacy text/texts rows" {
+    val legacy = fromJson<PipelineRecord>("{\"fields\": [{\"name\": \"success\", \"text\": \"hi\", \"texts\": []}]}")
+    assert(legacy != null, "typed")
+    assert(legacy!!.value("success") == "hi", "legacy-single")
+    val legacyMulti = fromJson<PipelineRecord>("{\"fields\": [{\"name\": \"tags\", \"text\": \"\", \"texts\": [\"a\"]}]}")
+    assert(legacyMulti != null, "typed-multi")
+    assert(legacyMulti!!.values("tags").size() == 1, "legacy-multi")
 }

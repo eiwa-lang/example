@@ -22,6 +22,7 @@ fun cleanEnv(): Void {
     Env.unset("POLL_INTERVAL_MS")
     Env.unset("ARTIFACT_DIR")
     Env.unset("PIPELINES_DIR")
+    Env.unset("SCHEDULER_INTERVAL_MS")
 }
 
 fun loadFails(): Bool {
@@ -66,4 +67,26 @@ test "config: csv splits and trims empties" {
     assert(parsePositive(null, 4) == 4)
     assert(parsePositive("12", 4) == 12)
     assert(parsePositive("1x", 4) == -1)
+}
+
+test "config: captcha providers default to empty allowlist" {
+    validEnv()
+    Env.unset("CAPTCHA_PROVIDERS")
+    assert(loadConfig().captchaProviders.size() == 0, "disabled")
+    Env.set("CAPTCHA_PROVIDERS", "two-captcha,fake")
+    val cfg = loadConfig()
+    assert(cfg.captchaProviders.size() == 2, "parsed")
+    assert(cfg.captchaProviders.get(0) == "two-captcha", "first")
+    cleanEnv()
+}
+
+test "config: scheduler tick defaults" {
+    validEnv()
+    val cfg = loadConfig()
+    assert(cfg.scheduleIntervalMs == 60000, "tick")
+    Env.set("SCHEDULER_INTERVAL_MS", "0")
+    assert(loadFails(), "zero")
+    Env.set("SCHEDULER_INTERVAL_MS", "30s")
+    assert(loadFails(), "nan")
+    cleanEnv()
 }

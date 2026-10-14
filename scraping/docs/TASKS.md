@@ -121,3 +121,22 @@ on JSON. Mark `[x]` only with proof (command + output).
 - [x] `Collect.selector`, `FieldDef.attr`, `Wait.text` are `String? = null`
   (runner normalizes with `?: ""`); legacy `""` snapshots still parse.
   eiwa-mcp goto keeps tuned `timeoutMs: 30000`. Proof: suite green vs PG16.
+
+## Captcha plugin (prototype, fake provider) — [x] done
+
+Locked decisions (brainstorm 2026-10-13): purpose = third-party auto-solve
+(C); registration = union member, not a named registry (string dispatch is
+what the union eliminated); gating = operator allowlist
+(`CAPTCHA_PROVIDERS`, empty = disabled, YAML alone never enables); scope =
+prototype with fake (real provider wiring is future work).
+
+- [x] `Captcha(provider, responseSelector, sitekey?, submitSelector?)`
+  union member + `validate()` (provider `[a-z0-9-]`, responseSelector
+  required). `CaptchaSolver` contract + `FakeCaptchaSolver` (call log).
+  Runner: allowlist check before solver call (`captcha-denied`),
+  null solver (`captcha-no-solver`), solve→fill→optional-click
+  (`captcha-failed`/`solved`); all fail closed, never retried.
+  `scrape_captcha_total{provider,outcome}` audit metric.
+  `Config.captchaProviders` optional (default empty = disabled).
+  Proof: pipeline 21/21, runner 12/12 (fake CDP fill branch), service
+  metrics + retryable asserts, smoke allowlist test — suite green vs PG16.

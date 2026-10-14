@@ -17,8 +17,8 @@ test "pipeline: live eiwa-mcp tab click through a real worker" {
         val res = runner.run(job, pipeline)
         assert(res.kind == "records", "kind-$res.note")
         assert(res.records.size() == 1, "count")
-        assert(res.records.get(0).text("title") == "MCP tools in arest", "title")
-        assert(res.records.get(0).texts("snippets").size() == 3, "snippets")
+        assert(res.records.get(0).value("title") == "MCP tools in arest", "title")
+        assert(res.records.get(0).values("snippets").size() == 3, "snippets")
         browser.close()
     }
 }

@@ -17,8 +17,8 @@ test "pipeline: live quotes through a real worker" {
         val res = runner.run(job, pipeline)
         assert(res.kind == "records", "kind-$res.note")
         assert(res.records.size() >= 50, "count-${res.records.size()}")
-        assert(res.records.get(0).text("author") != "", "author")
-        assert(res.records.get(0).texts("tags").size() > 0, "tags")
+        assert(res.records.get(0).value("author") != "", "author")
+        assert(res.records.get(0).values("tags").size() > 0, "tags")
         browser.close()
     }
 }

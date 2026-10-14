@@ -1,0 +1,111 @@
+import { assert } from "std.core"
+import { MutableMap } from "std.collections"
+import { Env } from "std.env"
+import { DbError } from "std.db"
+import { Postgres } from "postgres"
+import { Config } from ".scraper.config"
+import { Store } from ".scraper.store"
+import { PipelineStore } from ".scraper.pipeline.store"
+import { PipelineScheduler, lockName, occurrenceKey } from ".scraper.scheduler"
+
+test "scheduler: lock and key names are stable" {
+    assert(lockName("quotes") == "sched-quotes", "lock")
+    assert(occurrenceKey("quotes", 1000) == "sched-quotes-1000", "key")
+    assert(occurrenceKey("quotes", 2000) != occurrenceKey("quotes", 1000), "unique")
+}
+
+test "scheduler: owner defaults to a fresh ulid" {
+    val store = schedStore()
+    if (store == null) {
+        echo("scheduler live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        val a = PipelineScheduler(schedConfig(), store, PipelineStore("pipelines"))
+        val b = PipelineScheduler(schedConfig(), store, PipelineStore("pipelines"))
+        assert(a.owner != "", "present")
+        assert(a.owner.length == 26, "ulid")
+        assert(a.owner != b.owner, "unique")
+        store.close()
+    }
+}
+
+fun schedStore(): Store? {
+    val url = Env.get("SCRAPER_TEST_DATABASE_URL")
+    if (url == null || url == "") {
+        return null
+    }
+    try {
+        val store = Store(Postgres.connect(url))
+        store.migrate()
+        return store
+    } catch (e: DbError) {
+        return null
+    }
+}
+
+fun schedConfig(): Config {
+    val url = Env.get("SCRAPER_TEST_DATABASE_URL")
+    if (url == null) {
+        return Config(["ws://127.0.0.1:1"], "", 1, 100, "/tmp", "pipelines")
+    }
+    return Config(["ws://127.0.0.1:1"], url, 1, 100, "/tmp", "pipelines", [], "", "", 60000)
+}
+
+test "scheduler: shedlock is exclusive across owners" {
+    val store = schedStore()
+    if (store == null) {
+        echo("scheduler live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        assert(store.acquireLock("sched-u1", 60000, "owner-a"), "first-wins")
+        assert(store.acquireLock("sched-u1", 60000, "owner-b") == false, "second-loses")
+        assert(store.releaseLock("sched-u1", "owner-b") == false, "stranger-cannot-release")
+        assert(store.releaseLock("sched-u1", "owner-a"), "owner-releases")
+        assert(store.acquireLock("sched-u1", 60000, "owner-b"), "reacquires")
+        assert(store.releaseLock("sched-u1", "owner-b"), "cleanup")
+        store.close()
+    }
+}
+
+test "scheduler: tick schedules once then single-flights" {
+    val store = schedStore()
+    if (store == null) {
+        echo("scheduler live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        val sc = PipelineScheduler(schedConfig(), store, PipelineStore("pipelines"))
+        val names = sc.discover()
+        assert(names.contains("quotes"), "discovered")
+        val due: MutableMap<String, Int> = MutableMap<String, Int>()
+        assert(sc.tick(1000, ["quotes"], due) == "tick scheduled-1 skipped-0", "first")
+        assert(sc.tick(3601000, ["quotes"], due) == "tick scheduled-0 skipped-1", "active-skips")
+        store.deleteJob("quotes-sched-quotes-1000")
+        store.close()
+    }
+}
+
+test "scheduler: lost lock retries next tick without advancing" {
+    val store = schedStore()
+    if (store == null) {
+        echo("scheduler live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        val sc = PipelineScheduler(schedConfig(), store, PipelineStore("pipelines"))
+        assert(store.acquireLock("sched-quotes", 60000, "other-process"), "held")
+        val due: MutableMap<String, Int> = MutableMap<String, Int>()
+        assert(sc.tick(1000, ["quotes"], due) == "tick scheduled-0 skipped-1", "locked")
+        assert(due.contains("quotes") == false, "due-kept")
+        assert(store.releaseLock("sched-quotes", "other-process"), "cleanup")
+        store.close()
+    }
+}
+
+test "scheduler: discover skips pipelines without schedule" {
+    val store = schedStore()
+    if (store == null) {
+        echo("scheduler live: skip (set SCRAPER_TEST_DATABASE_URL)")
+    } else {
+        val sc = PipelineScheduler(schedConfig(), store, PipelineStore("pipelines"))
+        val names = sc.discover()
+        assert(names.contains("quotes"), "scheduled")
+        assert(names.contains("eiwa-mcp") == false, "manual")
+        assert(names.contains("recaptcha-demo") == false, "manual-demo")
+        store.close()
+    }
+}

@@ -1,0 +1,21 @@
+name: recaptcha-demo
+steps:
+  - goto:
+      url: https://www.google.com/recaptcha/api2/demo
+  - wait:
+      selector: "#recaptcha-demo"
+      timeoutMs: 15000
+  - captcha:
+      provider: universal
+      sitekey: 6Le-wvkSAAAAAPBMRTvw0Q4Muexq9bi0DJwx_mJ-
+      responseSelector: "#g-recaptcha-response"
+      submitSelector: "#recaptcha-demo-submit"
+      timeoutMs: 300000
+  - wait:
+      selector: ".recaptcha-success"
+      timeoutMs: 15000
+  - collect:
+      fields:
+        - name: success
+          selector: ".recaptcha-success"
+required: [success]

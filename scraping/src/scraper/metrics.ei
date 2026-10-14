@@ -5,11 +5,16 @@ import { MutableMap } from "std.collections"
 
 type Metrics(
     val jobs: MutableMap<String, Int> = MutableMap<String, Int>(),
-    val fetchErrors: MutableMap<String, Int> = MutableMap<String, Int>()
+    val fetchErrors: MutableMap<String, Int> = MutableMap<String, Int>(),
+    val captcha: MutableMap<String, Int> = MutableMap<String, Int>()
 ) {
 
     fun jobKey(pipeline: String, outcome: String): String {
         return pipeline + "|" + outcome
+    }
+
+    fun captchaKey(provider: String, outcome: String): String {
+        return provider + "|" + outcome
     }
 
     fun bumpJobs(pipeline: String, outcome: String): Void {
@@ -25,6 +30,15 @@ type Metrics(
         return this.jobs.get(this.jobKey(pipeline, outcome)) ?: 0
     }
 
+    fun bumpCaptcha(provider: String, outcome: String): Void {
+        val k = this.captchaKey(provider, outcome)
+        this.captcha.put(k, (this.captcha.get(k) ?: 0) + 1)
+    }
+
+    fun captchaCount(provider: String, outcome: String): Int {
+        return this.captcha.get(this.captchaKey(provider, outcome)) ?: 0
+    }
+
     fun render(): String {
         var out = ""
         for (this.jobs) { entry ->
@@ -35,6 +49,12 @@ type Metrics(
         }
         for (this.fetchErrors) { entry ->
             out = out + "scrape_fetch_errors_total{reason=\"${entry.key}\"} ${entry.value}\n"
+        }
+        for (this.captcha) { entry ->
+            val sep = entry.key.indexOf("|")
+            val provider = entry.key.substring(0, sep)
+            val outcome = entry.key.substring(sep + 1, entry.key.length)
+            out = out + "scrape_captcha_total{provider=\"${provider}\",outcome=\"${outcome}\"} ${entry.value}\n"
         }
         return out
     }

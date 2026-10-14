@@ -3,7 +3,7 @@ import { parseJson } from "std.json"
 import { Env } from "std.env"
 import { DbError } from "std.db"
 import { Postgres } from "postgres"
-import { Store } from ".scraper.store"
+import { Store, migrationCount } from ".scraper.store"
 
 fun testStore(): Store? {
     val url = Env.get("SCRAPER_TEST_DATABASE_URL")
@@ -24,8 +24,9 @@ test "store: migrate is idempotent" {
     if (store == null) {
         echo("store live: skip (set SCRAPER_TEST_DATABASE_URL)")
     } else {
-        assert(store.migrate() == 2, "migrate")
-        assert(store.migrate() == 2, "remigrate")
+        store.migrate()
+        assert(store.migrate() == 0, "settled-is-silent")
+        assert(store.appliedVersion() == migrationCount(), "tracked")
         store.close()
     }
 }

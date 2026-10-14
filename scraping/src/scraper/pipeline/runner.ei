@@ -4,32 +4,76 @@
 import { List, MutableList } from "std.collections"
 import { repeat } from "std.system"
 import { sleepMs } from "std.time"
-import { Serializable } from "std.serde"
+import { Serializable, SerdeValue, SerdeObject, SerdeField, SerdeString, SerdeListValue, SerdeStringList, SerdeList, asSerdeObject } from "std.serde"
 import { Json } from "std.json"
+import { Yaml } from "std.yaml"
 import { Browser, NoWorkerAvailable, UnknownContext } from "browser.browser"
 import { Timeout, Cancelled, ChallengeDetected, WorkerClosed, ResourceExhausted, UnknownBrowserError } from "browser.protocol.errors"
 import { Locator, UnsupportedSelector } from "browser.locator.locator"
 import { Page } from "page.page"
 import { Job } from ".scraper.job"
-import { Pipeline, FieldDef, Goto, Collect, Paginate } from ".scraper.pipeline.pipeline"
+import { Pipeline, FieldDef, Goto, Collect, Paginate, Captcha } from ".scraper.pipeline.pipeline"
+import { CaptchaSolver } from ".scraper.pipeline.captcha"
+import { Metrics } from ".scraper.metrics"
 
-type RecordValue(val name: String, val text: String, val texts: List<String>) : Serializable + Json
+type RecordValue(val name: String, val value: String = "", val values: List<String> = List<String>()) : Serializable + Json {
+    implement fun serialize(): SerdeValue {
+        val fields: MutableList<SerdeField> = MutableList<SerdeField>()
+        fields.add(SerdeField("name", SerdeString(this.name)))
+        if (this.value != "") {
+            fields.add(SerdeField("value", SerdeString(this.value)))
+        }
+        if (this.values.size() > 0) {
+            fields.add(SerdeField("values", SerdeListValue(SerdeStringList(this.values))))
+        }
+        return SerdeObject(fields.freeze())
+    }
+} object {
+    fun deserialize(raw: SerdeValue): RecordValue {
+        val obj = asSerdeObject(raw)
+        var single = obj.getString("value")
+        if (single == "") {
+            single = obj.getString("text")
+        }
+        var multi = readStrings(obj.getList("values"))
+        if (multi.size() == 0) {
+            multi = readStrings(obj.getList("texts"))
+        }
+        return RecordValue(obj.getString("name"), single, multi)
+    }
+}
 
-type PipelineRecord(val fields: List<RecordValue>) : Serializable + Json {
+fun readStrings(l: SerdeList?): List<String> {
+    val out: MutableList<String> = MutableList<String>()
+    if (l == null) {
+        return out.freeze()
+    }
+    var i = 0
+    while (i < l.size()) {
+        val v = l.getAt(i)
+        if (v is SerdeString) {
+            out.add((v as SerdeString).v)
+        }
+        i = i + 1
+    }
+    return out.freeze()
+}
 
-    fun text(name: String): String {
+type PipelineRecord(val fields: List<RecordValue>) : Serializable + Json + Yaml {
+
+    fun value(name: String): String {
         repeat(this.fields.size()) { i ->
             if (this.fields.get(i).name == name) {
-                return this.fields.get(i).text
+                return this.fields.get(i).value
             }
         }
         return ""
     }
 
-    fun texts(name: String): List<String> {
+    fun values(name: String): List<String> {
         repeat(this.fields.size()) { i ->
             if (this.fields.get(i).name == name) {
-                return this.fields.get(i).texts
+                return this.fields.get(i).values
             }
         }
         return MutableList<String>().freeze()
@@ -40,13 +84,13 @@ type PipelineRecord(val fields: List<RecordValue>) : Serializable + Json {
             return true
         }
         val first = this.fields.get(0)
-        return first.text == "" && first.texts.size() == 0
+        return first.value == "" && first.values.size() == 0
     }
 }
 
 type RunResult(val kind: String, val records: List<PipelineRecord>, val note: String)
 
-type PipelineRunner(val browser: Browser?) {
+type PipelineRunner(val browser: Browser?, val solver: CaptchaSolver? = null, val captchaProviders: List<String> = [], val metrics: Metrics? = null) {
 
     fun ok(records: List<PipelineRecord>, note: String): RunResult {
         return RunResult("records", records, note)
@@ -64,7 +108,7 @@ type PipelineRunner(val browser: Browser?) {
             return failed("no-browser")
         }
         return try {
-            runSteps(b, pipeline)
+            runSteps(b, pipeline, job.url)
         } catch (e: NoWorkerAvailable) {
             failed("browser-unavailable")
         } catch (e: UnknownContext) {
@@ -88,7 +132,7 @@ type PipelineRunner(val browser: Browser?) {
         }
     }
 
-    fun runSteps(b: Browser, pipeline: Pipeline): RunResult {
+    fun runSteps(b: Browser, pipeline: Pipeline, pageUrl: String): RunResult {
         var lastCollect: Collect? = null
         repeat(pipeline.steps.size()) { i ->
             val s = pipeline.steps.get(i)
@@ -125,6 +169,11 @@ type PipelineRunner(val browser: Browser?) {
                     }
                 } else if (s is Collect) {
                     this.collectPage(page, s as Collect, pipeline.required, out)
+                } else if (s is Captcha) {
+                    val note = this.doCaptcha(page, s as Captcha, pageUrl)
+                    if (note != "") {
+                        early = failed(note)
+                    }
                 }
             }
         }
@@ -170,6 +219,50 @@ type PipelineRunner(val browser: Browser?) {
 
     fun doClick(page: Page, c: Click): Bool {
         return page.locator(c.selector).nth(c.index).click()
+    }
+
+    fun providerDenied(provider: String): Bool {
+        repeat(this.captchaProviders.size()) { i ->
+            if (this.captchaProviders.get(i) == provider) {
+                return false
+            }
+        }
+        return true
+    }
+
+    fun bumpCaptcha(provider: String, outcome: String): Void {
+        val m = this.metrics
+        if (m != null) {
+            m.bumpCaptcha(provider, outcome)
+        }
+    }
+
+    fun doCaptcha(page: Page, c: Captcha, pageUrl: String): String {
+        if (this.providerDenied(c.provider)) {
+            this.bumpCaptcha(c.provider, "denied")
+            return "captcha-denied"
+        }
+        val sv = this.solver
+        if (sv == null || sv.name() != c.provider) {
+            this.bumpCaptcha(c.provider, "no-solver")
+            return "captcha-no-solver"
+        }
+        val token = sv.solve(c.sitekey ?: "", pageUrl, c.timeoutMs)
+        if (token == null || token == "") {
+            this.bumpCaptcha(c.provider, "failed")
+            return "captcha-failed"
+        }
+        if (page.fill(page.locator(c.responseSelector), token) == false) {
+            this.bumpCaptcha(c.provider, "failed")
+            return "captcha-failed"
+        }
+        val sub = c.submitSelector ?: ""
+        if (sub != "" && page.locator(sub).click() == false) {
+            this.bumpCaptcha(c.provider, "failed")
+            return "captcha-failed"
+        }
+        this.bumpCaptcha(c.provider, "solved")
+        return ""
     }
 
     fun doWait(page: Page, w: Wait): Bool {
@@ -272,7 +365,7 @@ type PipelineRunner(val browser: Browser?) {
     fun fieldPresent(rec: PipelineRecord, name: String): Bool {
         repeat(rec.fields.size()) { i ->
             val f = rec.fields.get(i)
-            if (f.name == name && (f.text != "" || f.texts.size() > 0)) {
+            if (f.name == name && (f.value != "" || f.values.size() > 0)) {
                 return true
             }
         }

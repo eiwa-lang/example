@@ -8,6 +8,7 @@ import { Browser } from "browser.browser"
 import { InvalidConfig, loadConfig } from ".scraper.config"
 import { Store } from ".scraper.store"
 import { Scraper } from ".scraper.scraper"
+import { PipelineScheduler } from ".scraper.scheduler"
 import { PipelineStore } from ".scraper.pipeline.store"
 
 fun main() {
@@ -21,6 +22,9 @@ fun main() {
         }
         task {
             scraper.run()
+        }
+        task {
+            PipelineScheduler(config, store, scraper.pipelines).run()
         }
         Log.info { "scraper boot: ${config.concurrency} workers, ${config.browserWorkers.size()} browser endpoint(s)" }
         park()

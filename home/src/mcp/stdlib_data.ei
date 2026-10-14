@@ -114,11 +114,13 @@ object StdlibData {
                 "```kotlin\nprint(\"hi\")\nprintln(\"hi\")\necho(\"hi\")\n```"
         }
         if (module == "fs" || module == "std.fs") {
-            return "## std.fs — File I/O\n\n" +
+            return "## std.fs — File I/O & Directory Listing\n\n" +
                 "`File(path: String)`: `read(): String`, `write(content: String): Bool`, `delete(): Bool`, `exists(): Bool`. " +
                 "Companion shortcuts: `File.read(path: String)`, `File.write(path: String, content: String)`, " +
                 "`File.delete(path: String)`, `File.exists(path: String)`.\n\n" +
-                "```kotlin\nimport { File } from \"std.fs\"\n\nFile.write(\"hello.txt\", \"hi\")\nprintln(File.read(\"hello.txt\"))\n```"
+                "`Dir.names(path: String): List<String>` — entry names (files and subdirs, excluding `.` and `..`). " +
+                "Returns empty instead of throwing when the directory cannot be opened.\n\n" +
+                "```kotlin\nimport { File, Dir } from \"std.fs\"\n\nFile.write(\"hello.txt\", \"hi\")\nprintln(File.read(\"hello.txt\"))\nprintln(Dir.names(\".\"))\n```"
         }
         if (module == "env" || module == "std.env") {
             return "## std.env — Environment & .env Loader\n\n" +

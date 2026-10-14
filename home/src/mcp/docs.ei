@@ -332,7 +332,7 @@ type Docs() {
             "- `std.system`: `loop/repeat/retry/every/sleep/sleepMs/yield/park/exit` (`repeat`/`loop`/`every` are `@Embed`: bare `leave` ends the loop, `leave v` delivers the call value).\n" +
             "- `std.exceptions`: `Throwable/Exception/AssertionException`, `ControlFlow/Leave` (bypass generic handlers), `error(msg)`, `assert(cond)`.\n" +
             "- `std.io`: `print/println/echo/printWelcome`, skill `Echoable`.\n" +
-            "- `std.fs`: `File(path)` (`read/write/delete/exists`) + `File.read/write/delete/exists(path)` shortcuts.\n" +
+            "- `std.fs`: `File(path)` (`read/write/delete/exists`) + `File.read/write/delete/exists(path)` shortcuts, `Dir.names(path): List<String>` (entry names, no `.`/`..`, empty when unreadable).\n" +
             "- `std.env`: `Env` (`load/get/set/unset/exists`, typed `get` defaults) + `env()` helpers, `.env` loader.\n" +
             "- `std.log`: `LogLevel`, `Log/Logger` (`trace/debug/info/warn/error` with lazy lambdas, `with/withFields`, `setLevel/setFormatter`), `StandardLogFormatter/JsonLogFormatter`.\n" +
             "- `std.random`: `Random` (CSPRNG) + `SeededRandom`, skill `RandomOps` (`nextInt/nextDouble/nextBool/nextPercent/choice/shuffle`), `Random.seeded(seed)`.\n" +

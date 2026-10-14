@@ -4,6 +4,7 @@ import { List, MutableList } from "std.collections"
 import { repeat } from "std.system"
 import { Serializable } from "std.serde"
 import { Json, fromJson } from "std.json"
+import { Schedule } from ".scraper.pipeline.schedule"
 
 type InvalidPipeline(val detail: String) : Throwable {
     implement fun message(): String {
@@ -29,15 +30,18 @@ type Click(val selector: String, val index: Int = 1) : Serializable + Json
 
 type Wait(val selector: String, val text: String? = null, val timeoutMs: Int = 5000) : Serializable + Json
 
+type Captcha(val provider: String, val responseSelector: String, val sitekey: String? = null, val submitSelector: String? = null, val timeoutMs: Int = 120000) : Serializable + Json
+
 union Step {
     @Alias("goto") Goto,
     @Alias("click") Click,
     @Alias("wait") Wait,
     @Alias("collect") Collect,
-    @Alias("paginate") Paginate
+    @Alias("paginate") Paginate,
+    @Alias("captcha") Captcha
 }
 
-type Pipeline(val name: String, val steps: List<Step>, val required: List<String>) : Serializable + Json {
+type Pipeline(val name: String, val steps: List<Step>, val required: List<String>, val schedule: Schedule? = null) : Serializable + Json {
 
     fun validate(): Void {
         if (this.name == "") {
@@ -53,6 +57,9 @@ type Pipeline(val name: String, val steps: List<Step>, val required: List<String
             this.validateStep(this.steps.get(i))
         }
         this.validateRequired()
+        if (this.schedule != null && this.schedule!!.everyMs() <= 0) {
+            throw InvalidPipeline("bad schedule every: " + this.schedule!!.every)
+        }
     }
 
     fun validateStep(s: Step): Void {
@@ -78,6 +85,14 @@ type Pipeline(val name: String, val steps: List<Step>, val required: List<String
             }
         } else if (s is Collect) {
             this.validateFields(s as Collect)
+        } else if (s is Captcha) {
+            val c = s as Captcha
+            if (validProviderName(c.provider) == false) {
+                throw InvalidPipeline("bad captcha provider")
+            }
+            if (c.responseSelector == "") {
+                throw InvalidPipeline("captcha needs responseSelector")
+            }
         } else if (s is Paginate) {
             val p = s as Paginate
             if (p.selector == "") {
@@ -135,7 +150,8 @@ type Pipeline(val name: String, val steps: List<Step>, val required: List<String
         return ""
     }
 
-    fun hasField(names: List<String>, want: String): Bool {        repeat(names.size()) { i ->
+    fun hasField(names: List<String>, want: String): Bool {        
+        repeat(names.size()) { i ->
             if (names.get(i) == want) {
                 return true
             }
@@ -151,6 +167,18 @@ type Pipeline(val name: String, val steps: List<Step>, val required: List<String
             }
         }
     }
+}
+
+fun validProviderName(name: String): Bool {
+    if (name == "") {
+        return false
+    }
+    repeat(name.length) { i ->
+        if ("abcdefghijklmnopqrstuvwxyz0123456789-".indexOf(name.substring(i, i + 1)) < 0) {
+            return false
+        }
+    }
+    return true
 }
 
 fun parsePipeline(raw: String): Pipeline {

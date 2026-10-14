@@ -1,5 +1,6 @@
 import { assert } from "std.core"
-import { InvalidPipeline, PipelineNotFound, parsePipeline, Goto, Collect, Paginate, Click, Wait } from ".scraper.pipeline.pipeline"
+import { InvalidPipeline, PipelineNotFound, parsePipeline, Goto, Collect, Paginate, Click, Wait, Captcha } from ".scraper.pipeline.pipeline"
+import { parseEvery } from ".scraper.pipeline.schedule"
 import { PipelineStore, parsePipelineYaml } from ".scraper.pipeline.store"
 
 fun quotesFixture(): String {
@@ -159,6 +160,8 @@ test "pipeline: store loads quotes.yaml from disk" {
     assert((p.steps.get(1) as Collect).selector == "div.quote", "selector")
     assert((p.steps.get(0) as Goto).timeoutMs == 15000, "default")
     assert(p.required.size() == 2, "required")
+    assert(p.schedule != null, "scheduled")
+    assert(p.schedule!!.every == "1h", "cadence")
 }
 
 test "pipeline: malformed yaml maps to InvalidPipeline" {
@@ -183,4 +186,51 @@ test "pipeline: store maps missing file to PipelineNotFound" {
     val store = PipelineStore("pipelines")
     assert(missingPipeline(store, "nope"), "missing")
     assert(missingPipeline(PipelineStore("no-such-dir"), "quotes"), "dir")
+}
+
+test "pipeline: captcha validates" {
+    val raw = "{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"captcha\": {\"provider\": \"two-captcha\", \"responseSelector\": \"#g-response\"}}, {\"collect\": {\"fields\": [{\"name\": \"t\", \"selector\": \"h3\"}]}}], \"required\": [\"t\"]}"
+    val p = parsePipeline(raw)
+    assert(p.steps.size() == 3, "steps")
+    assert(p.steps.get(1) is Captcha, "captcha")
+    assert((p.steps.get(1) as Captcha).provider == "two-captcha", "provider")
+    assert((p.steps.get(1) as Captcha).timeoutMs == 120000, "timeout-default")
+    assert(invalidFixture("{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"captcha\": {\"responseSelector\": \"#g\"}}], \"required\": []}"), "provider-required")
+    assert(invalidFixture("{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"captcha\": {\"provider\": \"Two_Captcha!\"}}], \"required\": []}"), "provider-charset")
+    assert(invalidFixture("{\"name\": \"x\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"captcha\": {\"provider\": \"fake\"}}], \"required\": []}"), "response-required")
+}
+
+test "pipeline: every parses durations to ms" {
+    assert(parseEvery("30s") == 30000, "seconds")
+    assert(parseEvery("15m") == 900000, "minutes")
+    assert(parseEvery("2h") == 7200000, "hours")
+    assert(parseEvery("1d") == 86400000, "days")
+    assert(parseEvery("") == -1, "empty")
+    assert(parseEvery("10") == -1, "no-unit")
+    assert(parseEvery("m") == -1, "no-count")
+    assert(parseEvery("1x") == -1, "unit")
+    assert(parseEvery("0h") == -1, "zero")
+    assert(parseEvery("1.5h") == -1, "fraction")
+}
+
+test "pipeline: bad schedule every is rejected" {
+    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"collect\": {\"fields\": [{\"name\": \"n\", \"selector\": \".n\"}]}}], \"required\": [], \"schedule\": {\"every\": \"soon\"}}"
+    assert(invalidFixture(raw), "every")
+}
+
+test "pipeline: schedule round-trips through json" {
+    val raw = "{\"name\": \"q\", \"steps\": [{\"goto\": {\"url\": \"https://example.com/\"}}, {\"collect\": {\"fields\": [{\"name\": \"n\", \"selector\": \".n\"}]}}], \"required\": [\"n\"], \"schedule\": {\"every\": \"1h\"}}"
+    val p = parsePipeline(raw)
+    assert(p.schedule != null, "present")
+    assert(p.schedule!!.everyMs() == 3600000, "cadence")
+    val back = parsePipeline(p.toJson())
+    assert(back.schedule != null, "kept")
+    assert(back.schedule!!.every == "1h", "value")
+}
+
+test "pipeline: store lists yaml pipelines" {
+    val names = PipelineStore("pipelines").list()
+    assert(names.contains("quotes"), "quotes")
+    assert(names.contains("eiwa-mcp"), "mcp")
+    assert(names.contains("recaptcha-demo"), "demo")
 }
