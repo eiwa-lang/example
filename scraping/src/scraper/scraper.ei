@@ -106,7 +106,7 @@ type Scraper(val config: Config, val store: Store, val browser: Browser, val pip
             return this.runPipeline(job)
         } catch (e: DbError) {
             this.metrics.bumpJobs("", "store-down")
-            Log.error { "store unreachable in run loop" }
+            Log.error { "store unreachable in run loop: ${e.message}" }
             return "store-down"
         }
     }

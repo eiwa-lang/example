@@ -14,7 +14,7 @@ import { PipelineStore } from ".scraper.pipeline.store"
 fun main() {
     try {
         val config = loadConfig()
-        val store = Store(Postgres.connect(config.databaseUrl))
+        val store = Store(Postgres.pool(config.databaseUrl))
         store.migrate()
         val scraper = Scraper(config, store, Browser(config.browserWorkers, config.concurrency), PipelineStore(config.pipelinesDir))
         task {

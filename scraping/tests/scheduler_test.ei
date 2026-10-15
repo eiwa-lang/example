@@ -121,6 +121,7 @@ test "scheduler: reaps idle running job back to queued" {
     if (store == null) {
         echo("scheduler live: skip (set SCRAPER_TEST_DATABASE_URL)")
     } else {
+        try {
         store.deleteJob("quotes-reap-1")
         assert(store.enqueue("quotes", "https://example.com/", "page", 3, "reap-1", "quotes", "{}"), "enqueue")
         val claimed = store.claim()
@@ -131,6 +132,11 @@ test "scheduler: reaps idle running job back to queued" {
         assert(again != null, "requeued")
         assert(again!!.attempt == 2, "attempt-consumed")
         store.deleteJob(claimed!!.id)
+        } catch (e: DbError) {
+            assert(false, "reap db-fail: " + e.message)
+        } catch (e) {
+            assert(false, "reap unexpected-fail")
+        }
         store.close()
     }
 }

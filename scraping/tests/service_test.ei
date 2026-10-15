@@ -168,7 +168,7 @@ fun svcStore(): Store? {
         return null
     }
     try {
-        val store = Store(Postgres.connect(url))
+        val store = Store(Postgres.pool(url, 4))
         store.migrate()
         return store
     } catch (e: DbError) {
@@ -266,7 +266,9 @@ test "service: createJob validates without sockets" {
     } else {
         val browser = Browser(["ws://127.0.0.1:28913"], 1)
         val scraper = Scraper(svcConfig(), store, browser, svcPipelines())
-        val created = scraper.createJob("{\"pipeline\": \"quotes\", \"maxAttempts\": 3, \"idempotencyKey\": \"pure-1\"}")
+        store.deleteJob("quotes-pure-1")
+        val rawReq = "{\"pipeline\": \"quotes\", \"maxAttempts\": 3, \"idempotencyKey\": \"pure-1\"}"
+        val created = scraper.createJob(rawReq)
         assert(created.id == "quotes-pure-1", "id")
         assert(created.status == "queued", "status")
         store.deleteJob("quotes-pure-1")

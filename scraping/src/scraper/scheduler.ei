@@ -87,7 +87,7 @@ type PipelineScheduler(val config: Config, val store: Store, val pipelines: Pipe
                 return "locked"
             }
         } catch (e: DbError) {
-            Log.error { "scheduler: store unreachable acquiring ${name}" }
+            Log.error { "scheduler: store unreachable acquiring ${name}: ${e.message}" }
             return "store-down"
         }
         val outcome = this.fireLocked(name, nowMs, every!!, due)
@@ -118,7 +118,7 @@ type PipelineScheduler(val config: Config, val store: Store, val pipelines: Pipe
             Log.error { "scheduler: ${name} invalid: ${e.message()}, skipping" }
             return "invalid"
         } catch (e: DbError) {
-            Log.error { "scheduler: store unreachable scheduling ${name}" }
+            Log.error { "scheduler: store unreachable scheduling ${name}: ${e.message}" }
             return "store-down"
         }
     }
@@ -158,7 +158,7 @@ type PipelineScheduler(val config: Config, val store: Store, val pipelines: Pipe
             }
             return n
         } catch (e: DbError) {
-            Log.error { "scheduler: store unreachable reaping orphans" }
+            Log.error { "scheduler: store unreachable reaping orphans: ${e.message}" }
             return null
         }
     }

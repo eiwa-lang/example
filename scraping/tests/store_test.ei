@@ -11,7 +11,7 @@ fun testStore(): Store? {
         return null
     }
     try {
-        val store = Store(Postgres.connect(url))
+        val store = Store(Postgres.pool(url, 4))
         store.migrate()
         return store
     } catch (e: DbError) {
