@@ -412,7 +412,6 @@ header {
 
 /* Hero Section */
 .hero {
-  position: relative;
   overflow: hidden;
 
   background-image:
@@ -423,6 +422,10 @@ header {
   background-position: center, center;
   background-size: contain, contain;
   background-color: #00020c;
+}
+
+.relative-hero {
+    position: relative;
 }
 
 .stars {
@@ -447,7 +450,6 @@ header {
 }
 
 .hero-grid {
-  position: relative;
   z-index: 2;
   display: grid;
   grid-template-columns: 48% 52%;
@@ -633,7 +635,6 @@ header {
 }
 
 .hero-art {
-  position: relative;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -641,18 +642,17 @@ header {
 }
 
 .hero-art img {
-  position: relative;
+  margin-bottom: -48px;
+  position: absolute;
   z-index: 2;
   width: min(292px, 75%);
-  margin-bottom: -4px;
   filter: drop-shadow(0 22px 24px rgba(0, 0, 0, .24));
   height: auto;
 }
 
 .hero-note {
   position: absolute;
-  top: 24%;
-  left: 2%;
+  top: 30%;
   z-index: 3;
   color: #827b8f;
   font-family: var(--mono);
@@ -761,6 +761,10 @@ header {
   border-radius: 10px;
   min-width: 0;
   max-width: 100%;
+}
+
+.side-card {
+    min-height: 100%;
 }
 
 .editor-bar {

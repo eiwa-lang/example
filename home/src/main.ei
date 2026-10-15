@@ -121,8 +121,10 @@ fun homePage() = html {
             }
         }
         main {
-            section(id = "hero", class = "hero", hxGet = "/fragments/home/hero", hxTrigger = "load", hxSwap = "innerHTML") {}
-            section(id = "features", hxGet = "/fragments/home/features", hxTrigger = "load", hxSwap = "innerHTML") {}
+            div("relative-hero") {
+                section(id = "hero", class = "hero", hxGet = "/fragments/home/hero", hxTrigger = "load", hxSwap = "innerHTML") {}
+                section(id = "features", hxGet = "/fragments/home/features", hxTrigger = "load", hxSwap = "innerHTML") {}
+            }
             section(id = "playground", class = "section") {
                 div(class = "wrap") {
                     div(class = "section-heading") {

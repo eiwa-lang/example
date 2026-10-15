@@ -4,15 +4,14 @@ import { Postgres } from "postgres"
 import { Config } from ".scraper.config"
 import { Store } from ".scraper.store"
 import { Browser } from "browser.browser"
-import { Scraper } from ".scraper.scraper"
+import { Scraper, DuplicateJob } from ".scraper.scraper"
 import { PipelineStore } from ".scraper.pipeline.store"
 
-// HARD RED (known harness issue): an uncaught DuplicateJob must fail
-// this test gracefully, but today it segfaults the test binary
-// instead (unwind through _longjmp crashes; DbError does NOT crash).
-// Keep this file crashing until upstream fixes test-harness unwinding:
-// a green suite with this file present proves the fix.
-test "harness: uncaught DuplicateJob fails gracefully, never segfaults" {
+// Regression: duplicate enqueue must surface as a catchable DuplicateJob
+// (graceful FAIL at worst), never segfault the test binary. This was red
+// while the compiler leaked try-frames across `return` (unwind into dead
+// stack via _longjmp); fixed upstream in the exception-frame tracking.
+test "harness: duplicate job raises catchable DuplicateJob" {
     val url = Env.get("SCRAPER_TEST_DATABASE_URL")
     if (url == null || url == "") {
         echo("harness red: skip (set SCRAPER_TEST_DATABASE_URL)")
@@ -23,8 +22,12 @@ test "harness: uncaught DuplicateJob fails gracefully, never segfaults" {
         val scraper = Scraper(Config(["ws://127.0.0.1:28913"], url, 1, 100, "/tmp", "pipelines"), store, browser, PipelineStore("pipelines"))
         store.deleteJob("quotes-red-1")
         scraper.createJob("{\"pipeline\": \"quotes\", \"maxAttempts\": 3, \"idempotencyKey\": \"red-1\"}")
-        scraper.createJob("{\"pipeline\": \"quotes\", \"maxAttempts\": 3, \"idempotencyKey\": \"red-1\"}")
-        assert(false, "must-not-reach-duplicate-accepted-twice")
+        try {
+            scraper.createJob("{\"pipeline\": \"quotes\", \"maxAttempts\": 3, \"idempotencyKey\": \"red-1\"}")
+            assert(false, "duplicate-accepted-twice")
+        } catch (e: DuplicateJob) {
+            assert(e.id == "quotes-red-1", "dupe-id")
+        }
         store.deleteJob("quotes-red-1")
         browser.close()
         store.close()

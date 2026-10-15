@@ -36,13 +36,9 @@ fun hero(): String {
             }
             div(class = "hero-art") {
                 div("hero-note") {
-                    write("// Eiwa sees")
+                    write("// Small creature.")
                     br()
-                    write("what others")
-                    br()
-                    write("don't.")
-                    br()
-                    img(src = "/assets/eiwa.avif", alt = "Eiwa", class = "logo")
+                    write("Big ideas.")
                 }
                 img(src = "/assets/owl-hero.avif", alt = "Eiwa owl mascot")
             }
