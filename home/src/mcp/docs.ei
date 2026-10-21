@@ -82,11 +82,15 @@ type Docs() {
     fun section6Exceptions(): String {
         return "# Section 6: Exception Handling (try-catch)\n\n" +
             "- Any type implementing `Throwable` (`implement fun message(): String`) can be thrown via `throw`.\n" +
+            "- `throw` is a STATEMENT, not an expression: `pathParam(\"id\") ?: throw ...` does not compile. Validate first, then throw.\n" +
+            "- Custom throwables carry fields (constructor `val`s, defaults allowed): `type AuthError(val status: HttpStatus, val detail: String = \"\") : Throwable { implement fun message(): String = \"auth failed\" }`. Field reads work in the `catch` block and in plain-param helpers.\n" +
             "- Control-flow signals implement `ControlFlow` instead (e.g. `Leave`): generic handlers never observe them.\n" +
             "- **Standard catch:** `try { ... } catch (e: MyError) { ... }`\n" +
-            "- **Multi-catch:** `try { ... } catch (e: ErrorA | ErrorB) { ... }`\n" +
+            "- **Sequential multi-catch (most specific first):** `try { ... } catch (e: AuthError) { ... } catch (e: Throwable) { ... }`\n" +
+            "- **Union catch:** `try { ... } catch (e: ErrorA | ErrorB) { ... }`\n" +
             "- **Bare try:** `try { optionalCall() }` (swallows exceptions silently)\n" +
-            "- **Catch-all:** `try { ... } catch { println(\"Error occurred\") }`"
+            "- **Catch-all:** `try { ... } catch { println(\"Error occurred\") }`\n" +
+            "- `error(msg: String)` throws immediately; `assert(cond, msg = \"...\")` throws `AssertionException` when false."
     }
 
     fun section7Collections(): String {
@@ -157,6 +161,10 @@ type Docs() {
             "Types opt in with `: Serializable + Json`, serialize with `toJson(): String`, decode with `fromJson<T>(raw: String): T`. " +
             "There is NO `Json.encode/Json.decode`.\n\n" +
             "```kotlin\nimport { Serializable } from \"std.serde\"\nimport { Json } from \"std.json\"\nimport { fromJson } from \"std.json\"\n\ntype User(val id: Int, val name: String) : Serializable + Json\n\nval u = User(1, \"Alice\")\nval raw = u.toJson()\nval decoded: User = fromJson<User>(raw)\n```\n\n" +
+            "Field mapping: `@Alias(\"snake_name\")` renames a camelCase field on the wire " +
+            "(`@Alias(\"avatar_url\") val avatarUrl: String? = null`); single-word fields need no alias. " +
+            "Defaults (`= null`, `= 0`, `= \"\"`, `= false`) make fields optional on decode. " +
+            "Construction is positional — keep same-typed adjacent fields in a stable order.\n\n" +
             "Closed `union`s dispatch on a single wrapper key (`{\"goto\": {...}}`): unknown tags and 0/2+ keys throw `Exception` with detail; " +
             "`List<Step>` and direct `Step` fields decode element-wise; encode via `s.serialize()` (a union value is not itself `Serializable`, so the tag is never dropped silently)."
     }
@@ -299,6 +307,35 @@ type Docs() {
             "- Compile for Windows: `./bin/eiwac build --target x86_64-windows -o app.exe main.ei`\n" +
             "- Compile for macOS Apple Silicon: `./bin/eiwac build --target aarch64-macos -o app_mac main.ei`\n\n" +
             "Parity is enforced during semantic analysis on the host machine before backend emission, guaranteeing that cross-compiled targets never fail due to API mismatches."
+    }
+
+    fun arest(): String {
+        return "# arest Server Reference (external package `github: eiwa-lang/arest`)\n\n" +
+            "Route handlers are extension lambdas `ApplicationCall.(ApplicationCall) -> Void`: `this` is the call, " +
+            "so bare `respond(...)` / `query(...)` / `receive<T>()` resolve on it. `return` is forbidden inside handler lambdas — " +
+            "respond first, then `leave` to exit early.\n\n" +
+            "## Request inputs (all nullable — missing values are `null`, never throw)\n" +
+            "- `pathParam(\"id\"): String?` (from `/posts/{id}`), `query(\"q\"): String?`, `header(\"X-Auth-Request-User\"): String?`\n" +
+            "- `this.receive<T>()`: JSON body into a `Serializable + Json` DTO; `this.request.body: String` is the raw body\n" +
+            "- `form(\"field\"): String?` (urlencoded), multipart via `parseParts(contentType, body)`\n\n" +
+            "## Responses (`HttpStatus` enum from `std.http` — NOT Int)\n" +
+            "- `respond(HttpStatus.OK)` / `respond(dto, HttpStatus.CREATED)` / `respondText(\"msg\", HttpStatus.BAD_REQUEST)`\n" +
+            "- `respondJson(raw)`, `respondHtml { fragment { ... } }`, `respondRedirect(url)`, `responseHeader(\"HX-Redirect\", url)`\n" +
+            "- Common codes: `OK CREATED NO_CONTENT BAD_REQUEST UNAUTHORIZED FORBIDDEN NOT_FOUND CONFLICT INTERNAL_SERVER_ERROR`\n\n" +
+            "## Typical guarded handler\n" +
+            "```kotlin\nget(\"/posts/{id}/comments\") {\n    try {\n        val id = requireParam(pathParam(\"id\"), \"id\")   // throws AuthError(400) when absent\n" +
+            "        respond(CommentRepository.listByPost(id, authPersonaId(this)), HttpStatus.OK)\n" +
+            "    } catch (e: AuthError) {\n        respondAuthError(this, e)\n" +
+            "    } catch (e: Throwable) {\n        Log.error(e) { \"Failed to fetch comments\" }\n" +
+            "        respondText(\"Error fetching comments\", HttpStatus.INTERNAL_SERVER_ERROR)\n" +
+            "    }\n}\n```\n\n" +
+            "## Testing handlers and clients\n" +
+            "- `test \"name\" { ... }` blocks run under `eiwa test`; `assert(cond)` / `assert(cond, msg)` throw on failure. " +
+            "The runner prints only PASS/FAIL — `println` debug output is swallowed, so write traces with `File.write(\"/tmp/trace.txt\", log)` and read the file after the run.\n" +
+            "- HTTP clients: `mock.on(\"POST\", \"/path\").reply(200, \"{}\")` via `MockEngine` (`arest.client.engine.mock_engine`), " +
+            "inject with `SocialClient.injected = makeSocialClient(mock)`, then assert on `res.ok` / parsed bodies.\n" +
+            "- When behavior diverges from these docs, check the resolved dependency commit in `eiwa.freeze` first: " +
+            "the local cache holds several versions of each package and sources you read by hand may not be the compiled one (`eiwa build` never upgrades deps on its own)."
     }
 
     fun syntaxRules(): String {
@@ -464,7 +501,11 @@ type Docs() {
             "host-only CPU features (e.g. AVX-512) leaking into the binary under emulation.\n" +
             "- Missing shared libs at runtime (`libcurl`, `libgc`): compare with the `runtime` apt list above.\n" +
             "- Stale toolchain layer after a release: the release workflow passes " +
-            "`EIWA_CACHE_BUST=<sha>`; do the same on manual `docker build`."
+            "`EIWA_CACHE_BUST=<sha>`; do the same on manual `docker build`.\n" +
+            "- Stale dev servers squatting ports: every `eiwa run` compiles to `~/.eiwa/cache/bin/*` and stays " +
+            "listening — a later run on the same port dies at bind while health checks keep hitting the OLD server " +
+            "(identical 200s, wrong code). Before debugging a live server, confirm the listener: `lsof -i :PORT` " +
+            "and kill stale cache binaries; only then trust `curl` results."
     }
 
     fun listTopics(): String {
@@ -476,6 +517,7 @@ type Docs() {
             "- `coroutines` — Stackless coroutines (task/await)\n" +
             "- `syntax-rules` — Syntax rules and restrictions\n" +
             "- `stdlib` — Standard library modules\n" +
+            "- `arest` — arest server reference (handlers, ApplicationCall API, testing)\n" +
             "- `packages` — Packages and modules\n" +
             "- `cli` — CLI toolchain guide"
     }
@@ -520,6 +562,9 @@ type Docs() {
         }
         if (query == "packages") {
             return packages()
+        }
+        if (query == "arest" || query == "server" || query == "applicationcall" || query == "handlers" || query == "testing") {
+            return arest()
         }
         if (query == "cli") {
             return cli()

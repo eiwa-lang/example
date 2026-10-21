@@ -46,6 +46,10 @@ fun setupMcp(server: ArestBuilder) {
             respond(Docs.stdlib())
         }
 
+        resource("eiwa://spec/arest") {
+            respond(Docs.arest())
+        }
+
         resource("eiwa://spec/std-time") {
             respond(StdlibData.get("time"))
         }
@@ -208,7 +212,7 @@ fun setupMcp(server: ArestBuilder) {
         }
 
         tool("get_doc_topic", description = "Get a documentation section", arguments = [
-            Argument("topic", JsonType.STRING, "Documentation section (overview, type-system, platform-parity, coroutines, syntax-rules, stdlib, cli)", true),
+            Argument("topic", JsonType.STRING, "Documentation section (overview, type-system, platform-parity, coroutines, syntax-rules, stdlib, arest, cli)", true),
             Argument("section", JsonType.STRING, "Alias for topic (kept for compatibility)", false)
         ]) {
             val topic = hasArgument("topic") ? argument("topic")!!.asString() : (hasArgument("section") ? argument("section")!!.asString() : "overview")
