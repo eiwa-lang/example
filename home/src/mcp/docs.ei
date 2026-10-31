@@ -28,7 +28,7 @@ type Docs() {
 
     fun section2TopLevel(): String {
         return "# Section 2: Top-Level Statements & Side-Effects\n\n" +
-            "`fun main()` is optional in the root entry file. You can write top-level statements for scripts.\n\n" +
+            "The canonical entry point is `init { ... }` (consistent with `test \"...\" { ... }`). `fun main()` still works but emits a deprecation warning. You can also write bare top-level statements for scripts.\n\n" +
             "**Golden Rule of Modules:** Top-level side effects are ONLY allowed in the entry file. Imported files must be passive libraries (declaring types, functions, tests) without top-level executable statements, otherwise the compiler raises `ImportSideEffectsNotAllowed`."
     }
 
@@ -169,6 +169,20 @@ type Docs() {
             "`List<Step>` and direct `Step` fields decode element-wise; encode via `s.serialize()` (a union value is not itself `Serializable`, so the tag is never dropped silently)."
     }
 
+    fun annotations(): String {
+        return "# User Annotations (@Name / @Name(\"value\"))\n\n" +
+            "Any `@Name` / `@Name(\"value\")` on a `type`, `object`, field or method is preserved — no declaration needed. " +
+            "The compiler synthesizes three query methods per `type`/`object` (auto-injected `Annotable` contract, like `toString`): " +
+            "`annotation(name): Annotation?`, `fieldAnnotation(field, name): Annotation?`, `methodAnnotation(method, name): Annotation?`. " +
+            "Pure compile-time codegen, no runtime reflection.\n\n" +
+            "```kotlin\n@Table(\"users\")\ntype User(val name: String) {\n    @Skip\n    val password: String = \"\"\n}\n\nval u = User(\"leo\")\nval table = u.annotation(\"Table\")?.value ?: \"\"   // \"users\"\nval skip = u.fieldAnnotation(\"password\", \"Skip\") != null   // true\n```\n\n" +
+            "Rules: at most one argument (`@X` / `@X(\"v\")`, more is a `TypeError`; compiler annotations keep theirs); " +
+            "only `@Primitive` is hidden (`@Alias` stays queryable); " +
+            "presence via `!= null` (a present `@Skip` carries `\"\"`, distinct from absent); " +
+            "a hand-written `implement fun annotation(...)` wins over the generated one. " +
+            "`@Alias(\"user_name\")` both renames the serde wire field and answers `fieldAnnotation(\"userName\", \"Alias\")`."
+    }
+
     fun section14SmartCast(): String {
         return "# Section 14: Smart Casts & Type Inspection\n\n" +
             "## 14.1 Null smart cast (`T?` -> `T` after a null check)\n" +
@@ -187,7 +201,7 @@ type Docs() {
 
     fun section15Enums(): String {
         return "# Section 15: Enums & Algebraic Data Types\n\n" +
-            "```kotlin\nenum HttpMethod {\n    GET, POST, PUT, DELETE\n}\n\nfun main() {\n    val m = HttpMethod.GET\n    println(m.name())\n}\n```"
+            "```kotlin\nenum HttpMethod {\n    GET, POST, PUT, DELETE\n}\n\ninit {\n    val m = HttpMethod.GET\n    println(m.name())\n}\n```"
     }
 
     fun section16Generics(): String {
@@ -275,7 +289,7 @@ type Docs() {
             "// ==========================================================================\n" +
             "// TIER 4: PORTABLE APPLICATION CODE (Zero platform leak)\n" +
             "// ==========================================================================\n" +
-            "fun main() {\n" +
+            "init {\n" +
             "    val pid = ProcessOps.getPid()\n" +
             "    println(\"Process running with PID: \$pid\")\n" +
             "}\n" +
@@ -517,6 +531,7 @@ type Docs() {
             "- `coroutines` — Stackless coroutines (task/await)\n" +
             "- `syntax-rules` — Syntax rules and restrictions\n" +
             "- `stdlib` — Standard library modules\n" +
+            "- `annotations` — User annotations (@X + Annotable)\n" +
             "- `arest` — arest server reference (handlers, ApplicationCall API, testing)\n" +
             "- `packages` — Packages and modules\n" +
             "- `cli` — CLI toolchain guide"
@@ -607,6 +622,9 @@ type Docs() {
         }
         if (query == "13" || query == "serialization" || query == "json") {
             return section13Serialization()
+        }
+        if (query == "annotations" || query == "annotation" || query == "annotable") {
+            return annotations()
         }
         if (query == "14" || query == "smartcast" || query == "casts") {
             return section14SmartCast()

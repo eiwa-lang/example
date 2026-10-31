@@ -154,7 +154,7 @@ object ExamplesData {
                 "Cooperative state-machine coroutines with zero OS-thread overhead. `task { ... }` spawns a `StackTask<T>`, `.await()` suspends cooperatively until done. " +
                 "NOTE: there is no top-level `sleep` in `std.coroutines` — blocking sleeps live in `std.system` (`sleep(seconds)/sleepMs(ms)`), " +
                 "cooperative sleeps are `Coroutine.sleepMs(n)` inside a task.\n\n" +
-                "```kotlin\nimport { task } from \"std.coroutines\"\n\nfun fetchUser(id: Int): String = \"User #\$id\"\nfun fetchOrders(id: Int): String = \"Orders for #\$id\"\n\nfun main() {\n    val userTask = task { fetchUser(42) }\n    val ordersTask = task { fetchOrders(42) }\n    println(\"Profile: \${userTask.await()} | \${ordersTask.await()}\")\n}\n```"
+                "```kotlin\nimport { task } from \"std.coroutines\"\n\nfun fetchUser(id: Int): String = \"User #\$id\"\nfun fetchOrders(id: Int): String = \"Orders for #\$id\"\n\ninit {\n    val userTask = task { fetchUser(42) }\n    val ordersTask = task { fetchOrders(42) }\n    println(\"Profile: \${userTask.await()} | \${ordersTask.await()}\")\n}\n```"
         }
         if (topic == "postgres") {
             return "## PostgreSQL Driver (external `postgres` package)\n\n" +
@@ -243,19 +243,19 @@ object ExamplesData {
                 "Top-level functions: `now(): Time` (current epoch seconds), `nowMillis(): Int` (current epoch millis), " +
                 "`date(year: Int, month: Int, day: Int): Time` (midnight UTC), `hours/minutes/seconds(n: Int): Duration`.\n\n" +
                 "### 1. now(), nowMillis(), date() and .sec access\n\n" +
-                "```kotlin\nimport { now, nowMillis, date } from \"std.time\"\n\nfun main() {\n    val t = now()\n    println(t.sec)\n    println(nowMillis())\n    val release = date(2026, 7, 20)\n    println(release.format(\"YYYY-MM-DD HH:mm:ss\"))\n}\n```\n\n" +
+                "```kotlin\nimport { now, nowMillis, date } from \"std.time\"\n\ninit {\n    val t = now()\n    println(t.sec)\n    println(nowMillis())\n    val release = date(2026, 7, 20)\n    println(release.format(\"YYYY-MM-DD HH:mm:ss\"))\n}\n```\n\n" +
                 "### 2. Porting Kotlin Clock.System.now().toEpochMilliseconds()\n\n" +
-                "```kotlin\nimport { now, nowMillis } from \"std.time\"\n\nfun main() {\n    // Kotlin: Clock.System.now().toEpochMilliseconds() / 86400000L\n    val daysSinceEpoch = nowMillis() / 86400000\n    // Equivalent using seconds: now().sec / 86400\n    val daysSinceEpoch2 = now().sec / 86400\n    println(daysSinceEpoch)\n}\n```\n\n" +
+                "```kotlin\nimport { now, nowMillis } from \"std.time\"\n\ninit {\n    // Kotlin: Clock.System.now().toEpochMilliseconds() / 86400000L\n    val daysSinceEpoch = nowMillis() / 86400000\n    // Equivalent using seconds: now().sec / 86400\n    val daysSinceEpoch2 = now().sec / 86400\n    println(daysSinceEpoch)\n}\n```\n\n" +
                 "### 3. Daily rotation (days since epoch)\n\n" +
-                "```kotlin\nimport { now } from \"std.time\"\n\nfun main() {\n    val dayIndex = now().sec / 86400\n    val rotation = dayIndex % 7\n    println(\"Day index: \$dayIndex, rotation slot: \$rotation\")\n}\n```\n\n" +
+                "```kotlin\nimport { now } from \"std.time\"\n\ninit {\n    val dayIndex = now().sec / 86400\n    val rotation = dayIndex % 7\n    println(\"Day index: \$dayIndex, rotation slot: \$rotation\")\n}\n```\n\n" +
                 "### 4. Formatting YYYY-MM-DD HH:mm:ss\n\n" +
-                "```kotlin\nimport { now } from \"std.time\"\n\nfun main() {\n    println(now().format(\"YYYY-MM-DD HH:mm:ss\"))\n    println(now().toString())\n}\n```"
+                "```kotlin\nimport { now } from \"std.time\"\n\ninit {\n    println(now().format(\"YYYY-MM-DD HH:mm:ss\"))\n    println(now().toString())\n}\n```"
         }
         if (topic == "money") {
             return "## Money with std.money (minor units, Int cents)\n\n" +
                 "Builders take MINOR units (`Int` cents — never `Double`): `brl(14990)` = R$ 149,90. " +
                 "Formatting is `format(): String` (there is no `formatted()`). `+`/`-` throw on currency mismatch.\n\n" +
-                "```kotlin\nimport { brl } from \"std.money\"\n\nfun main() {\n    val subtotal = brl(10000)\n    val discount = brl(1550)\n    val total = subtotal - discount\n    println(\"Total: \${total.format()}\")\n    println(brl(1000).split(3)[0].format())\n}\n```"
+                "```kotlin\nimport { brl } from \"std.money\"\n\ninit {\n    val subtotal = brl(10000)\n    val discount = brl(1550)\n    val total = subtotal - discount\n    println(\"Total: \${total.format()}\")\n    println(brl(1000).split(3)[0].format())\n}\n```"
         }
         if (topic == "tests") {
             return "```kotlin\nfun add(a: Int, b: Int): Int = a + b\n\ntest \"addition works correctly\" {\n    assert(add(2, 3) == 5)\n    assert(add(-1, 1) == 0)\n}\n```"
@@ -300,7 +300,7 @@ object ExamplesData {
                 "    }\n" +
                 "}\n\n" +
                 "// TIER 4: Portable User Code (Zero platform-specific leaks)\n" +
-                "fun main() {\n" +
+                "init {\n" +
                 "    if (Terminal.isInteractive()) {\n" +
                 "        Terminal.writeAnsi(\"\\u001b[32m[OK]\\u001b[0m Running on interactive terminal\\n\")\n" +
                 "    } else {\n" +
@@ -327,20 +327,20 @@ object ExamplesData {
                 "`Regex(pattern)`: `find(input): MatchResult?` (first match), `findAll(input): List<MatchResult>`, " +
                 "`matches(input): Bool` (FULL match), `replace(input, replacement): String`. " +
                 "String shortcuts: `matchesRegex/findRegex/findAllRegex/replaceRegex`.\n\n" +
-                "```kotlin\nimport { Regex } from \"std.regex\"\n\nfun main() {\n    println(Regex(\"[0-9]+\").find(\"abc123\")?.value)\n    println(\"hello\".replaceRegex(\"l+\", \"L\"))\n    println(\"abc\".matchesRegex(\"[a-z]+\"))\n}\n```"
+                "```kotlin\nimport { Regex } from \"std.regex\"\n\ninit {\n    println(Regex(\"[0-9]+\").find(\"abc123\")?.value)\n    println(\"hello\".replaceRegex(\"l+\", \"L\"))\n    println(\"abc\".matchesRegex(\"[a-z]+\"))\n}\n```"
         }
         if (topic == "json") {
             return "## JSON with std.json (reflectionless)\n\n" +
                 "Types opt in with `: Serializable + Json`, then `toJson(): String`. " +
                 "Decode with `fromJson<T>(raw: String): T`, inspect schemaless payloads with `parseJson(raw): JsonValue` " +
                 "(`get(key): JsonValue?`, `asString()/asNumber()/asBool()`). There is NO `Json.encode/Json.decode`.\n\n" +
-                "```kotlin\nimport { Serializable } from \"std.serde\"\nimport { Json } from \"std.json\"\nimport { parseJson, fromJson } from \"std.json\"\n\ntype User(val id: Int, val name: String) : Serializable + Json\n\nfun main() {\n    val u = User(1, \"Alice\")\n    val raw = u.toJson()\n    println(raw)\n    val back: User = fromJson<User>(raw)\n    println(back.name)\n    println(parseJson(raw).get(\"name\")?.asString())\n}\n```"
+                "```kotlin\nimport { Serializable } from \"std.serde\"\nimport { Json } from \"std.json\"\nimport { parseJson, fromJson } from \"std.json\"\n\ntype User(val id: Int, val name: String) : Serializable + Json\n\ninit {\n    val u = User(1, \"Alice\")\n    val raw = u.toJson()\n    println(raw)\n    val back: User = fromJson<User>(raw)\n    println(back.name)\n    println(parseJson(raw).get(\"name\")?.asString())\n}\n```"
         }
         if (topic == "uuid" || topic == "ulid" || topic == "ids") {
             return "## IDs with std.uuid & std.ulid\n\n" +
                 "`Uuid.v4(): Uuid` (random), `Uuid.v7()/generate(): Uuid` (time-ordered), `Uuid.parse(str): Uuid?`, `version(): Int`. " +
                 "`Ulid.generate(): Ulid` (millis prefix + CSPRNG), `Ulid.parse(str): Ulid?`, `timestamp(): Int`, 26-char Crockford `toString()`.\n\n" +
-                "```kotlin\nimport { Uuid } from \"std.uuid\"\nimport { Ulid } from \"std.ulid\"\n\nfun main() {\n    println(Uuid.v4().toString())\n    println(Ulid.generate().toString())\n}\n```"
+                "```kotlin\nimport { Uuid } from \"std.uuid\"\nimport { Ulid } from \"std.ulid\"\n\ninit {\n    println(Uuid.v4().toString())\n    println(Ulid.generate().toString())\n}\n```"
         }
 
         return "Example not found for: $topic. Available: http, http_client, html, tasks, postgres, mcp, time, money, tests, platform, regex, json, uuid, ulid."

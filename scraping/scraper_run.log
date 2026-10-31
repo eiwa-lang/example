@@ -1,0 +1,67 @@
+[2026-10-15 15:18:24] [36m[INFO][0m scraper boot: 2 workers, 1 browser endpoint(s)
+[2026-10-15 15:18:24] [36m[INFO][0m [Arest] Server listening on http://localhost:9090 ...
+[2026-10-15 15:18:24] [36m[INFO][0m scheduler: eiwa-mcp declares no schedule, skipping
+[2026-10-15 15:18:24] [36m[INFO][0m scheduler: quotes declares no schedule, skipping
+[2026-10-15 15:18:24] [36m[INFO][0m scheduler: recaptcha-demo declares no schedule, skipping
+[2026-10-15 15:18:24] [36m[INFO][0m scheduler boot: 1 pipeline(s) every 60000ms as 01M50298B9V3Z46KCRAP6E5CT7
+[2026-10-15 15:18:24] [36m[INFO][0m scheduler: dolar scheduled as sched-dolar-1792077504875
+[2026-10-15 15:18:25] [36m[INFO][0m job claimed: dolar-sched-dolar-1792077504875 dolar attempt 1
+[2026-10-15 15:18:28] [36m[INFO][0m job done: dolar-sched-dolar-1792077504875 1 records
+[2026-10-15 15:19:24] [36m[INFO][0m scheduler: dolar scheduled as sched-dolar-1792077564894
+[2026-10-15 15:19:25] [36m[INFO][0m job claimed: dolar-sched-dolar-1792077564894 dolar attempt 1
+[2026-10-15 15:19:27] [36m[INFO][0m job done: dolar-sched-dolar-1792077564894 1 records
+[2026-10-15 15:20:16] [36m[INFO][0m [Arest] HTTP GET /health -> OK
+[2026-10-15 15:20:24] [36m[INFO][0m scheduler: dolar scheduled as sched-dolar-1792077624909
+[2026-10-15 15:20:25] [36m[INFO][0m job claimed: dolar-sched-dolar-1792077624909 dolar attempt 1
+[2026-10-15 15:20:27] [36m[INFO][0m job done: dolar-sched-dolar-1792077624909 1 records
+[2026-10-15 15:21:24] [36m[INFO][0m scheduler: dolar scheduled as sched-dolar-1792077684924
+[2026-10-15 15:21:25] [36m[INFO][0m job claimed: dolar-sched-dolar-1792077684924 dolar attempt 1
+[2026-10-15 15:21:27] [36m[INFO][0m job done: dolar-sched-dolar-1792077684924 1 records
+[2026-10-15 15:22:24] [36m[INFO][0m scheduler: dolar scheduled as sched-dolar-1792077744936
+[2026-10-15 15:22:25] [36m[INFO][0m job claimed: dolar-sched-dolar-1792077744936 dolar attempt 1
+[2026-10-15 15:22:27] [36m[INFO][0m job done: dolar-sched-dolar-1792077744936 1 records
+[2026-10-15 15:22:48] [36m[INFO][0m [Arest] HTTP GET /health -> OK
+[2026-10-15 15:23:18] [36m[INFO][0m [Arest] HTTP GET /health -> OK
+[2026-10-15 15:23:24] [36m[INFO][0m scheduler: dolar scheduled as sched-dolar-1792077804947
+[2026-10-15 15:23:25] [36m[INFO][0m job claimed: dolar-sched-dolar-1792077804947 dolar attempt 1
+[2026-10-15 15:23:26] [36m[INFO][0m job done: dolar-sched-dolar-1792077804947 1 records
+[2026-10-15 15:23:48] [36m[INFO][0m [Arest] HTTP GET /health -> OK
+[2026-10-15 15:24:18] [36m[INFO][0m [Arest] HTTP GET /health -> OK
+[2026-10-15 15:24:24] [36m[INFO][0m scheduler: dolar scheduled as sched-dolar-1792077864959
+[2026-10-15 15:24:25] [36m[INFO][0m job claimed: dolar-sched-dolar-1792077864959 dolar attempt 1
+[2026-10-15 15:24:26] [36m[INFO][0m job done: dolar-sched-dolar-1792077864959 1 records
+[2026-10-15 15:24:48] [36m[INFO][0m [Arest] HTTP GET /health -> OK
+[2026-10-15 15:25:18] [36m[INFO][0m [Arest] HTTP GET /health -> OK
+[2026-10-15 15:25:24] [36m[INFO][0m scheduler: dolar scheduled as sched-dolar-1792077924974
+[2026-10-15 15:25:25] [36m[INFO][0m job claimed: dolar-sched-dolar-1792077924974 dolar attempt 1
+[2026-10-15 15:25:27] [36m[INFO][0m job done: dolar-sched-dolar-1792077924974 1 records
+[2026-10-15 15:25:49] [36m[INFO][0m [Arest] HTTP GET /health -> OK
+[2026-10-15 15:26:19] [36m[INFO][0m [Arest] HTTP GET /health -> OK
+[2026-10-15 15:26:25] [36m[INFO][0m scheduler: dolar scheduled as sched-dolar-1792077985054
+[2026-10-15 15:26:25] [36m[INFO][0m job claimed: dolar-sched-dolar-1792077985054 dolar attempt 1
+[2026-10-15 15:26:26] [36m[INFO][0m job done: dolar-sched-dolar-1792077985054 1 records
+[2026-10-15 15:26:49] [36m[INFO][0m [Arest] HTTP GET /health -> OK
+[2026-10-15 15:27:19] [36m[INFO][0m [Arest] HTTP GET /health -> OK
+[2026-10-15 15:27:25] [36m[INFO][0m scheduler: dolar scheduled as sched-dolar-1792078045072
+[2026-10-15 15:27:25] [36m[INFO][0m job claimed: dolar-sched-dolar-1792078045072 dolar attempt 1
+[2026-10-15 15:27:27] [36m[INFO][0m job done: dolar-sched-dolar-1792078045072 1 records
+[2026-10-15 15:27:49] [36m[INFO][0m [Arest] HTTP GET /health -> OK
+[2026-10-15 15:28:19] [36m[INFO][0m [Arest] HTTP GET /health -> OK
+      598,18 real         0,12 user         0,26 sys
+            38502400  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                3811  page reclaims
+                2565  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                 818  messages sent
+                 933  messages received
+                   1  signals received
+                 250  voluntary context switches
+                5847  involuntary context switches
+            35496880  instructions retired
+            22283974  cycles elapsed
+             2326816  peak memory footprint

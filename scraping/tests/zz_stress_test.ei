@@ -1,0 +1,18 @@
+import { assert } from "std.core"
+import { PipelineStore } from ".scraper.pipeline.store"
+import { parsePipeline } from ".scraper.pipeline.pipeline"
+
+test "stress: pipeline serde churn" {
+    val snap = PipelineStore("pipelines").load("dolar").toJson()
+    var i = 0
+    var ok = 0
+    while (i < 30000) {
+        val p = parsePipeline(snap)
+        val back = p.toJson()
+        if (back.length > 100) {
+            ok = ok + 1
+        }
+        i = i + 1
+    }
+    assert(ok == 30000, "churn")
+}
