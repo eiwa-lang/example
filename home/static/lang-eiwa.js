@@ -33,6 +33,7 @@
       begin: /\b[A-Za-z_][A-Za-z0-9_]*(?=\s*\()/
     };
     const TYPE_NAME = { scope: "title.class", begin: /\b[A-Z][A-Za-z0-9_]*\b/ };
+    const PROPERTY = { scope: "property", begin: /\.[A-Za-z_][A-Za-z0-9_]*/ };
     const CHAR = {
       scope: "string",
       begin: /'(\\(u[0-9a-fA-F]{4}|[tbrn'"\\])|[^'\\\n\r])'/
@@ -52,6 +53,7 @@
         NUMBER_INT,
         SUBST_SIMPLE,
         FUNC_CALL,
+        PROPERTY,
         TYPE_NAME
       ]
     };
@@ -82,6 +84,7 @@
         NUMBER_FLOAT,
         NUMBER_INT,
         FUNC_CALL,
+        PROPERTY,
         TYPE_NAME
       ]
     };
