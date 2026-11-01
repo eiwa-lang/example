@@ -25,7 +25,7 @@ fun paradigms(): String {
                         }
                         div(class = "editor-content source-code") {
                             pre(class = "playground-code") {
-                                code(class = "language-kotlin") {
+                                code(class = "language-eiwa") {
                                     write("type User(val name: String, val role: String) {\n    fun isModerator(): Bool {\n        return role == \"admin\" || role == \"mod\"\n    }\n\n    fun greet(): String {\n        return \"Welcome, \$name\"\n    }\n}\n\nval u = User(\"Alice\", \"admin\")\nprint(u.greet())")
                                 }
                             }
@@ -49,7 +49,7 @@ fun paradigms(): String {
                         }
                         div(class = "editor-content source-code") {
                             pre(class = "playground-code") {
-                                code(class = "language-kotlin") {
+                                code(class = "language-eiwa") {
                                     write("type User(val name: String, val role: String)\n\nfun User.isModerator(): Bool {\n    return this.role == \"admin\" || this.role == \"mod\"\n}\n\nfun User.greet(): String {\n    return \"Welcome, \${this.name}\"\n}\n\nval u = User(\"Alice\", \"admin\")\nprint(u.greet())")
                                 }
                             }

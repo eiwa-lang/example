@@ -20,7 +20,7 @@ fun mcpExample(): String {
                 }
                 p { strong(text = "2. mcp.ei — the server") }
                 pre {
-                    code(class = "language-kotlin") {
+                    code(class = "language-eiwa") {
                         write("import { arest } from \"arest.arest\"\nimport { Argument, JsonType } from \"arest.mcp.mcp_builder\"\n\narest(8080) {\n    mcp {\n        name(\"Calculator\")\n        version(\"1.0.0\")\n        instructions(\"Soma dois números e retorna o total.\")\n\n        tool(\"sum\", description = \"Soma dois números\", arguments = [\n            Argument(\"a\", JsonType.INTEGER, \"Primeiro número\"),\n            Argument(\"b\", JsonType.INTEGER, \"Segundo número\")\n        ]) {\n            val a = argument(\"a\")!!.asNumber()\n            val b = argument(\"b\")!!.asNumber()\n            respond(a + b)\n        }\n\n        resource(\"calc://historico\") {\n            respond(\"Nenhum cálculo ainda\")\n        }\n\n        prompt(\"calculadora\") {\n            respond(\"Você é uma calculadora. Use a tool 'sum' para somar números.\")\n        }\n    }\n}")
                     }
                 }

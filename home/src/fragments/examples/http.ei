@@ -20,7 +20,7 @@ fun httpExample(): String {
                 }
                 p { strong(text = "2. http.ei — the server") }
                 pre {
-                    code(class = "language-kotlin") {
+                    code(class = "language-eiwa") {
                         write("import { arest } from \"arest.arest\"\nimport { Json } from \"std.json\"\n\ntype User(val id: Int, val name: String) : Serializable + Json\n\narest(8080) {\n    health()\n\n    routing {\n        get(\"/hello\") {\n            respondText(\"Hello from Eiwa!\")\n        }\n\n        get(\"/users/me\") {\n            respond(User(1, \"Leo\"))\n        }\n\n        get(\"/users/:id\") {\n            val id = pathParam(\"id\") ?: \"unknown\"\n            respond(User(id.toInt(), \"User \$id\"))\n        }\n\n        post(\"/users\") {\n            val user = receive<User>()\n            respond(user, status = 201)\n        }\n    }\n}")
                     }
                 }

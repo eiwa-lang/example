@@ -65,9 +65,10 @@ fun homePage() = html {
         link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/material-darker.min.css")
         script(src = "https://unpkg.com/htmx.org@2.0.6")
         script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js")
-        script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/kotlin.min.js")
         script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js")
         script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/yaml.min.js")
+        script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js")
+        script(src = "/lang-eiwa.js")
 
         link(rel = "icon", linkType = "image/png", href = "/favicon/favicon-96x96.png", sizes = "96x96")
         link(rel = "icon", linkType = "image/svg+xml", href = "/favicon/favicon.svg")
@@ -145,7 +146,7 @@ fun homePage() = html {
                             div(class = "editor-split") {
                                 div(class = "editor-content source-code") {
                                     pre(class = "playground-code") {
-                                        code(class = "language-kotlin") {
+                                        code(class = "language-eiwa") {
                                             write("init {\n    val message = \"Hello, Eiwa!\"\n    println(message)\n\n    val numbers = [1, 2, 3, 4, 5]\n    for (numbers) {\n        println(\"n = \$it\")\n    }\n}")
                                         }
                                     }

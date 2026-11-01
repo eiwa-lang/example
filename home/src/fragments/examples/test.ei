@@ -13,7 +13,7 @@ fun testExample(): String {
             h3(text = "Native test runner")
             p(text = "Files ending with _test.ei can declare test blocks and run with eiwa test.")
             pre {
-                code(class = "language-kotlin") {
+                code(class = "language-eiwa") {
                     write("// calculator_test.ei\nimport { sum } from \"calculator\"\n\ntest \"sum two integers\" {\n    val result = sum(10, 5)\n    assert(result == 15)\n}")
                 }
             }

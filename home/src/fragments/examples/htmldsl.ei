@@ -20,7 +20,7 @@ fun htmlExample(): String {
                 }
                 p { strong(text = "2. page.ei — the page") }
                 pre {
-                    code(class = "language-kotlin") {
+                    code(class = "language-eiwa") {
                         write("import { html } from \"html\"\nimport { arest } from \"arest.arest\"\n\nfun page(): String = html {\n    head {\n        title(\"Eiwa App\")\n        link(rel = \"stylesheet\", href = \"/app.css\")\n    }\n    body {\n        h1(\"Welcome to Eiwa\")\n        p(\"Compiled to native machine code with zero overhead.\")\n        ul {\n            li { write(\"Native performance\") }\n            li { write(\"Strict null safety\") }\n        }\n    }\n}\n\narest(8080) {\n    routing {\n        get(\"/\") { respond(200, \"text/html\", page()) }\n    }\n}")
                     }
                 }
