@@ -6,7 +6,7 @@
     const KEYWORDS = {
       keyword:
         "if else when for while do try catch finally throw return leave continue " +
-        "fun val var type contract skill enum object class interface lib test companion import from typealias init constructor package " +
+        "fun val var type contract skill enum object lib test companion import from typealias init constructor package " +
         "public private internal protected open abstract final sealed data inner value annotation expect actual override implement lateinit operator infix inline external tailrec suspend const vararg noinline crossinline reified " +
         "is in as of by where get set out",
       literal: "true false null",
@@ -19,7 +19,7 @@
       scope: "char.escape",
       begin: /\\(u[0-9a-fA-F]{4}|[tbrn'"\\$])/
     };
-    const SUBST_SIMPLE = { scope: "variable", begin: /\$[a-zA-Z_][a-zA-Z0-9_]*/ };
+    const SUBST_SIMPLE = { scope: "subst", begin: /\$[a-zA-Z_][a-zA-Z0-9_]*/ };
     const NUMBER_HEX = { scope: "number", begin: /\b0[xX][0-9a-fA-F_]+[uUL]?\b/ };
     const NUMBER_BIN = { scope: "number", begin: /\b0[bB][01_]+[uUL]?\b/ };
     const NUMBER_FLOAT = {
@@ -32,15 +32,18 @@
       scope: "title.function",
       begin: /\b[A-Za-z_][A-Za-z0-9_]*(?=\s*\()/
     };
+    const DSL_CALL = {
+      scope: "title.function",
+      begin: /\b[A-Za-z_][A-Za-z0-9_]*(?=\s*\{)/
+    };
     const TYPE_NAME = { scope: "title.class", begin: /\b[A-Z][A-Za-z0-9_]*\b/ };
     const PROPERTY = { scope: "property", begin: /\.[A-Za-z_][A-Za-z0-9_]*/ };
     const CHAR = {
       scope: "string",
       begin: /'(\\(u[0-9a-fA-F]{4}|[tbrn'"\\])|[^'\\\n\r])'/
     };
-    // ${...} — mesmo truque do Kotlin: cria vazio e injeta STRING depois
-    // para permitir recursao sem TDZ. Com keywords para que this/name
-    // dentro de ${this.name} nao fique branco.
+    // ${...} com interior destacado (estilo IntelliJ/Kotlin):
+    // $name fica com a mesma cor do container subst.
     const SUBST_BLOCK = {
       scope: "subst",
       begin: /\$\{/,
@@ -51,8 +54,8 @@
         NUMBER_BIN,
         NUMBER_FLOAT,
         NUMBER_INT,
-        SUBST_SIMPLE,
         FUNC_CALL,
+        DSL_CALL,
         PROPERTY,
         TYPE_NAME
       ]
