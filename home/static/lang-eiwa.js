@@ -20,24 +20,6 @@
       begin: /\\(u[0-9a-fA-F]{4}|[tbrn'"\\$])/
     };
     const SUBST_SIMPLE = { scope: "variable", begin: /\$[a-zA-Z_][a-zA-Z0-9_]*/ };
-    const SUBST_BLOCK = {
-      scope: "subst",
-      begin: /\$\{/,
-      end: /\}/
-    };
-    const STRING = {
-      scope: "string",
-      begin: /"/,
-      end: /"/,
-      contains: [ESCAPE, SUBST_BLOCK, SUBST_SIMPLE]
-    };
-    const CHAR = {
-      scope: "string",
-      begin: /'(\\(u[0-9a-fA-F]{4}|[tbrn'"\\])|[^'\\\n\r])'/
-    };
-    const ANNOTATION = { scope: "meta", begin: /@[A-Za-z_][A-Za-z0-9_]*/ };
-    const COMMENT_LINE = hljs.COMMENT("//", "$");
-    const COMMENT_BLOCK = hljs.COMMENT("/\\*", "\\*/");
     const NUMBER_HEX = { scope: "number", begin: /\b0[xX][0-9a-fA-F_]+[uUL]?\b/ };
     const NUMBER_BIN = { scope: "number", begin: /\b0[bB][01_]+[uUL]?\b/ };
     const NUMBER_FLOAT = {
@@ -51,6 +33,38 @@
       begin: /\b[A-Za-z_][A-Za-z0-9_]*(?=\s*\()/
     };
     const TYPE_NAME = { scope: "title.class", begin: /\b[A-Z][A-Za-z0-9_]*\b/ };
+    const CHAR = {
+      scope: "string",
+      begin: /'(\\(u[0-9a-fA-F]{4}|[tbrn'"\\])|[^'\\\n\r])'/
+    };
+    // ${...} — mesmo truque do Kotlin: cria vazio e injeta STRING depois
+    // para permitir recursao sem TDZ. Com keywords para que this/name
+    // dentro de ${this.name} nao fique branco.
+    const SUBST_BLOCK = {
+      scope: "subst",
+      begin: /\$\{/,
+      end: /\}/,
+      keywords: KEYWORDS,
+      contains: [
+        NUMBER_HEX,
+        NUMBER_BIN,
+        NUMBER_FLOAT,
+        NUMBER_INT,
+        SUBST_SIMPLE,
+        FUNC_CALL,
+        TYPE_NAME
+      ]
+    };
+    const STRING = {
+      scope: "string",
+      begin: /"/,
+      end: /"/,
+      contains: [ESCAPE, SUBST_BLOCK, SUBST_SIMPLE]
+    };
+    SUBST_BLOCK.contains.push(STRING, CHAR, "self");
+    const ANNOTATION = { scope: "meta", begin: /@[A-Za-z_][A-Za-z0-9_]*/ };
+    const COMMENT_LINE = hljs.COMMENT("//", "$");
+    const COMMENT_BLOCK = hljs.COMMENT("/\\*", "\\*/");
 
     return {
       name: "Eiwa",
