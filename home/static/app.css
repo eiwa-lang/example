@@ -854,22 +854,6 @@ header {
   white-space: pre;
 }
 
-.tok-kw {
-  color: #b895ff;
-}
-
-.tok-fn {
-  color: #77c9ff;
-}
-
-.tok-str {
-  color: #d8e57b;
-}
-
-.tok-num {
-  color: #ffb06f;
-}
-
 .terminal {
   padding: 15px;
   overflow-x: auto;

@@ -145,25 +145,8 @@ fun homePage() = html {
                             div(class = "editor-split") {
                                 div(class = "editor-content source-code") {
                                     pre(class = "playground-code") {
-                                        code {
-                                            span(text = "fun", class = "tok-kw")
-                                            write(" ")
-                                            span(text = "main", class = "tok-fn")
-                                            write("() {\n    ")
-                                            span(text = "val", class = "tok-kw")
-                                            write(" message = ")
-                                            span(text = "\"Hello, Eiwa!\"", class = "tok-str")
-                                            write("\n    ")
-                                            span(text = "println", class = "tok-fn")
-                                            write("(message)\n\n    ")
-                                            span(text = "val", class = "tok-kw")
-                                            write(" numbers = [1, 2, 3, 4, 5]\n    ")
-                                            span(text = "for", class = "tok-kw")
-                                            write(" (numbers) {\n        ")
-                                            span(text = "println", class = "tok-fn")
-                                            write("(")
-                                            span(text = "\"n = \$it\"", class = "tok-str")
-                                            write(")\n    }\n}")
+                                        code(class = "language-kotlin") {
+                                            write("init {\n    val message = \"Hello, Eiwa!\"\n    println(message)\n\n    val numbers = [1, 2, 3, 4, 5]\n    for (numbers) {\n        println(\"n = \$it\")\n    }\n}")
                                         }
                                     }
                                 }
