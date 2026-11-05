@@ -522,6 +522,148 @@ type Docs() {
             "and kill stale cache binaries; only then trust `curl` results."
     }
 
+    fun ffi(): String {
+        return "# FFI in Depth (lib blocks, platform libs, Pointer/GC rules, Stdin)\n\n" +
+            "Companion to the `platform-parity` topic (contract parity rules) and lesson 19 (first `@Header` contact). " +
+            "This topic covers the mechanics: how `lib` blocks bind C, and how to move memory safely across the boundary.\n\n" +
+            "## 1. lib blocks and annotations\n" +
+            "- `lib Name { ... }`: one named C-binding scope. Names must be UNIQUE across platforms " +
+            "(never reuse one name for posix + windows; use `PosixProcess` vs `Win32Process`, `PosixThread` vs `Win32Thread`).\n" +
+            "- `lib(\"posix\") PosixProcess { ... }` / `lib(\"windows\") Win32Process { ... }`: platform-tagged variants " +
+            "(also `linux`, `macos`, `darwin`, `win32`, arch tags, `!windows`). Inactive targets are pruned at codegen.\n" +
+            "- `@Header(\"<stdio.h>\")`: C headers for the declarations (several allowed).\n" +
+            "- `@Source(\"src/runtime/third_party/.../helpers.c\")`: extra C file compiled into the binary.\n" +
+            "- `@Alias(\"c_name\")`: maps the Eiwa name to the C symbol " +
+            "(`@Alias(\"sprintf\") fun sprintfInt(...)`, `@Alias(\"eiwa_stdin\") fun stdinStream()`).\n" +
+            "- `@Link(\"kernel32\")`: extra system library on that platform.\n" +
+            "- `@CFunction fun name(...)`: marks a `lib` member as a plain C function (lesson 19 pattern).\n" +
+            "- Platform `object(\"posix\")` / `object(\"windows\")` wrappers MUST implement the same `contract` list " +
+            "(no ad-hoc public methods) — see `platform-parity`.\n\n" +
+            "```kotlin\n@Header(\"<unistd.h>\")\nlib(\"posix\") PosixIds {\n    fun getpid(): Int\n}\n\n@Header(\"<windows.h>\")\n@Link(\"kernel32\")\nlib(\"windows\") Win32Ids {\n    fun GetCurrentProcessId(): Int\n}\n\ncontract PidContract {\n    fun pid(): Int\n}\n\nobject(\"posix\") Pid : PidContract {\n    implement fun pid(): Int = PosixIds.getpid()\n}\n\nobject(\"windows\") Pid : PidContract {\n    implement fun pid(): Int = Win32Ids.GetCurrentProcessId()\n}\n```\n\n" +
+            "## 2. Moving memory across the boundary\n" +
+            "- `Pointer`: an opaque C address. Compare with `null` (`if (p == null)`), advance with `+` (`buf + off`).\n" +
+            "- `Int`, `Double`, `Bool` map to C ints/doubles; `String` passes as `str.ptr` (NUL-terminated) plus an explicit length.\n" +
+            "- Read/write raw bytes with `NativeMemory.readByte(ptr, i)` / `NativeMemory.writeByte(ptr, i, b)` " +
+            "(both live in `std.core`, no import needed).\n" +
+            "- `IntVar(ptr)`: typed view of one 8-byte slot (`get(): Int`, `set(v: Int)`).\n" +
+            "- `Memory.alloc<T>(block: (T) -> Void): T`: scoped slot allocation (Kotlin/Native `memScoped` style).\n" +
+            "- GC rules: allocate C-visible buffers with `Standard.gcMalloc(n)` (scanned) or " +
+            "`Standard.gcMallocAtomic(n)` (plain byte blobs, unscanned). Build the Eiwa value with the copying " +
+            "constructor `String(buf, len)` and never `free` GC memory by hand.\n\n" +
+            "## 3. stdin is NOT a macro call: use object Stdin\n" +
+            "C's `stdin` is a macro, so there is no direct binding. The stdlib already wraps it " +
+            "(`NativeStdin.stdinStream()` via the `eiwa_stdin` helper): user code only touches `object Stdin` in `std.io` " +
+            "(no import needed): `Stdin.readLine(): String?` (`null` on EOF, strips trailing `\\r\\n`) and " +
+            "`Stdin.readExact(n: Int): String` (`\"\"` when `n <= 0` or on immediate EOF, short read otherwise).\n\n" +
+            "```kotlin\ninit {\n    while (true) {\n        val line = Stdin.readLine()\n        if (line == null) {\n            leave\n        }\n        println(\"got: \$line\")\n    }\n}\n```\n\n" +
+            "Byte-by-byte loop (`readExact(1)`, `\"\"` means EOF):\n\n" +
+            "```kotlin\ninit {\n    var count = 0\n    while (true) {\n        val b = Stdin.readExact(1)\n        if (b == \"\") {\n            leave\n        }\n        count = count + 1\n    }\n    println(\"bytes: \$count\")\n}\n```"
+    }
+
+    fun toolchain(): String {
+        return "# Toolchain Reference (eiwac + eiwa, eiwa.yaml, module resolution)\n\n" +
+            "`eiwac` (Zig, compiler backend) compiles single `.ei` files and runs the native test suite. " +
+            "`eiwa` (Eiwa, developer CLI) manages `eiwa.yaml` projects and delegates `run`/`build`/`test`/`check` to `eiwac`.\n\n" +
+            "## 1. eiwac commands\n" +
+            "- `eiwac run [file.ei] [args...]`: compile and execute (JIT; `--aot` builds a cached native binary instead).\n" +
+            "- `eiwac build [file.ei] -o <binary>`: native static binary. Extra args after the file go to the program (run only).\n" +
+            "- `eiwac test [dir|file]`: run `test \"name\" { ... }` blocks (see the `tests` topic).\n" +
+            "- `eiwac check <file.ei>`: parse + type-check only, no codegen. Fast; for editors/CI. " +
+            "Diagnostics go to stderr as `error: <msg>` + `  --> <file>:<line>:<col>`; a clean file prints `OK <file>`.\n\n" +
+            "## 2. eiwac flags\n" +
+            "- `--release`: optimized build. `--target <name>`: triple or alias (`windows`, `linux`, `macos`, `wasm`).\n" +
+            "- `-o <name>`: output binary (build). `--module-path <dir>`: extra module root (repeatable).\n" +
+            "- `--no-cache`: disable the incremental cache (`EIWA_CACHE_DIR`, default `~/.eiwa/cache`).\n" +
+            "- `-I, -L, -l, -D`: forwarded to the C compiler. `--print-std-dir`: print the stdlib source dir and exit " +
+            "(editors resolve `std.*` against it, like `rustc --print sysroot`).\n\n" +
+            "## 3. eiwa project commands\n" +
+            "- `eiwa init [dir]`: scaffold (`eiwa.yaml`, `src/main.ei`, `test/`).\n" +
+            "- `eiwa add <name> <source> [--branch|--tag|--commit <ref>]` / `--path <dir>`: add a git or local dep.\n" +
+            "- `eiwa remove <name>`, `eiwa freeze` (pin commits to `eiwa.freeze`), `eiwa update [name]` (re-resolve).\n" +
+            "- `eiwa run|build|test|check`: project-aware passthrough to `eiwac`. `eiwa build --frozen`: fail unless `eiwa.freeze` exists (CI).\n\n" +
+            "## 4. eiwa.yaml schema\n" +
+            "```yaml\n" +
+            "name: my-app\n" +
+            "version: 0.1.0\n" +
+            "output: bin/my-app   # optional, default bin/<name>\n\n" +
+            "dependencies:\n" +
+            "  arest:\n" +
+            "    github: eiwa-lang/arest\n" +
+            "    branch: main       # or tag: v1.0.0 / commit: 84d2ab3\n" +
+            "  auth:\n" +
+            "    git: https://gitlab.com/company/auth.git\n" +
+            "    commit: 84d2ab3\n" +
+            "  meulib:\n" +
+            "    path: ../meulib   # local dir dep: no clone, no freeze, live on next run\n" +
+            "```\n" +
+            "Sources: `github: org/repo`, `gitlab: org/repo`, `git: <url>`, `path: <dir>`. " +
+            "`eiwa build` never upgrades deps on its own; only `eiwa update` re-resolves. " +
+            "When `eiwa.freeze` exists it overrides the resolution cache (commit it for reproducible CI).\n\n" +
+            "## 5. Module resolution (case-sensitive on all OSes)\n" +
+            "`import { Sym } from \".path\"`: `.x` resolves against the project root (entry file directory), " +
+            "`x` / `x.y` against the importing file's directory, `std.x` against the stdlib package. " +
+            "Top-level side effects are allowed ONLY in the entry file (`ImportSideEffectsNotAllowed` otherwise). " +
+            "Extra roots via `--module-path`. File names: `snake_case`."
+    }
+
+    fun testing(): String {
+        return "# Native Testing (test blocks, discovery, xfail)\n\n" +
+            "## 1. Writing tests\n" +
+            "```kotlin\nfun add(a: Int, b: Int): Int = a + b\n\ntest \"addition works\" {\n    assert(add(2, 3) == 5)\n    assert(add(-1, 1) == 0, \"negatives\")\n}\n```\n" +
+            "`test \"name\" { ... }` blocks run under the test runner. `assert(cond, message = \"Assertion failed\")` throws " +
+            "`AssertionException` on failure; `error(msg)` throws immediately. Tests are plain Eiwa: imports, helpers " +
+            "and fixtures are just top-level declarations in the `_test.ei` file.\n\n" +
+            "## 2. Discovery and execution\n" +
+            "- `eiwac test [dir]` (default: current dir) walks the tree for `*_test.ei` and spawns one child " +
+            "`eiwac test <file>` per file; `eiwac test <file>` runs a single file. `eiwa test` is the project passthrough.\n" +
+            "- Files run in parallel, one child per CPU core. `EIWA_TEST_JOBS=1` forces sequential; " +
+            "`EIWA_TEST_TIMEOUT_MS` sets the per-test deadline (default `120000`); hung tests are killed and reported.\n" +
+            "- Output is grouped per file (`--- <name> ---`) with `[PASS]`, `*[FAIL]` and `[SUMMARY]` markers " +
+            "plus totals and elapsed time; a file that dies before reporting gets a file-level `*[FAIL]`.\n\n" +
+            "## 3. Expected failures (`*_xfail_test.ei`)\n" +
+            "Files ending in `_xfail_test.ei` run through the same machinery but failures (compile errors, crashes, " +
+            "failed blocks) are reported as XFAIL and NEVER break the suite. A fully-passing xfail file (XPASS) " +
+            "fails the build to force marker removal. Use it for known bugs and regression tracking."
+    }
+
+    fun projectConventions(): String {
+        return "# Contributor Conventions (eiwa-lang repo, AGENTS.md — normative)\n\n" +
+            "These rules bind contributors to the compiler/stdlib repos. Application code only needs the language topics.\n\n" +
+            "1. **Composition only.** NEVER `class`, `open`, `abstract`, `override`. Model with `type` + `contract` + `skill` + `object` + `implement`.\n" +
+            "2. **No magic methods.** Every user-visible method/operator/type MUST be explicitly declared in `src/std/` " +
+            "(`@Primitive`/`@Alias` where backend-backed). The LLVM emitter introduces no floating APIs.\n" +
+            "3. **Name mangling.** Types/objects/skills/contracts/functions mangle in LLVM output (e.g. `system_Int`); expect it in IR dumps.\n" +
+            "4. **Boehm GC allocation.** Emitted allocations go through the heap allocator " +
+            "(`getHeapAllocFn`/`getHeapReallocFn`, `GC_malloc`-first) — never raw `malloc`/`free` for Eiwa values.\n" +
+            "5. **Zig 0.16.0.** Compiler code targets exactly this Zig version; no deprecated APIs.\n" +
+            "6. **No placeholders.** Samples and test cases are complete, working assertions.\n" +
+            "7. **Commands.** `zig build` (compiler, ReleaseSafe default), `zig build test` (Zig unit tests), " +
+            "`./bin/eiwac run|build|test` (Eiwa programs / native suite). The roadmap lives in `docs/roadmap.md`; " +
+            "ADRs in `docs/decisions.md` (read before changing a decided pattern). Check `docs/roadmap.md` for phase status."
+    }
+
+    fun changelog(): String {
+        return "# Changelog (MCP server + pinned toolchain)\n\n" +
+            "Policy: additive-only. New tools/topics/examples are appended; existing tools keep their names, " +
+            "arguments and response shapes, and existing topics keep their content (corrections land as NEW topics). " +
+            "Default version is the latest stable deployment of https://eiwa.dev/mcp. Multi-version `?version=` " +
+            "pinning is not yet supported.\n\n" +
+            "## MCP 1.1.0 (current)\n" +
+            "- New tools: `get_std_source` (verbatim `src/std/*.ei`), `search_std` (symbol index over std sources), " +
+            "`check_snippet` (best-effort `eiwac check` as a service; unavailable where no toolchain is installed).\n" +
+            "- New topics: `ffi`, `toolchain`, `tests`, `project-conventions`, `changelog`.\n" +
+            "- `get_std_module` now also serves the previously missing `string` module (27 total).\n" +
+            "- New examples: `cli`, `ffi`, `lsp`.\n" +
+            "- Compat notes: `get_doc_topic(\"testing\")` still returns the arest reference (use `tests` for the runner); " +
+            "`\"cinterop\"` still returns lesson 19 (use `ffi` for depth).\n\n" +
+            "## Toolchain pin\n" +
+            "- Server image builds on `eiwac/eiwa:v0.0.93`; std sources served are that toolchain's `src/std` snapshot.\n" +
+            "- Since MCP 1.1.0 the runtime image vendors that snapshot at `/app/std` (fallback when no toolchain is on PATH).\n\n" +
+            "## MCP 1.0.0\n" +
+            "- Initial catalog: lessons (33), examples, doc topics (overview … cli), per-module std summaries (26), " +
+            "resources `eiwa://spec/*`, prompts (`eiwa_expert`, `port_kotlin`, `explain_concept`)."
+    }
+
     fun listTopics(): String {
         return "# Eiwa Documentation Topics\n\n" +
             "Use `get_doc_topic` with one of:\n" +
@@ -534,7 +676,12 @@ type Docs() {
             "- `annotations` — User annotations (@X + Annotable)\n" +
             "- `arest` — arest server reference (handlers, ApplicationCall API, testing)\n" +
             "- `packages` — Packages and modules\n" +
-            "- `cli` — CLI toolchain guide"
+            "- `cli` — CLI toolchain guide\n" +
+            "- `ffi` — C interop in depth (lib blocks, @Header/@Source/@Alias, platform libs, Pointer/GC rules, Stdin)\n" +
+            "- `toolchain` — eiwac/eiwa reference (flags, eiwa.yaml schema, module resolution)\n" +
+            "- `tests` — native test runner (*_test.ei, *_xfail_test.ei)\n" +
+            "- `project-conventions` — contributor rules (AGENTS.md, no magic methods, Zig 0.16)\n" +
+            "- `changelog` — MCP/toolchain versions and additive-only policy"
     }
 
     fun listTourSections(): String {
@@ -583,6 +730,21 @@ type Docs() {
         }
         if (query == "cli") {
             return cli()
+        }
+        if (query == "ffi" || query == "cffi" || query == "native-ffi" || query == "stdin" || query == "lib-blocks" || query == "libblocks") {
+            return ffi()
+        }
+        if (query == "toolchain" || query == "eiwac" || query == "eiwa-cli" || query == "eiwacli" || query == "module-resolution" || query == "moduleresolution" || query == "compiler-flags" || query == "compilerflags" || query == "eiwa-yaml" || query == "eiwyaml") {
+            return toolchain()
+        }
+        if (query == "tests" || query == "test" || query == "test-runner" || query == "testrunner" || query == "unittest" || query == "xfail") {
+            return testing()
+        }
+        if (query == "project-conventions" || query == "projectconventions" || query == "conventions" || query == "agents-md" || query == "agentsmd" || query == "contributing") {
+            return projectConventions()
+        }
+        if (query == "changelog" || query == "versions" || query == "version") {
+            return changelog()
         }
         if (query == "1" || query == "01" || query == "modules" || query == "imports") {
             return section1Modules()

@@ -1,6 +1,6 @@
 object StdlibData {
     fun list(): String {
-        return "# Eiwa Standard Library - 26 Modules\n\n" +
+        return "# Eiwa Standard Library - 27 Modules\n\n" +
             "Use `get_std_module` with one of:\n" +
             "- `core` — Primitive types (String, Int, Double, Bool, Pointer), contracts, Scope skill\n" +
             "- `collections` — List, MutableList, Map, MutableMap, Set, MutableSet, String.split\n" +
@@ -19,6 +19,7 @@ object StdlibData {
             "- `regex` — Regex, MatchResult, String.matchesRegex/findRegex/replaceRegex\n" +
             "- `json` — JsonValue, JsonParser, parseJson, Json skill, serializeJson/fromJson\n" +
             "- `serde` — Serializable, SerdeValue/SerdeObject/SerdeList, asString/asInt/asDouble/asBool, deserializeList\n" +
+            "- `string` — String extensions (split/trim/lowercase/slice/trimIndent/trimMargin, no import needed)\n" +
             "- `yaml` — Yaml skill (toYaml/writeYaml/...)\n" +
             "- `jsonrpc` — JsonRpc (argument*/response/errorResponse/parse)\n" +
             "- `http` — Client (get/post), Server, ServerConnection, Request/Response, urlEncode\n" +
@@ -247,6 +248,21 @@ object StdlibData {
                 "Helpers: `asSerdeObject(v)`, `asString(v)`, `asInt(v)`, `asDouble(v)`, `asBool(v)`, `asSerdeList(v): SerdeList?`, " +
                 "`deserializeList<T>(serdeList, mapper: (SerdeValue) -> T): List<T>`."
         }
+        if (module == "string" || module == "std.string") {
+            return "## std.string — String Extensions (no import needed)\n\n" +
+                "The `String` type itself lives in `std.core`; every function below is an extension in `std.string` " +
+                "(implicitly available, like `std.system` top-levels).\n\n" +
+                "`split(delimiter: String): List<String>` (literal delimiter, keeps empty parts; whole string when absent/empty), " +
+                "`trim(): String` (bytes `<= 32` both ends), `isBlank()/isNotBlank(): Bool`, `isEmpty()/isNotEmpty(): Bool`, " +
+                "`lowercase()/uppercase(): String`, `contains(other: String): Bool`, `startsWith(prefix: String): Bool`, " +
+                "`endsWith(suffix: String): Bool`, `charAt(index: Int): String` (\"\" when out of range), " +
+                "`replace(old: String, newStr: String): String` (all occurrences), " +
+                "`slice(start: Int, end: Int = length): String` (binary-safe memcpy; embedded NULs survive), " +
+                "`trimIndent(): String` (drop blank first/last lines, strip minimal common indent), " +
+                "`trimMargin(marginPrefix: String = \"|\"): String` (strip indent + prefix per line).\n\n" +
+                "Top-level: `isNullOrEmpty(s: String?): Bool`, `isNullOrBlank(s: String?): Bool`.\n\n" +
+                "```kotlin\nprintln(\"a,,b\".split(\",\").size())\nprintln(\"  hi  \".trim())\nprintln(\"hello\".replace(\"l\", \"L\"))\n```"
+        }
         if (module == "yaml" || module == "std.yaml") {
             return "## std.yaml — YAML Encoding (skill)\n\n" +
                 "Skill `Yaml : Serializable`: `toYaml(): String`, `writeYaml(fields: List<SerdeField>): String`, " +
@@ -339,6 +355,6 @@ object StdlibData {
                 "(distinct FFI libs `PosixProcess` vs `Win32Process`).\n\n" +
                 "```kotlin\nimport { Process } from \"std.process\"\n\nprintln(Process.capture(\"echo hi\"))\nprintln(Process.args().size())\n```"
         }
-        return "Unknown std module: $module. Call list_std_modules to see all 26 modules (core, collections, math, system, exceptions, io, fs, env, log, random, time, money, uuid, ulid, regex, json, serde, yaml, jsonrpc, http, net, db, coroutines, thread, atomic, process)."
+        return "Unknown std module: $module. Call list_std_modules to see all 27 modules (core, collections, math, system, exceptions, io, fs, env, log, random, time, money, uuid, ulid, regex, json, serde, yaml, jsonrpc, http, net, db, coroutines, thread, atomic, process, string)."
     }
 }

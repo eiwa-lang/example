@@ -1,0 +1,292 @@
+import { File } from "std.fs"
+import { Process } from "std.process"
+import { Env } from "std.env"
+import { Uuid } from "std.uuid"
+import { List, MutableList, MutableMap } from "std.collections"
+
+// Mutable memo store: resolved std dir + file contents. Held as an
+// object-level val (same pattern as Dispatchers.Single / Log.rootLogger).
+// Sources are version-pinned per deploy, so entries live until restart;
+// a toolchain upgrade under a running server needs a restart to be seen.
+type StdCache(
+    var dir: String = "",
+    var dirResolved: Bool = false,
+    var sources: MutableMap<String, String> = MutableMap<String, String>()
+)
+
+// Agent-facing stdlib truth layer (MCP P0).
+// Serves verbatim std sources, cross-module symbol search and
+// best-effort type-checking on top of the local toolchain.
+// Read-only by design: never writes outside /tmp, never executes code
+// (`eiwac check` only type-checks, no codegen, no run).
+object StdSources {
+    val cache: StdCache = StdCache()
+    fun modules(): List<String> {
+        return [
+            "atomic", "collections", "core", "coroutines", "db", "env",
+            "exceptions", "fs", "http", "io", "json", "jsonrpc", "log",
+            "math", "money", "net", "process", "random", "regex", "serde",
+            "string", "system", "thread", "time", "ulid", "uuid", "yaml"
+        ]
+    }
+
+    fun isKnown(module: String): Bool {
+        val mods = modules()
+        var i = 0
+        while (i < mods.size()) {
+            if (mods.get(i) == module) {
+                return true
+            }
+            i = i + 1
+        }
+        return false
+    }
+
+    // Locates src/std on this host. Prefers the live toolchain
+    // (`eiwac --print-std-dir`, always in sync; note it prints to
+    // stderr, hence 2>&1), then vendored copies
+    // (production runtime ships one at /app/std), then well-known paths.
+    // Successful resolutions are memoized; misses are retried on the next call.
+    fun stdDir(): String {
+        if (StdSources.cache.dirResolved) {
+            return StdSources.cache.dir
+        }
+        val fromToolchain = Process.capture("eiwac --print-std-dir 2>&1").trim()
+        if (fromToolchain != "" && File.exists(fromToolchain + "/core.ei")) {
+            StdSources.cache.dir = fromToolchain
+            StdSources.cache.dirResolved = true
+            return StdSources.cache.dir
+        }
+        val home = Env.get("EIWA_HOME") ?: ""
+        if (home != "" && File.exists(home + "/core.ei")) {
+            StdSources.cache.dir = home
+            StdSources.cache.dirResolved = true
+            return StdSources.cache.dir
+        }
+        if (home != "" && File.exists(home + "/src/core.ei")) {
+            StdSources.cache.dir = home + "/src"
+            StdSources.cache.dirResolved = true
+            return StdSources.cache.dir
+        }
+        val candidates = ["./std-src", "./std", "/app/std", "/app/std-src", "/opt/eiwa/src"]
+        var i = 0
+        while (i < candidates.size()) {
+            val c = candidates.get(i)
+            if (File.exists(c + "/core.ei")) {
+                StdSources.cache.dir = c
+                StdSources.cache.dirResolved = true
+                return StdSources.cache.dir
+            }
+            i = i + 1
+        }
+        return ""
+    }
+
+    // Reads one std source, memoized in StdSources.cache.sources. Null when the
+    // source tree is missing or the file is absent (callers report it).
+    fun readSource(mod: String): String? {
+        val hit = StdSources.cache.sources.get(mod)
+        if (hit != null) {
+            return hit
+        }
+        val dir = stdDir()
+        if (dir == "") {
+            return null
+        }
+        val path = dir + "/" + mod + ".ei"
+        if (!File.exists(path)) {
+            return null
+        }
+        val src = File.read(path)
+        StdSources.cache.sources.put(mod, src)
+        return src
+    }
+
+    fun get(module: String): String {
+        var m = module.trim()
+        if (m.startsWith("std.")) {
+            m = m.substring(4, m.length)
+        }
+        if (!isKnown(m)) {
+            return "Unknown std module: " + module + ". Call list_std_modules to see all 27 modules."
+        }
+        val src = readSource(m)
+        if (src == null) {
+            return "Std sources unavailable on this host (no toolchain and no vendored copy). " +
+                "Use get_std_module(\"" + m + "\") for the API summary instead."
+        }
+        val lines = src.split("\n").size()
+        return "# src/std/" + m + ".ei — full source, verbatim (" + lines.toString() + " lines)\n\n" + src
+    }
+
+    // Search order: implicit-import modules first (system, core, string
+    // need no import, so a bare name resolves to them), then the rest
+    // alphabetically. Same rule as bare-name resolution: only top-level
+    // declarations resolve bare names, and implicit scope wins.
+    fun searchOrder(): List<String> {
+        return [
+            "system", "core", "string", "atomic", "collections",
+            "coroutines", "db", "env", "exceptions", "fs", "http", "io",
+            "json", "jsonrpc", "log", "math", "money", "net", "process",
+            "random", "regex", "serde", "thread", "time", "ulid", "uuid", "yaml"
+        ]
+    }
+
+    fun isDeclLine(line: String, q: String): Bool {
+        if (line.startsWith("fun " + q)) {
+            return true
+        }
+        if (line.startsWith("type " + q)) {
+            return true
+        }
+        if (line.startsWith("object " + q)) {
+            return true
+        }
+        if (line.startsWith("contract " + q)) {
+            return true
+        }
+        if (line.startsWith("skill " + q)) {
+            return true
+        }
+        if (line.startsWith("enum " + q)) {
+            return true
+        }
+        if (line.startsWith("lib " + q)) {
+            return true
+        }
+        return false
+    }
+
+    // Substring search over every vendored std source. Top-level
+    // declarations rank first (same rule as name resolution: only
+    // top-level declarations resolve bare names).
+    fun search(query: String): String {
+        val q = query.trim()
+        if (q == "") {
+            return "Empty query. Examples: 'sleep', 'toString', 'File', 'parseJson'."
+        }
+        val dir = stdDir()
+        if (dir == "") {
+            return "Std sources unavailable on this host (no toolchain and no vendored copy). " +
+                "Use get_std_module with your best-guess module instead."
+        }
+        val exact = MutableList<String>()
+        val partial = MutableList<String>()
+        val mods = searchOrder()
+        for (mods) { mod ->
+            val text = readSource(mod)
+            if (text != null) {
+                val lines = text.split("\n")
+                var n = 0
+                for (lines) { line ->
+                    n = n + 1
+                    val t = line.trim()
+                    if (t.contains(q)) {
+                        val entry = "std." + mod + " (" + mod + ".ei:" + n.toString() + "): " + t
+                        if (isDeclLine(t, q)) {
+                            exact.add(entry)
+                        } else {
+                            partial.add(entry)
+                        }
+                    }
+                }
+            }
+        }
+        val total = exact.size() + partial.size()
+        if (total == 0) {
+            return "No matches for '" + q + "' in src/std/*.ei."
+        }
+        val shown = MutableList<String>()
+        for (exact.freeze()) {
+            if (shown.size() >= 8) {
+                leave
+            }
+            shown.add(it)
+        }
+        for (partial.freeze()) {
+            if (shown.size() >= 20) {
+                leave
+            }
+            shown.add(it)
+        }
+        var res = "# search_std: \"" + q + "\" (" + total.toString() + " matches, showing " + shown.size().toString() + ")\n\n"
+        for (shown.freeze()) {
+            res = res + it + "\n"
+        }
+        res = res + "\nTop-level declarations first; implicit-import modules (system, core, string) rank above the rest. Full context: get_std_source(module)."
+        return res
+    }
+
+    fun sanitize(name: String): String {
+        val allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
+        var res = ""
+        var i = 0
+        while (i < name.length) {
+            val c = name.charAt(i)
+            if (allowed.contains(c)) {
+                res = res + c
+            } else {
+                res = res + "_"
+            }
+            i = i + 1
+        }
+        return res
+    }
+
+    // Type-checks a snippet with the local toolchain (`eiwac check`:
+    // parse + semantic analysis only, no codegen, no execution).
+    // Best-effort: production runtime images ship no compiler, so the
+    // tool reports itself unavailable there instead of failing obscurely.
+    fun checkSnippet(code: String, filename: String): String {
+        val eiwac = Process.capture("command -v eiwac 2>/dev/null").trim()
+        if (eiwac == "") {
+            return "check_snippet unavailable: no Eiwa toolchain on this host.\n" +
+                "Type-check locally with `eiwac check file.ei` instead. " +
+                "(Production eiwa.dev serves check_snippet best-effort only: the slim runtime image ships no compiler.)"
+        }
+        var base = filename.trim()
+        if (base == "") {
+            base = "main.ei"
+        }
+        var cut = 0
+        var i = 0
+        while (i < base.length) {
+            if (base.charAt(i) == "/") {
+                cut = i + 1
+            }
+            i = i + 1
+        }
+        base = base.substring(cut, base.length)
+        if (base == "" || base == "." || base == ".." || base.contains("..")) {
+            base = "main.ei"
+        }
+        base = sanitize(base)
+        if (base == "" || base == ".ei") {
+            base = "main.ei"
+        }
+        val tmp = "/tmp/mcp_check_" + Uuid.v4().toString() + "_" + base
+        if (!File.write(tmp, code)) {
+            return "check_snippet failed: could not write temp file."
+        }
+        val raw = Process.capture("eiwac check " + tmp + " 2>&1; echo EIWA_EXIT:\$?")
+        File.delete(tmp)
+        var exit = ""
+        var body = ""
+        val lines = raw.split("\n")
+        for (lines) {
+            if (it.startsWith("EIWA_EXIT:")) {
+                exit = it.substring(10, it.length)
+            } else {
+                body = body + it + "\n"
+            }
+        }
+        var shown = body.replace(tmp, base).trim()
+        if (shown == "") {
+            shown = "(no output captured)"
+        }
+        if (exit == "0") {
+            return "ok: true\n" + shown + "\n"
+        }
+        return "ok: false\n" + shown + "\n"
+    }
+}

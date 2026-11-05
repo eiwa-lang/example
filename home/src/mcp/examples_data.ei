@@ -14,7 +14,10 @@ object ExamplesData {
             "- `regex`: Pure-Eiwa regex (find/replace/matches)\n" +
             "- `json`: Reflectionless JSON serialization (toJson/fromJson)\n" +
             "- `uuid`: RFC 4122 UUIDs (v4/v7/parse)\n" +
-            "- `ulid`: Sortable Crockford ULIDs (generate/parse)"
+            "- `ulid`: Sortable Crockford ULIDs (generate/parse)\n" +
+            "- `cli`: Project layout (eiwa.yaml + src/main.ei + test/)\n" +
+            "- `ffi`: Byte-by-byte stdin with Stdin.readExact\n" +
+            "- `lsp`: Stdio LSP framing with Stdin.readLine/readExact (real eiwa-lsp pattern)"
     }
 
     fun get(topic: String): String {
@@ -343,6 +346,131 @@ object ExamplesData {
                 "```kotlin\nimport { Uuid } from \"std.uuid\"\nimport { Ulid } from \"std.ulid\"\n\ninit {\n    println(Uuid.v4().toString())\n    println(Ulid.generate().toString())\n}\n```"
         }
 
-        return "Example not found for: $topic. Available: http, http_client, html, tasks, postgres, mcp, time, money, tests, platform, regex, json, uuid, ulid."
+        if (topic == "cli") {
+            return "## CLI Project Layout (eiwa.yaml + src + test)\n\n" +
+                "The canonical layout `eiwa init my-app` scaffolds. No central registry: git or local path deps.\n\n" +
+                "### 1. Manifest (eiwa.yaml)\n\n" +
+                "```yaml\n" +
+                "name: my-app\n" +
+                "version: 0.1.0\n" +
+                "output: bin/my-app\n\n" +
+                "dependencies:\n" +
+                "  arest:\n" +
+                "    github: eiwa-lang/arest\n" +
+                "    branch: main\n" +
+                "```\n\n" +
+                "### 2. Entry (src/main.ei)\n\n" +
+                "```kotlin\n" +
+                "init {\n" +
+                "    println(\"hello from my-app\")\n" +
+                "}\n" +
+                "```\n\n" +
+                "### 3. Test (test/greet_test.ei)\n\n" +
+                "```kotlin\n" +
+                "fun greet(name: String): String = \"hello \" + name\n\n" +
+                "test \"greets by name\" {\n" +
+                "    assert(greet(\"ana\") == \"hello ana\")\n" +
+                "}\n" +
+                "```\n\n" +
+                "### 4. Commands\n\n" +
+                "```bash\n" +
+                "eiwa run     # compile + execute src/main.ei\n" +
+                "eiwa test    # run every test \"...\" block in *_test.ei files\n" +
+                "eiwa build   # native binary at output (bin/my-app)\n" +
+                "eiwa freeze  # pin dep commits to eiwa.freeze for reproducible CI\n" +
+                "```"
+        }
+        if (topic == "ffi") {
+            return "## FFI: Byte-by-Byte stdin (std.io Stdin, no import needed)\n\n" +
+                "C's `stdin` is a macro, so user code never binds it directly. The stdlib wraps it " +
+                "(`NativeStdin.stdinStream`) behind `object Stdin`: `readLine(): String?` (`null` on EOF) and " +
+                "`readExact(n: Int): String` (`\"\"` on immediate EOF). This loop counts every stdin byte " +
+                "(`echo hi | eiwa run`):\n\n" +
+                "```kotlin\n" +
+                "init {\n" +
+                "    var count = 0\n" +
+                "    while (true) {\n" +
+                "        val b = Stdin.readExact(1)\n" +
+                "        if (b == \"\") {\n" +
+                "            leave\n" +
+                "        }\n" +
+                "        count = count + 1\n" +
+                "    }\n" +
+                "    println(\"bytes: \$count\")\n" +
+                "}\n" +
+                "```\n\n" +
+                "Line-oriented version (`\\r\\n` stripped, `null` on EOF):\n\n" +
+                "```kotlin\n" +
+                "init {\n" +
+                "    while (true) {\n" +
+                "        val line = Stdin.readLine()\n" +
+                "        if (line == null) {\n" +
+                "            leave\n" +
+                "        }\n" +
+                "        println(\"got: \$line\")\n" +
+                "    }\n" +
+                "}\n" +
+                "```\n\n" +
+                "Raw C bindings (`lib` + `@Header`/`@Alias`) and GC buffer rules: topic `ffi`."
+        }
+        if (topic == "lsp") {
+            return "## LSP over stdio (real eiwa-lsp pattern, std only)\n\n" +
+                "The Eiwa LSP server (`eiwa-lang/lsp/`, package `eiwa-lsp`) is stdio-framed: " +
+                "`Content-Length` headers via `Stdin.readLine`, body via `Stdin.readExact(length)` " +
+                "(answers the canonical 'where does Content-Length go?' with `std.io`). No external deps.\n\n" +
+                "### 1. Manifest (lsp/eiwa.yaml)\n\n" +
+                "```yaml\n" +
+                "name: eiwa-lsp\n" +
+                "version: 0.1.0\n" +
+                "output: bin/eiwa-lsp\n" +
+                "```\n\n" +
+                "### 2. Framing (src/transport.ei, verbatim excerpt)\n\n" +
+                "```kotlin\n" +
+                "fun readMessage(): String? {\n" +
+                "    var length = -1\n" +
+                "    var more = true\n" +
+                "    while (more) {\n" +
+                "        val line = Stdin.readLine()\n" +
+                "        if (line == null) {\n" +
+                "            return null\n" +
+                "        }\n" +
+                "        if (line.isEmpty()) {\n" +
+                "            more = false\n" +
+                "        } else if (isContentLength(line)) {\n" +
+                "            val v = headerValue(line)\n" +
+                "            if (v != null) {\n" +
+                "                length = v.toInt()\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "    if (length < 0) {\n" +
+                "        return null\n" +
+                "    }\n" +
+                "    if (length == 0) {\n" +
+                "        return \"\"\n" +
+                "    }\n" +
+                "    return Stdin.readExact(length)\n" +
+                "}\n\n" +
+                "fun writeMessage(body: String) {\n" +
+                "    print(\"Content-Length: \" + body.length.toString() + \"\\r\\n\\r\\n\" + body)\n" +
+                "}\n" +
+                "```\n\n" +
+                "### 3. Loop (src/main.ei)\n\n" +
+                "```kotlin\n" +
+                "import { readMessage } from \"transport\"\n" +
+                "import { handleMessage } from \"server\"\n\n" +
+                "init {\n" +
+                "    while (true) {\n" +
+                "        val raw = readMessage()\n" +
+                "        if (raw == null) {\n" +
+                "            leave\n" +
+                "        }\n" +
+                "        handleMessage(raw)\n" +
+                "    }\n" +
+                "}\n" +
+                "```\n\n" +
+                "Run with `eiwa run` and point any LSP client at the stdio transport."
+        }
+        return "Example not found for: $topic. Available: http, http_client, html, tasks, postgres, mcp, time, money, tests, platform, regex, json, uuid, ulid, cli, ffi, lsp."
     }
 }

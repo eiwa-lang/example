@@ -4,6 +4,7 @@ import { Docs } from ".mcp.docs"
 import { LessonsData } from ".mcp.lessons_data"
 import { ExamplesData } from ".mcp.examples_data"
 import { StdlibData } from ".mcp.stdlib_data"
+import { StdSources } from ".mcp.std_sources"
 
 fun setupMcp(server: ArestBuilder) {
     server.mcp {
@@ -18,7 +19,11 @@ fun setupMcp(server: ArestBuilder) {
             "3. Stackless coroutines: task {} and .await().\n" +
             "4. All APIs are explicitly declared in std/.\n" +
             "5. Standard library APIs to work with mcp, http, ai, html and etc are declared in std and Arest framework.\n" +
-            "6. Complete per-module std API references (100% of methods) are available via the list_std_modules and get_std_module tools."
+            "6. Complete per-module std API references (100% of methods) are available via the list_std_modules and get_std_module tools.\n" +
+            "7. Verbatim std sources (exact signatures, defaults, overloads, generics, platform variants, lib blocks) via get_std_source; " +
+            "symbol lookup via search_std (top-level declarations rank first); snippet type-checking via check_snippet (best-effort, needs a toolchain).\n" +
+            "8. Deep topics via get_doc_topic: ffi (lib/Pointer/GC/Stdin), toolchain (eiwac flags, eiwa.yaml, module resolution), " +
+            "tests (*_test.ei, *_xfail_test.ei), project-conventions (contributor rules), changelog (versions)."
         )
 
         // Resources
@@ -199,7 +204,7 @@ fun setupMcp(server: ArestBuilder) {
             respond(ExamplesData.list())
         }
 
-        tool("get_example", description = "Get a functional example by topic (http, http_client, html, tasks, postgres, mcp, time, money, tests, platform, regex, json, uuid, ulid)", arguments = [
+        tool("get_example", description = "Get a functional example by topic (http, http_client, html, tasks, postgres, mcp, time, money, tests, platform, regex, json, uuid, ulid, cli, ffi, lsp)", arguments = [
             Argument("topic", JsonType.STRING, "Example topic (http, html, mcp, tasks, postgres, money, tests, time)", true),
             Argument("name", JsonType.STRING, "Alias for topic (kept for compatibility)", false)
         ]) {
@@ -212,7 +217,7 @@ fun setupMcp(server: ArestBuilder) {
         }
 
         tool("get_doc_topic", description = "Get a documentation section", arguments = [
-            Argument("topic", JsonType.STRING, "Documentation section (overview, type-system, platform-parity, coroutines, syntax-rules, stdlib, annotations, arest, cli)", true),
+            Argument("topic", JsonType.STRING, "Documentation section (overview, type-system, platform-parity, coroutines, syntax-rules, stdlib, annotations, arest, cli, ffi, toolchain, tests, project-conventions, changelog)", true),
             Argument("section", JsonType.STRING, "Alias for topic (kept for compatibility)", false)
         ]) {
             val topic = hasArgument("topic") ? argument("topic")!!.asString() : (hasArgument("section") ? argument("section")!!.asString() : "overview")
@@ -240,7 +245,7 @@ fun setupMcp(server: ArestBuilder) {
         }
 
         tool("get_std_module", description = "Get the complete API reference for one std module (100% of methods)", arguments = [
-            Argument("module", JsonType.STRING, "Std module (core, collections, math, system, exceptions, io, fs, env, log, random, time, money, uuid, ulid, regex, json, serde, yaml, jsonrpc, http, net, db, coroutines, thread, atomic, process)", true),
+            Argument("module", JsonType.STRING, "Std module (core, collections, math, system, exceptions, io, fs, env, log, random, time, money, uuid, ulid, regex, json, serde, yaml, jsonrpc, http, net, db, coroutines, thread, atomic, process, string)", true),
             Argument("name", JsonType.STRING, "Alias for module (kept for compatibility)", false)
         ]) {
             val module = hasArgument("module") ? argument("module")!!.asString() : (hasArgument("name") ? argument("name")!!.asString() : "")
@@ -248,6 +253,40 @@ fun setupMcp(server: ArestBuilder) {
                 error("Missing required parameter 'module' (e.g. 'random', 'money', 'time').")
             } else {
                 respond(StdlibData.get(module))
+            }
+        }
+
+        tool("get_std_source", description = "Get the verbatim source of one std module (src/std/<module>.ei): exact signatures, defaults, overloads, generics, platform variants and lib blocks. Use when get_std_module summaries are not precise enough", arguments = [
+            Argument("module", JsonType.STRING, "Std module (core, collections, math, system, exceptions, io, fs, env, log, random, time, money, uuid, ulid, regex, json, serde, yaml, jsonrpc, http, net, db, coroutines, thread, atomic, process, string)", true),
+            Argument("name", JsonType.STRING, "Alias for module (kept for compatibility)", false)
+        ]) {
+            val module = hasArgument("module") ? argument("module")!!.asString() : (hasArgument("name") ? argument("name")!!.asString() : "")
+            if (module == "") {
+                error("Missing required parameter 'module' (e.g. 'system', 'io', 'fs').")
+            } else {
+                respond(StdSources.get(module))
+            }
+        }
+
+        tool("search_std", description = "Search stdlib sources for a symbol (exact name, prefix or fragment). Returns file:line matches with top-level declarations first. Use to find which module defines a symbol", arguments = [
+            Argument("query", JsonType.STRING, "Symbol to find (e.g. 'sleep', 'toString', 'File', 'parseJson')", true)
+        ]) {
+            if (hasArgument("query")) {
+                respond(StdSources.search(argument("query")!!.asString()))
+            } else {
+                error("Missing required parameter 'query' (e.g. 'sleep', 'File').")
+            }
+        }
+
+        tool("check_snippet", description = "Type-check an Eiwa snippet with eiwac check (no codegen, no execution). Returns ok plus file:line:col diagnostics. Best-effort: unavailable where no toolchain is installed", arguments = [
+            Argument("code", JsonType.STRING, "Eiwa source code to type-check", true),
+            Argument("filename", JsonType.STRING, "Optional filename for diagnostics (default main.ei)", false)
+        ]) {
+            if (hasArgument("code")) {
+                val filename = hasArgument("filename") ? argument("filename")!!.asString() : "main.ei"
+                respond(StdSources.checkSnippet(argument("code")!!.asString(), filename))
+            } else {
+                error("Missing required parameter 'code'.")
             }
         }
 
